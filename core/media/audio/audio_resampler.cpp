@@ -100,86 +100,108 @@ std::size_t rescaling_sample(const void* input_sample, std::size_t input_sample_
     return result;
 }
 
-}
-
-AudioResampler::AudioResampler()
-{
-
-}
+} // resample utils
 
 std::int32_t AudioResampler::Resampling(const audio_format_t &input_format,
-                           const audio_format_t &output_format,
-                           const void *input_data, std::size_t input_size,
-                           void *output_data, std::size_t output_size)
+						   const audio_format_t &output_format,
+						   const void *input_data, std::size_t input_size,
+						   void *output_data, std::size_t output_size)
 {
-    std::int32_t result = -1;
+	std::int32_t result = -1;
 
-    if (input_format.is_valid() && output_format.is_valid()
-            && input_data != nullptr && output_data != nullptr
-            && input_size > 0)
-    {
+	if (input_format.is_valid() && output_format.is_valid()
+			&& input_data != nullptr && output_data != nullptr
+			&& input_size > 0)
+	{
 
-        if (input_format != output_format)
-        {
+		if (input_format != output_format)
+		{
 
-            // cut the sizes on both sides
+			// cut the sizes on both sides
 
-            auto real_output_size = (input_size * output_format.bytes_per_second()) / input_format.bytes_per_second();
+			auto real_output_size = output_format.octets_from_format(input_format, input_size);
 
-            if (output_size == 0 || output_size > real_output_size)
-            {
-                output_size = real_output_size;
-            }
-            else if (output_size < real_output_size)
-            {
-                input_size = (output_size * input_format.bytes_per_second()) / output_format.bytes_per_second();
-            }
+			if ((output_size == 0) || (output_size > real_output_size))
+			{
+				output_size = real_output_size;
+			}
+			else if (output_size < real_output_size)
+			{
+				input_size = (output_size * input_format.bytes_per_second()) / output_format.bytes_per_second();
+			}
 
-            auto input_ptr = static_cast<const std::uint8_t*>(input_data);
-            auto output_ptr = static_cast<std::uint8_t*>(output_data);
+			auto input_sample_count = input_size / input_format.sample_octets();
+			auto output_sample_count = output_size / output_format.sample_octets();
 
-            auto input_sample_size = input_format.sample_octets();
-            auto output_sample_size = output_format.sample_octets();
+			result = 0;
 
-            auto input_sample_count = input_size / input_sample_size;
-            auto output_sample_count = output_size / output_sample_size;
+			for (auto out_idx = 0; out_idx < output_size; out_idx += output_format.sample_octets())
+			{
 
-            result = 0;
+				auto in_idx = (out_idx * input_sample_count) / output_sample_count;
 
-            for (auto out_idx = 0; out_idx < output_size; out_idx += output_sample_size)
-            {
-                auto in_idx = (out_idx * input_sample_count) / output_sample_count;
+				in_idx -= in_idx % input_format.sample_octets();
 
-                in_idx -= in_idx % input_sample_size;
+				result += reample_utils::rescaling_sample(
+							static_cast<const std::uint8_t*>(input_data) + in_idx
+							, input_format.bit_per_sample
+							, static_cast<std::uint8_t*>(output_data) + out_idx
+							, output_format.bit_per_sample
+							, input_format.channels
+							, output_format.channels);
+			}
+		}
+		else
+		{
+			output_size = input_size = std::min(input_size, output_size == 0 ? input_size : output_size);
 
-                result += reample_utils::rescaling_sample(
-                            input_ptr + in_idx
-                            , input_format.bit_per_sample
-                            , output_ptr + out_idx
-                            , output_format.bit_per_sample
-                            , input_format.channels
-                            , output_format.channels);
-            }
-        }
-        else
-        {
-            output_size = input_size = std::min(input_size, output_size == 0 ? input_size : output_size);
+			result = output_size;
 
-            result = output_size;
+			if ((result > 0) && (input_data != output_data))
+			{
+				std::memcpy(output_data, input_data, result);
+			}
+		}
+	}
 
-            if (input_data != output_data)
-            {
-                std::memcpy(output_data, input_data, result);
-            }
-        }
-    }
+	return result;
+}
 
-    return result;
+int32_t AudioResampler::Resampling(const audio_format_t& input_format,
+								   const audio_format_t& output_format,
+								   const void* input_data,
+								   std::size_t input_size,
+								   audio_buffer_t& output_buffer)
+{
+	auto output_size = output_format.octets_from_format(input_format, input_size);
+
+	if (output_buffer.size() < output_size)
+	{
+		output_buffer.resize(output_size);
+	}
+
+	return Resampling(input_format, output_format, input_data, input_size, output_buffer.data(), output_buffer.size());
+}
+
+int32_t AudioResampler::Resampling(const audio_format_t& input_format, const audio_format_t& output_format, const audio_buffer_t& input_buffer, audio_buffer_t& output_buffer)
+{
+	return Resampling(input_format, output_format, input_buffer.data(), input_buffer.size(), output_buffer);
+}
+
+AudioResampler::AudioResampler(const audio_format_t& input_format, const audio_format_t& output_format)
+	: AudioFormatter(input_format, output_format)
+{
+
 }
 
 int32_t AudioResampler::Resampling(const void *input_data, std::size_t input_size, void *output_data, std::size_t output_size)
 {
-    return Resampling(m_input_fromat, m_output_fromat, input_data, input_size, output_data, output_size);
+	return Resampling(GetInputFormat(), GetOutputFormat(), input_data, input_size, output_data, output_size);
+}
+
+int32_t AudioResampler::Resampling(const void *input_data, std::size_t input_size, const audio_format_t &input_fromat, void *output_data, std::size_t output_size)
+{
+	return Resampling(input_fromat, GetOutputFormat(), input_data, input_size, output_data, output_size);
 }
 
 } // audio

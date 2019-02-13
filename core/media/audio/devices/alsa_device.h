@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include "../audio_format.h"
+#include "media/audio/audio_format.h"
 
 namespace core
 {
@@ -22,9 +22,6 @@ namespace devices
 #ifndef __ALSA_PCM_H
 struct snd_pcm_t;
 #endif
-
-static const audio_format_t default_audio_format = { 44100, 16, 1 };
-static const audio_format_t null_audio_format = { 0, 0, 0 };
 
 struct audio_params_t
 {

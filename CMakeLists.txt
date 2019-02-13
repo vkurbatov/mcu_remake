@@ -22,6 +22,8 @@ set(SOURCES
     "main.cpp"
     "core/media/audio/devices/alsa_device.cpp"
     "core/media/common/data_queue.cpp"
+    "core/media/common/media_point.cpp"
+    "core/media/audio/audio_formatter.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_point.cpp"
     )
@@ -29,6 +31,8 @@ set(SOURCES
 set(HEADERS
     "core/media/audio/devices/alsa_device.h"
     "core/media/common/data_queue.h"
+    "core/media/common/media_point.h"
+    "core/media/audio/audio_formatter.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_format.h"
     "core/media/audio/audio_point.h"
