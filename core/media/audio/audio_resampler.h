@@ -3,6 +3,15 @@
 
 #include "audio_format.h"
 
+namespace core
+{
+
+namespace media
+{
+
+namespace audio
+{
+
 struct audio_format_t;
 
 class AudioResampler
@@ -26,5 +35,11 @@ public:
     std::int32_t Resampling(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size = 0);
 
 };
+
+} // audio
+
+} // media
+
+} // core
 
 #endif // AUDIO_RESAMPLER_H

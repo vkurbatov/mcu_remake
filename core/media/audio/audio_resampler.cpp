@@ -4,6 +4,15 @@
 #include <cstring>
 #include <algorithm>
 
+namespace core
+{
+
+namespace media
+{
+
+namespace audio
+{
+
 namespace reample_utils
 {
 
@@ -105,7 +114,7 @@ std::int32_t AudioResampler::Resampling(const audio_format_t &input_format,
 {
     std::int32_t result = -1;
 
-    if (input_format.is_init() && output_format.is_init()
+    if (input_format.is_valid() && output_format.is_valid()
             && input_data != nullptr && output_data != nullptr
             && input_size > 0)
     {
@@ -172,3 +181,9 @@ int32_t AudioResampler::Resampling(const void *input_data, std::size_t input_siz
 {
     return Resampling(m_input_fromat, m_output_fromat, input_data, input_size, output_data, output_size);
 }
+
+} // audio
+
+} // media
+
+} // core

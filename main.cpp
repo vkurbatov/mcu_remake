@@ -3,17 +3,17 @@
 #include <cstring>
 #include <mutex>
 
-#include "alsa_device.h"
-#include "data_queue.h"
-#include "audio_resampler.h"
+#include "core/media/audio/devices/alsa_device.h"
+#include "core/media/common/data_queue.h"
+#include "core/media/audio/audio_resampler.h"
 
 int main()
 {
 
     int i = 0;
 
-    auto device_playback_list = audio_devices::AlsaDevice::GetDeviceList(false, "plughw");
-    auto device_recorder_list = audio_devices::AlsaDevice::GetDeviceList(true, "plughw");
+    auto device_playback_list = core::media::audio::devices::AlsaDevice::GetDeviceList(false, "plughw");
+    auto device_recorder_list = core::media::audio::devices::AlsaDevice::GetDeviceList(true, "plughw");
 
 	std::cout << "ALSA playback list " << device_playback_list.size() << ":" << std::endl;
 
@@ -34,21 +34,21 @@ int main()
 	}
 
 
-    const std::uint32_t duration_ms = 10;
-    const std::uint32_t sample_rate = 32000;
-    const std::uint32_t frame_size = 2 * (sample_rate * duration_ms) / 1000;
-    const std::uint32_t buffers_count = 10;
+    static const std::uint32_t duration_ms = 10;
+    static const std::uint32_t sample_rate = 32000;
+    static const std::uint32_t frame_size = 2 * (sample_rate * duration_ms) / 1000;
+    static const std::uint32_t buffers_count = 10;
 
     using clock = std::chrono::high_resolution_clock;
 
-    DataQueue queue(frame_size * buffers_count);
+    core::media::common::DataQueue queue(frame_size * buffers_count);
     std::mutex  queue_mutex;
 
     std::thread recorder_thread([&device_recorder_list, &queue_mutex, &queue]()
     {
-        audio_devices::audio_params_t recorder_params(true, { sample_rate, 16, 1 }, frame_size, false);
+        core::media::audio::devices::audio_params_t recorder_params(true, { sample_rate, 16, 1 }, frame_size, false);
 
-        audio_devices::AlsaDevice recorder;
+        core::media::audio::devices::AlsaDevice recorder;
 
         recorder.Open("default", recorder_params);
 
@@ -84,9 +84,9 @@ int main()
 
     std::thread player_thread([&device_playback_list, &queue_mutex, &queue]()
     {
-        audio_devices::audio_params_t player_params(false, { 48000, 16, 1 }, frame_size * 2, true);
+        core::media::audio::devices::audio_params_t player_params(false, { 48000, 16, 1 }, frame_size * 2, true);
 
-        audio_devices::AlsaDevice player;
+        core::media::audio::devices::AlsaDevice player;
 
         player.Open("default", player_params);
 
@@ -100,7 +100,7 @@ int main()
 
         auto start = clock::now();
 
-        audio_format_t input_format(sample_rate, 16, 1);
+        core::media::audio::audio_format_t input_format(sample_rate, 16, 1);
 
         while (player.IsOpen())
         {
@@ -114,7 +114,7 @@ int main()
                 ret = queue.Pop(buffer, frame_size);
             }
 
-            ret = AudioResampler::Resampling(input_format, player_params.audio_format, buffer, ret, resample_buffer);
+            ret = core::media::audio::AudioResampler::Resampling(input_format, player_params.audio_format, buffer, ret, resample_buffer);
 
             ret = player.Write(resample_buffer, ret);
 

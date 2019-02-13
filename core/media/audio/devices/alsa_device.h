@@ -5,9 +5,18 @@
 #include <vector>
 #include <memory>
 
-#include "audio_format.h"
+#include "../audio_format.h"
 
-namespace audio_devices
+namespace core
+{
+
+namespace media
+{
+
+namespace audio
+{
+
+namespace devices
 {
 
 #ifndef __ALSA_PCM_H
@@ -31,7 +40,7 @@ struct audio_params_t
 		, nonblock_mode(nonblock)
 	{}
 
-	inline bool is_init() const { return audio_format.is_init(); }
+    inline bool is_init() const { return audio_format.is_valid(); }
 };
 
 
@@ -77,8 +86,8 @@ public:
 	bool Open(const std::string& device_name, const audio_params_t& audio_params = null_audio_params);
     bool Close();
 
-    inline bool IsOpen() const;
-	inline bool IsRecorder() const;
+    bool IsOpen() const;
+    bool IsRecorder() const;
 
 	inline const audio_params_t& GetParams() const;
 	bool SetParams(const audio_params_t& audio_params);
@@ -98,6 +107,13 @@ private:
 
 };
 
-}
+} // devices
+
+} // audio
+
+} // media
+
+} // core
+
 
 #endif // ALSA_DEVICE_H

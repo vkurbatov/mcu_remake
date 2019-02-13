@@ -10,22 +10,27 @@ extern "C"
 #include <cstring>
 #include <algorithm>
 
-#ifndef LOG_END
+#include <core-tools/logging.h>
 
-#include <iostream>
+namespace core
+{
 
-#define LOG(a)	std::cout << "[" << #a << "] "
-#define LOG_END << std::endl;
+namespace media
+{
 
-#endif
+namespace audio
+{
+
+namespace devices
+{
 
 const char* device_info_fields[] = {"NAME", "DESC",  "IOID" };
 const char default_hw_profile[] = "plughw:";
 const char default_device_name[] = "default";
 const std::int32_t default_max_io_retry_count = 5;
-
-namespace audio_devices
-{
+const std::int32_t default_max_set_hw_retry_count = 10;
+const std::uint32_t max_volume = 100u;
+const std::uint32_t min_volume = 0u;
 
 namespace alsa_utils
 {
@@ -72,7 +77,7 @@ snd_pcm_format_t bits_to_snd_format(std::uint32_t bits)
 template<typename Tval>
 void change_volume(const void *sound_data, std::size_t size, void *output_data, std::uint32_t volume)
 {
-    volume = std::min(100u, std::max(0u, volume));
+    volume = std::min(max_volume, std::max(min_volume, volume));
 
     for (int i = 0; i < size / sizeof(Tval); i++)
     {
@@ -100,7 +105,8 @@ void change_volume(const void *sound_data, std::size_t size, void* output_data, 
         break;
     }
 }
-}
+
+} // alsa_utils
 
 AlsaDevice::AlsaDevice()
 		: m_handle(nullptr)
@@ -406,7 +412,18 @@ std::int32_t AlsaDevice::setHardwareParams(const audio_params_t& audio_params)
                     }
                 }
 
-				result = snd_pcm_hw_params(m_handle, hw_params);
+                std::int32_t max_try = default_max_set_hw_retry_count;
+
+                do
+                {
+                    result = snd_pcm_hw_params(m_handle, hw_params);
+                    if (result == -EAGAIN)
+                    {
+                        snd_pcm_wait(m_handle, 1);
+                    }
+                }
+                while(result == -EAGAIN || max_try-- > 0);
+
 				if(result < 0)
 				{
 					LOG(error) << "Can't set hardware params, errno = " << errno LOG_END;
@@ -503,7 +520,7 @@ std::int32_t AlsaDevice::internalRead(void *capture_data, std::size_t size)
             LOG(error) << "Can't read alsa device with error = " << err << ", retry = " << retry_read_count LOG_END;
         }
 
-        if (io_complete |= (size == 0) || (retry_read_count >= default_max_io_retry_count))
+        if ((io_complete |= (size == 0) || (retry_read_count >= default_max_io_retry_count)) == true)
         {
             result = err <= 0 ? err : total;
         }
@@ -593,7 +610,7 @@ std::int32_t AlsaDevice::internalWrite(const void *playback_data, std::size_t si
             LOG(error) << "Can't write alsa device with error = " << err << ", retry = " << retry_write_count << ", id = " << trans_id LOG_END;
         }
 
-        if (io_complete |= (size == 0) || (retry_write_count >= default_max_io_retry_count))
+        if ((io_complete |= (size == 0) || (retry_write_count >= default_max_io_retry_count)) == true)
         {
             result = err <= 0 ? err : total;
         }
@@ -614,4 +631,10 @@ std::int32_t AlsaDevice::internalWrite(const void *playback_data, std::size_t si
     return result;
 }
 
-}
+} // devices
+
+} // audio
+
+} // media
+
+} // core

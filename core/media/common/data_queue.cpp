@@ -1,6 +1,15 @@
 #include "data_queue.h"
 #include <cstring>
 
+namespace core
+{
+
+namespace media
+{
+
+namespace common
+{
+
 
 DataQueue::DataQueue(std::size_t size)
     : m_buffer(size + 1)
@@ -11,6 +20,37 @@ DataQueue::DataQueue(std::size_t size)
 }
 
 size_t DataQueue::Pop(void* data, std::size_t size)
+{
+    return internalPop(data, size);
+}
+
+std::size_t DataQueue::Get(void *data, std::size_t size)
+{
+    return internalGet(data, size);
+}
+
+std::size_t DataQueue::Drop(std::size_t size)
+{
+    return internalDrop(size);
+}
+
+size_t DataQueue::Push(const void* data, std::size_t size)
+{
+
+    return internalPush(data, size);
+}
+
+void DataQueue::Reset(std::size_t capacity)
+{
+    internalReset(capacity);
+}
+
+std::size_t DataQueue::internalPop(void *data, std::size_t size)
+{
+    return internalDrop(internalGet(data, size));
+}
+
+std::size_t DataQueue::internalGet(void *data, std::size_t size)
 {
     std::size_t result = 0;
 
@@ -37,14 +77,21 @@ size_t DataQueue::Pop(void* data, std::size_t size)
     }
 
     std::memcpy(data_ptr, m_buffer.data() + position, size);
-    m_size -= result;
 
     return size;
 }
 
-size_t DataQueue::Push(const void* data, std::size_t size)
+std::size_t DataQueue::internalDrop(std::size_t size)
 {
+    auto result = std::min(m_size, size);
 
+    m_size -= result;
+
+    return result;
+}
+
+std::size_t DataQueue::internalPush(const void *data, std::size_t size)
+{
     std::uint32_t result = 0;
 
     auto data_ptr = static_cast<const std::uint8_t*>(data);
@@ -88,7 +135,7 @@ size_t DataQueue::Push(const void* data, std::size_t size)
     return result;
 }
 
-void DataQueue::Reset(std::size_t capacity)
+void DataQueue::internalReset(std::size_t capacity)
 {
     m_position = 0;
     m_size = 0;
@@ -98,3 +145,9 @@ void DataQueue::Reset(std::size_t capacity)
         m_buffer.resize(capacity + 1);
     }
 }
+
+} // common
+
+} // media
+
+} // core
