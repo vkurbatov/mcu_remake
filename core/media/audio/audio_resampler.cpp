@@ -23,7 +23,6 @@ Tin clamp_channel_sample(const Tin* input_sample, std::size_t channels)
 
     if (channels > 1)
     {
-
         double sample = 0;
 
         for (std::size_t in_idx = 1; in_idx < channels; in_idx++)
@@ -73,7 +72,12 @@ std::size_t rescaling_sample(const Tin* input_sample, void* output_sample, std::
     return result;
 }
 
-std::size_t rescaling_sample(const void* input_sample, std::size_t input_sample_size, void* output_sample, std::size_t output_sample_size, std::size_t input_channels = 1, std::size_t output_channels = 1)
+std::size_t rescaling_sample(const void* input_sample
+							 , std::size_t input_sample_size
+							 , void* output_sample
+							 , std::size_t output_sample_size
+							 , std::size_t input_channels = 1
+							 , std::size_t output_channels = 1)
 {
     std::size_t result = 0;
 
@@ -102,10 +106,13 @@ std::size_t rescaling_sample(const void* input_sample, std::size_t input_sample_
 
 } // resample utils
 
-std::int32_t AudioResampler::Resampling(const audio_format_t &input_format,
-						   const audio_format_t &output_format,
-						   const void *input_data, std::size_t input_size,
-						   void *output_data, std::size_t output_size)
+// ----------------------------------------------------------------------------------------------------------
+
+std::int32_t AudioResampler::Resampling(
+		const audio_format_t &input_format
+		, const audio_format_t &output_format
+		, const void *input_data, std::size_t input_size
+		, void *output_data, std::size_t output_size)
 {
 	std::int32_t result = -1;
 
@@ -162,22 +169,25 @@ std::int32_t AudioResampler::Resampling(const audio_format_t &input_format,
 				std::memcpy(output_data, input_data, result);
 			}
 		}
+
 	}
 
 	return result;
 }
 
-int32_t AudioResampler::Resampling(const audio_format_t& input_format,
-								   const audio_format_t& output_format,
-								   const void* input_data,
-								   std::size_t input_size,
-								   audio_buffer_t& output_buffer)
+int32_t AudioResampler::Resampling(
+		const audio_format_t& input_format
+		, const audio_format_t& output_format
+		, const void* input_data
+		, std::size_t input_size
+		, audio_buffer_t& output_buffer)
 {
 	auto output_size = output_format.octets_from_format(input_format, input_size);
 
-	if (output_buffer.size() < output_size)
+	if (output_buffer.size() != output_size)
 	{
 		output_buffer.resize(output_size);
+		// LOG ???
 	}
 
 	return Resampling(input_format, output_format, input_data, input_size, output_buffer.data(), output_buffer.size());
@@ -188,20 +198,86 @@ int32_t AudioResampler::Resampling(const audio_format_t& input_format, const aud
 	return Resampling(input_format, output_format, input_buffer.data(), input_buffer.size(), output_buffer);
 }
 
+int32_t AudioResampler::Resampling(const audio_format_t& input_format, const audio_format_t& output_format, const audio_buffer_t& input_buffer, void* output_data, std::size_t output_size)
+{
+	return Resampling(input_format, output_format, input_buffer.data(), input_buffer.size(), output_data, output_size);
+}
+
+// ----------------------------------------------------------------------------------------------------------
+
 AudioResampler::AudioResampler(const audio_format_t& input_format, const audio_format_t& output_format)
-	: AudioFormatter(input_format, output_format)
+	: m_input_format(input_format)
+	, m_output_format(output_format)
 {
 
 }
 
-int32_t AudioResampler::Resampling(const void *input_data, std::size_t input_size, void *output_data, std::size_t output_size)
+int32_t AudioResampler::operator()(const void *input_data, std::size_t input_size, void *output_data, std::size_t output_size) const
 {
 	return Resampling(GetInputFormat(), GetOutputFormat(), input_data, input_size, output_data, output_size);
 }
 
-int32_t AudioResampler::Resampling(const void *input_data, std::size_t input_size, const audio_format_t &input_fromat, void *output_data, std::size_t output_size)
+int32_t AudioResampler::operator()(const void *input_data, std::size_t input_size, const audio_format_t &input_format, void *output_data, std::size_t output_size) const
 {
-	return Resampling(input_fromat, GetOutputFormat(), input_data, input_size, output_data, output_size);
+	return Resampling(input_format, GetOutputFormat(), input_data, input_size, output_data, output_size);
+}
+
+int32_t AudioResampler::operator()(const audio_buffer_t& input_buff, void* output_data, std::size_t output_size) const
+{
+	return Resampling(GetInputFormat(), GetOutputFormat(), input_buff, output_data, output_size);
+}
+
+int32_t AudioResampler::operator()(const audio_buffer_t& input_buff, const audio_format_t& input_format, void* output_data, std::size_t output_size) const
+{
+	return Resampling(input_format, GetOutputFormat(), input_buff, output_data, output_size);
+}
+
+const audio_buffer_t& AudioResampler::operator()(const void* input_data, std::size_t input_size, const audio_format_t& input_format)
+{
+	Resampling(input_format, GetOutputFormat(), input_data, input_size, m_internal_resampler_buffer);
+
+	return m_internal_resampler_buffer;
+}
+
+const audio_buffer_t& AudioResampler::operator()(const audio_buffer_t& input_buff, const audio_format_t& input_format)
+{
+	Resampling(input_format, GetOutputFormat(), input_buff.data(), input_buff.size(), m_internal_resampler_buffer);
+
+	return m_internal_resampler_buffer;
+}
+
+const audio_buffer_t& AudioResampler::operator()(const void* input_data, std::size_t input_size)
+{
+	operator()(input_data, input_size, GetInputFormat());
+
+	return m_internal_resampler_buffer;
+}
+
+const audio_buffer_t& AudioResampler::operator()(const audio_buffer_t& input_buff)
+{
+	operator()(input_buff, GetInputFormat());
+
+	return m_internal_resampler_buffer;
+}
+
+const audio_format_t& AudioResampler::GetInputFormat() const
+{
+	return m_input_format;
+}
+
+const audio_format_t& AudioResampler::GetOutputFormat() const
+{
+	return m_output_format;
+}
+
+void AudioResampler::SetInputFormat(const audio_format_t& input_format)
+{
+	m_input_format = input_format;
+}
+
+void AudioResampler::SetOutputFormat(const audio_format_t& output_format)
+{
+	m_output_format = output_format;
 }
 
 } // audio

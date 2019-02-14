@@ -10,9 +10,6 @@ namespace core
 namespace media
 {
 
-namespace common
-{
-
 class DataQueue
 {
     typedef std::vector<std::uint8_t> queue_buffer_t;
@@ -43,8 +40,6 @@ private:
     void internalReset(std::size_t capacity = 0);
 
 };
-
-} // common
 
 } // media
 

@@ -20,23 +20,27 @@ set(WEBRTCAP_INC_ALSA "/usr/include/alsa/")
 
 set(SOURCES
     "main.cpp"
-    "core/media/audio/devices/alsa_device.cpp"
     "core/media/common/data_queue.cpp"
     "core/media/common/media_point.cpp"
-    "core/media/audio/audio_formatter.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_point.cpp"
+    "core/media/audio/channels/alsa_channel.cpp"
+    "core/media/audio/channels/audio_channel.cpp"
     )
 
 set(HEADERS
-    "core/media/audio/devices/alsa_device.h"
     "core/media/common/data_queue.h"
     "core/media/common/media_point.h"
-    "core/media/audio/audio_formatter.h"
+    "core/media/common/media_types.h"
+    "core/media/audio/i_audio_formatter.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_format.h"
     "core/media/audio/audio_point.h"
     "core/core-tools/logging.h"
+    "core/media/audio/channels/alsa_channel.h"
+    "core/media/audio/channels/i_audio_channel.h"
+    "core/media/audio/channels/audio_channel.h"
+    "core/media/audio/channels/audio_channel_params.h"
     )
 
 include_directories(

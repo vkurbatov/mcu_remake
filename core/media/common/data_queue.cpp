@@ -7,10 +7,6 @@ namespace core
 namespace media
 {
 
-namespace common
-{
-
-
 DataQueue::DataQueue(std::size_t size)
     : m_buffer(size + 1)
     , m_position(0)
@@ -145,8 +141,6 @@ void DataQueue::internalReset(std::size_t capacity)
         m_buffer.resize(capacity + 1);
     }
 }
-
-} // common
 
 } // media
 

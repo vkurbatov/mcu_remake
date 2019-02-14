@@ -3,7 +3,7 @@
 #include <cstring>
 #include <mutex>
 
-#include "core/media/audio/devices/alsa_device.h"
+#include "core/media/audio/channels/alsa_channel.h"
 #include "core/media/common/data_queue.h"
 #include "core/media/audio/audio_resampler.h"
 
@@ -12,8 +12,8 @@ int main()
 
     int i = 0;
 
-    auto device_playback_list = core::media::audio::devices::AlsaDevice::GetDeviceList(false, "plughw");
-    auto device_recorder_list = core::media::audio::devices::AlsaDevice::GetDeviceList(true, "plughw");
+	auto device_playback_list = core::media::audio::channels::AlsaChannel::GetDeviceList(false, "plughw");
+	auto device_recorder_list = core::media::audio::channels::AlsaChannel::GetDeviceList(true, "plughw");
 
 	std::cout << "ALSA playback list " << device_playback_list.size() << ":" << std::endl;
 
@@ -35,20 +35,20 @@ int main()
 
 
     static const std::uint32_t duration_ms = 10;
-    static const std::uint32_t sample_rate = 32000;
+	static const std::uint32_t sample_rate = 32000;
     static const std::uint32_t frame_size = 2 * (sample_rate * duration_ms) / 1000;
     static const std::uint32_t buffers_count = 10;
 
     using clock = std::chrono::high_resolution_clock;
 
-    core::media::common::DataQueue queue(frame_size * buffers_count);
+	core::media::DataQueue queue(frame_size * buffers_count);
     std::mutex  queue_mutex;
 
     std::thread recorder_thread([&device_recorder_list, &queue_mutex, &queue]()
     {
-        core::media::audio::devices::audio_params_t recorder_params(true, { sample_rate, 16, 1 }, frame_size, false);
+		core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { sample_rate, 16, 1 }, frame_size, false);
 
-        core::media::audio::devices::AlsaDevice recorder;
+		core::media::audio::channels::AlsaChannel recorder;
 
         recorder.Open("default", recorder_params);
 
@@ -84,9 +84,9 @@ int main()
 
     std::thread player_thread([&device_playback_list, &queue_mutex, &queue]()
     {
-        core::media::audio::devices::audio_params_t player_params(false, { 48000, 16, 1 }, frame_size * 2, true);
+		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, 16, 1 }, frame_size * 2, true);
 
-        core::media::audio::devices::AlsaDevice player;
+		core::media::audio::channels::AlsaChannel player;
 
         player.Open("default", player_params);
 

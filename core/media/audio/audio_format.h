@@ -1,7 +1,7 @@
 #ifndef AUDIO_FORMAT_H
 #define AUDIO_FORMAT_H
 
-#include <cstdint>
+#include "media/common/media_types.h"
 
 namespace core
 {
