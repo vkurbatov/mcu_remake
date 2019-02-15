@@ -33,11 +33,11 @@ public:
 
 private:
 
-    std::size_t internalPop(void* data, std::size_t size);
-    std::size_t internalGet(void* data, std::size_t size);
-    std::size_t internalDrop(std::size_t size);
-    std::size_t internalPush(const void* data, std::size_t size);
-    void internalReset(std::size_t capacity = 0);
+	std::size_t internal_pop(void* data, std::size_t size);
+	std::size_t internal_get(void* data, std::size_t size);
+	std::size_t internal_drop(std::size_t size);
+	std::size_t internal_push(const void* data, std::size_t size);
+	void internal_reset(std::size_t capacity = 0);
 
 };
 

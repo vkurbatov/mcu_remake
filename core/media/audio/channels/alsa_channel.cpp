@@ -77,33 +77,33 @@ snd_pcm_format_t bits_to_snd_format(std::uint32_t bits)
 template<typename Tval>
 void change_volume(const void *sound_data, std::size_t size, void *output_data, std::uint32_t volume)
 {
-    volume = std::min(max_volume, std::max(min_volume, volume));
+	volume = std::min(max_volume, std::max(min_volume, volume));
 
-    for (int i = 0; i < size / sizeof(Tval); i++)
-    {
+	for (int i = 0; i < size / sizeof(Tval); i++)
+	{
 
-        auto& input_sample = *(static_cast<const Tval*>(sound_data) + i);
-        auto& output_sample = *(static_cast<Tval*>(output_data) + i);
+		auto& input_sample = *(static_cast<const Tval*>(sound_data) + i);
+		auto& output_sample = *(static_cast<Tval*>(output_data) + i);
 
-        output_sample = static_cast<Tval>((static_cast<double>(input_sample) * static_cast<double>(volume)) / 100.0f);
+		output_sample = static_cast<Tval>((static_cast<double>(input_sample) * static_cast<double>(volume)) / 100.0f);
 
-    }
+	}
 }
 
 void change_volume(const void *sound_data, std::size_t size, void* output_data, std::uint32_t bit_per_sample, std::uint32_t volume)
 {
-    switch(bit_per_sample)
-    {
-        case 8:
-            change_volume<std::int8_t>(sound_data, size, output_data, volume);
-        break;
-        case 16:
-            change_volume<std::int16_t>(sound_data, size, output_data, volume);
-        break;
-        case 32:
-            change_volume<std::int32_t>(sound_data, size, output_data, volume);
-        break;
-    }
+	switch(bit_per_sample)
+	{
+		case 8:
+			change_volume<std::int8_t>(sound_data, size, output_data, volume);
+		break;
+		case 16:
+			change_volume<std::int16_t>(sound_data, size, output_data, volume);
+		break;
+		case 32:
+			change_volume<std::int32_t>(sound_data, size, output_data, volume);
+		break;
+	}
 }
 
 } // alsa_utils

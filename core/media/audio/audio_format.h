@@ -21,17 +21,22 @@ struct audio_format_t
         pcm_8,
         pcm_16,
         pcm_32,
-        float_32
+		float_32,
+		float_64
+
     };
 
     static const std::uint32_t min_sample_rate = 8000;
     static const std::uint32_t max_sample_rate = 48000;
+	static const std::uint32_t default_sample_rate = 8000;
 
     static const std::uint32_t min_bit_per_sample = 8;
     static const std::uint32_t max_bit_per_sample = 32;
+	static const std::uint32_t default_bit_per_sample = 16;
 
     static const std::uint32_t min_channels = 1;
     static const std::uint32_t max_channels = 2;
+	static const std::uint32_t default_channels = 1;
 
     std::uint32_t   sample_rate;
     std::uint32_t   bit_per_sample;
@@ -64,8 +69,7 @@ struct audio_format_t
 
 };
 
-
-static const audio_format_t default_audio_format = { 8000, 16, 1 };
+static const audio_format_t default_audio_format = { audio_format_t::default_sample_rate, audio_format_t::default_bit_per_sample, audio_format_t::default_channels };
 static const audio_format_t null_audio_format = { 0, 0, 0 };
 
 } // audio

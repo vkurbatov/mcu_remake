@@ -45,7 +45,7 @@ private:
 
     snd_pcm_t*                      m_handle;
 
-	audio_channel_params_t					m_audio_params;
+	audio_channel_params_t			m_audio_params;
 
     std::uint32_t                   m_volume;
 

@@ -17,36 +17,36 @@ DataQueue::DataQueue(std::size_t size)
 
 size_t DataQueue::Pop(void* data, std::size_t size)
 {
-    return internalPop(data, size);
+    return internal_pop(data, size);
 }
 
 std::size_t DataQueue::Get(void *data, std::size_t size)
 {
-    return internalGet(data, size);
+    return internal_get(data, size);
 }
 
 std::size_t DataQueue::Drop(std::size_t size)
 {
-    return internalDrop(size);
+    return internal_drop(size);
 }
 
 size_t DataQueue::Push(const void* data, std::size_t size)
 {
 
-    return internalPush(data, size);
+    return internal_push(data, size);
 }
 
 void DataQueue::Reset(std::size_t capacity)
 {
-    internalReset(capacity);
+    internal_reset(capacity);
 }
 
-std::size_t DataQueue::internalPop(void *data, std::size_t size)
+std::size_t DataQueue::internal_pop(void *data, std::size_t size)
 {
-    return internalDrop(internalGet(data, size));
+    return internal_drop(internal_get(data, size));
 }
 
-std::size_t DataQueue::internalGet(void *data, std::size_t size)
+std::size_t DataQueue::internal_get(void *data, std::size_t size)
 {
     std::size_t result = 0;
 
@@ -77,7 +77,7 @@ std::size_t DataQueue::internalGet(void *data, std::size_t size)
     return size;
 }
 
-std::size_t DataQueue::internalDrop(std::size_t size)
+std::size_t DataQueue::internal_drop(std::size_t size)
 {
     auto result = std::min(m_size, size);
 
@@ -86,7 +86,7 @@ std::size_t DataQueue::internalDrop(std::size_t size)
     return result;
 }
 
-std::size_t DataQueue::internalPush(const void *data, std::size_t size)
+std::size_t DataQueue::internal_push(const void *data, std::size_t size)
 {
     std::uint32_t result = 0;
 
@@ -131,7 +131,7 @@ std::size_t DataQueue::internalPush(const void *data, std::size_t size)
     return result;
 }
 
-void DataQueue::internalReset(std::size_t capacity)
+void DataQueue::internal_reset(std::size_t capacity)
 {
     m_position = 0;
     m_size = 0;

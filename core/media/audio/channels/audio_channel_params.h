@@ -37,7 +37,7 @@ struct audio_channel_params_t
 		, nonblock_mode(nonblock)
 	{}
 
-    inline bool is_init() const { return audio_format.is_valid(); }
+	inline bool is_init() const { return direction != channel_direction_t::none && audio_format.is_valid(); }
 };
 
 

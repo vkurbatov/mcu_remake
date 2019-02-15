@@ -14,70 +14,20 @@ namespace channels
 
 AudioChannel::AudioChannel(const audio_channel_params_t& param)
 	: AudioPoint(param.audio_format, param.audio_format)
-	, m_mute(false)
-	, m_volume(max_volume)
 {
 
 }
 
-int32_t AudioChannel::Open(const std::string& device_name)
+
+
+bool AudioChannel::IsRecorder() const
 {
-
-}
-
-int32_t AudioChannel::Close()
-{
-
-}
-
-bool AudioChannel::IsOpen() const
-{
-
-}
-
-const audio_channel_params_t&AudioChannel::GetAudioParams() const
-{
-
-}
-
-bool AudioChannel::SetAudioParams(const audio_channel_params_t& audio_params)
-{
-
-}
-
-bool AudioChannel::IsReader() const
-{
-
+	return GetAudioParams().direction == channel_direction_t::recorder || GetAudioParams().direction == channel_direction_t::both;
 }
 
 bool AudioChannel::IsPlayback() const
 {
-
-}
-
-uint32_t AudioChannel::GetVolume() const
-{
-
-}
-
-void AudioChannel::SetVolume(uint32_t volume)
-{
-
-}
-
-bool AudioChannel::GetMute() const
-{
-
-}
-
-void AudioChannel::SetMute(bool mute)
-{
-
-}
-
-const std::string&AudioChannel::GetName() const
-{
-
+	return GetAudioParams().direction == channel_direction_t::playback || GetAudioParams().direction == channel_direction_t::both;
 }
 
 } // channels
