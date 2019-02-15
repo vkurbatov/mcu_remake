@@ -10,7 +10,7 @@ namespace core
 namespace media
 {
 
-   typedef std::vector<std::uint8_t>    media_buffer_t;
+typedef std::vector<std::uint8_t>    media_buffer_t;
 
 } // media
 

@@ -23,10 +23,10 @@ AudioPoint::AudioPoint(const audio_format_t& input_format, const audio_format_t&
 
 std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t flags)
 {
-    std::int32_t result = -EINVAL;
+	std::int32_t result = -EINVAL;
 
-    if (data != nullptr && size > 0)
-    {
+	if (data != nullptr && size > 0)
+	{
 		if (audio_format == GetOutputFormat())
 		{
 			result = Write(data, size, flags);
@@ -42,13 +42,13 @@ std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_f
 				result = Write(resample_buffer.data(), resample_buffer.size(), flags);
 			}
 		}
-    }
-    else
-    {
+	}
+	else
+	{
 		LOG(error) << "Failed write audio frame into audio point - invalid argument: data = " << data << ", size = " << size LOG_END;
-    }
+	}
 
-    return result;
+	return result;
 }
 
 std::int32_t AudioPoint::Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t flags)
@@ -72,7 +72,7 @@ std::int32_t AudioPoint::Read(void* data, std::size_t size, const audio_format_t
 
 			result = Read(m_input_resampler_buffer.data(), input_size, flags);
 
-			if (result > 0)		
+			if (result > 0)
 			{
 				if (audio_format != m_input_resampler.GetOutputFormat())
 				{

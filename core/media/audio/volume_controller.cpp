@@ -35,13 +35,13 @@ bool change_volume(std::uint32_t bit_per_sample, const void *sound_data, std::si
 	{
 		case 8:
 			change_volume<std::int8_t>(sound_data, size, output_data, volume);
-		break;
+			break;
 		case 16:
 			change_volume<std::int16_t>(sound_data, size, output_data, volume);
-		break;
+			break;
 		case 32:
 			change_volume<std::int32_t>(sound_data, size, output_data, volume);
-		break;
+			break;
 		default:
 			return false;
 	}

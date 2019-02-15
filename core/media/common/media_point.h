@@ -12,7 +12,7 @@ namespace media
 class MediaPoint
 {
 public:
-    virtual ~MediaPoint() = default;
+	virtual ~MediaPoint() = default;
 
 	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t flags = 0);
 	virtual std::int32_t Read(void* data, std::size_t size, std::uint32_t flags = 0);

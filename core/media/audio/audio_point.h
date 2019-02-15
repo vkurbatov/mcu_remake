@@ -33,8 +33,8 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 
 public:
 
-    AudioPoint(const audio_format_t& input_format, const audio_format_t& output_format);
-    virtual ~AudioPoint() override = default;
+	AudioPoint(const audio_format_t& input_format, const audio_format_t& output_format);
+	virtual ~AudioPoint() override = default;
 
 	// IAudioPoint interface
 public:
