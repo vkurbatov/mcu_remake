@@ -27,8 +27,8 @@ public:
 
 	virtual ~IAudoChannel() = default;
 
-	virtual std::int32_t Open(const std::string& device_name) = 0;
-	virtual std::int32_t Close() = 0;
+	virtual bool Open(const std::string& device_name) = 0;
+	virtual bool Close() = 0;
 	virtual bool IsOpen() const = 0;
 
 	virtual const audio_channel_params_t& GetAudioParams() const = 0;

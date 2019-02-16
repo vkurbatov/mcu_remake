@@ -1,4 +1,4 @@
-#ifndef AUDIO_CHANNEL_H
+﻿#ifndef AUDIO_CHANNEL_H
 #define AUDIO_CHANNEL_H
 
 #include "media/audio/channels/i_audio_channel.h"
@@ -22,13 +22,29 @@ class AudioChannel : public IAudoChannel, public AudioPoint
 
 public:
 
-	AudioChannel(const audio_channel_params_t& param = null_audio_params);
+	AudioChannel(const audio_channel_params_t& audio_params = null_audio_params);
 
 	// IAudoChannel interface
 public:
 
+	const audio_channel_params_t& GetAudioParams() const override final;
+	bool SetAudioParams(const audio_channel_params_t& audio_params) override final;
+
 	virtual bool IsRecorder() const override;
 	virtual bool IsPlayback() const override;
+
+	// IAudioFormatter interface
+public:
+
+	const audio_format_t &GetInputFormat() const;
+	const audio_format_t &GetOutputFormat() const;
+	void SetInputFormat(const audio_format_t &input_fromat);
+	void SetOutputFormat(const audio_format_t &output_fromat);
+
+protected:
+
+	virtual const audio_channel_params_t& internal_get_audio_params() const = 0;
+	virtual bool internal_set_audio_params(const audio_channel_params_t& audio_params) = 0;
 
 
 };

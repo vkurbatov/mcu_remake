@@ -61,8 +61,8 @@ public:
 
 	// MediaPoint interface
 public:
-	virtual int32_t Write(const void* data, std::size_t size, uint32_t flags) override final;
-	virtual int32_t Read(void* data, std::size_t size, uint32_t flags) override final;
+	virtual std::int32_t Write(const void* data, std::size_t size, uint32_t flags = 0) override final;
+	virtual std::int32_t Read(void* data, std::size_t size, uint32_t flags = 0) override final;
 
 };
 

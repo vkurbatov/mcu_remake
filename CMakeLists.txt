@@ -25,8 +25,8 @@ set(SOURCES
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_point.cpp"
     "core/media/audio/volume_controller.cpp"
-    "core/media/audio/channels/alsa_channel.cpp"
     "core/media/audio/channels/audio_channel.cpp"
+    "core/media/audio/channels/alsa/alsa_channel.cpp"
     )
 
 set(HEADERS
@@ -41,10 +41,10 @@ set(HEADERS
     "core/core-tools/logging.h"
     "core/media/audio/i_volume_controller.h"
     "core/media/audio/volume_controller.h"
-    "core/media/audio/channels/alsa_channel.h"
     "core/media/audio/channels/i_audio_channel.h"
     "core/media/audio/channels/audio_channel.h"
     "core/media/audio/channels/audio_channel_params.h"
+    "core/media/audio/channels/alsa/alsa_channel.h"
     )
 
 include_directories(

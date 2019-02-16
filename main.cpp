@@ -3,7 +3,7 @@
 #include <cstring>
 #include <mutex>
 
-#include "core/media/audio/channels/alsa_channel.h"
+#include "core/media/audio/channels/alsa/alsa_channel.h"
 #include "core/media/common/data_queue.h"
 #include "core/media/audio/audio_resampler.h"
 
@@ -12,8 +12,8 @@ int main()
 
     int i = 0;
 
-	auto device_playback_list = core::media::audio::channels::AlsaChannel::GetDeviceList(false, "plughw");
-	auto device_recorder_list = core::media::audio::channels::AlsaChannel::GetDeviceList(true, "plughw");
+	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::playback, "plughw");
+	auto device_recorder_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder, "plughw");
 
 	std::cout << "ALSA playback list " << device_playback_list.size() << ":" << std::endl;
 
@@ -48,9 +48,9 @@ int main()
     {
 		core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { sample_rate, 16, 1 }, frame_size, false);
 
-		core::media::audio::channels::AlsaChannel recorder;
+		core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
-        recorder.Open("default", recorder_params);
+		recorder.Open("default");
 
         // recorder.SetVolume(1000);
 
@@ -86,11 +86,12 @@ int main()
     {
 		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, 16, 1 }, frame_size * 2, true);
 
-		core::media::audio::channels::AlsaChannel player;
+		core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
-        player.Open("default", player_params);
+		player.Open("default");
 
         player.SetVolume(100);
+
 
         std::uint8_t buffer[frame_size];
 
@@ -128,6 +129,7 @@ int main()
             // std::cout << "Write delay = "  << delay << ", ret = " << ret << std::endl;
         }
     }
+
     );
 
     recorder_thread.join();
