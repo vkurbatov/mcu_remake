@@ -14,19 +14,19 @@ class MediaPoint
 public:
 	virtual ~MediaPoint() = default;
 
-	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t flags = 0);
-	virtual std::int32_t Read(void* data, std::size_t size, std::uint32_t flags = 0);
+	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t options = 0);
+	virtual std::int32_t Read(void* data, std::size_t size, std::uint32_t options = 0);
 
-	virtual std::int32_t Write(const media_buffer_t& data, std::uint32_t flags = 0);
-	virtual std::int32_t Read(media_buffer_t& data, std::uint32_t flags = 0);
+	virtual std::int32_t Write(const media_buffer_t& data, std::uint32_t options = 0);
+	virtual std::int32_t Read(media_buffer_t& data, std::uint32_t options = 0);
 
 	virtual bool CanRead() const;
 	virtual bool CanWrite() const;
 
 protected:
 
-	virtual std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t flags = 0) = 0;
-	virtual std::int32_t internal_read(void* data, std::size_t size, std::uint32_t flags = 0) = 0;
+	virtual std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t options = 0) = 0;
+	virtual std::int32_t internal_read(void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
 } // media

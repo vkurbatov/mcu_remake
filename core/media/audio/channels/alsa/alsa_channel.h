@@ -51,7 +51,8 @@ private:
 
 	audio_channel_params_t			m_audio_params;
 
-	std::uint32_t                   m_volume;
+	std::uint32_t					m_write_transaction_id;
+	std::uint32_t					m_read_transaction_id;
 
 	// sample_buffer_t                 m_sample_buffer;
 
@@ -81,14 +82,16 @@ public:
 	bool CanWrite() const override;
 
 	// AudioChannel interface
-protected:
+private:
 	const audio_channel_params_t& internal_get_audio_params() const override final;
 	bool internal_set_audio_params(const audio_channel_params_t& audio_params) override final;
 
+	// MediaPoint interface
 private:
-	std::int32_t internal_read(void* data, std::size_t size, std::uint32_t flags = 0) override;
-	std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t flags = 0) override;
+	std::int32_t internal_read(void* data, std::size_t size, std::uint32_t options = 0) override final;
+	std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t options = 0) override final;
 
+	std::int32_t io_error_process(std::int32_t error, std::uint32_t timeout_ms = 0);
 	std::int32_t set_hardware_params(const audio_channel_params_t& audio_params);
 
 };

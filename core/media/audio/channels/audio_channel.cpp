@@ -13,7 +13,8 @@ namespace channels
 {
 
 AudioChannel::AudioChannel(const audio_channel_params_t& audio_params)
-	: AudioPoint(audio_params.audio_format, audio_params.audio_format)
+	: AudioPoint(audio_params.is_recorder() ? audio_params.audio_format : null_audio_format,
+				 audio_params.is_playback() ? audio_params.audio_format : null_audio_format)
 {
 
 }
@@ -45,12 +46,12 @@ bool AudioChannel::SetAudioParams(const audio_channel_params_t& audio_params)
 
 bool AudioChannel::IsRecorder() const
 {
-	return GetAudioParams().direction == channel_direction_t::recorder || GetAudioParams().direction == channel_direction_t::both;
+	return GetAudioParams().is_recorder();
 }
 
 bool AudioChannel::IsPlayback() const
 {
-	return GetAudioParams().direction == channel_direction_t::playback || GetAudioParams().direction == channel_direction_t::both;
+	return GetAudioParams().is_playback();
 }
 
 const audio_format_t &AudioChannel::GetInputFormat() const

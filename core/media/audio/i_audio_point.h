@@ -18,8 +18,8 @@ public:
 
 	virtual ~IAudioPoint() = default;
 
-	virtual std::int32_t Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t flags = 0) = 0;
-	virtual std::int32_t Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t flags = 0) = 0;
+	virtual std::int32_t Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options = 0) = 0;
+	virtual std::int32_t Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options = 0) = 0;
 
 
 };

@@ -61,11 +61,12 @@ struct audio_format_t
 				&& channels == af.channels; }
 
 	inline bool operator != (const audio_format_t& af) const { return !(af == *this); }
-	inline std::uint32_t sample_octets() const { return (bit_per_sample * channels) / 8; }
+	inline std::uint32_t bytes_per_sample() const { return (bit_per_sample * channels) / 8; }
 	inline std::uint32_t bytes_per_second() const { return (sample_rate * bit_per_sample * channels) / 8; }
 	inline std::uint32_t duration_ms(std::size_t size) const { return is_valid() ? (size * 1000) / bytes_per_second() : 0; }
-	inline std::size_t octets_from_duration(std::uint32_t duration_ms) const { return (duration_ms * bytes_per_second()) / 1000; }
-	inline std::size_t octets_from_format(const audio_format_t& af, std::size_t size) const { return is_valid() ? size * bytes_per_second() / af.bytes_per_second() : 0; }
+	inline std::size_t size_from_duration(std::uint32_t duration_ms) const { return (duration_ms * bytes_per_second()) / 1000; }
+	inline std::size_t size_from_format(const audio_format_t& af, std::size_t size) const { return is_valid() ? size * bytes_per_second() / af.bytes_per_second() : 0; }
+	inline std::uint32_t samples_from_size(std::size_t size) const { return is_valid() ? size / bytes_per_sample() : 0; }
 
 };
 

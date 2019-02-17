@@ -32,8 +32,10 @@ const char default_hw_profile[] = "plughw:";
 const char default_device_name[] = "default";
 const std::int32_t default_max_io_retry_count = 5;
 const std::int32_t default_max_set_hw_retry_count = 10;
-const std::uint32_t max_volume = 100u;
-const std::uint32_t min_volume = 0u;
+
+const std::size_t max_read_size_part = 16ul;
+const std::size_t max_write_size_part = 16ul;
+
 
 namespace alsa_utils
 {
@@ -181,7 +183,8 @@ AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params)
 	, m_audio_params(audio_params)
 	, m_handle(nullptr)
 	, m_device_name("default")
-	, m_volume(100)
+	, m_write_transaction_id(0)
+	, m_read_transaction_id(0)
 {
 
 }
@@ -210,7 +213,7 @@ bool AlsaChannel::Open(const std::string &device_name)
 												 , SND_PCM_NONBLOCK);
 		if (err >= 0)
 		{
-			// snd_pcm_nonblock(m_handle, 0);
+
 			result = set_hardware_params(m_audio_params) >= 0;
 
 			if (result == false)
@@ -220,6 +223,7 @@ bool AlsaChannel::Open(const std::string &device_name)
 			}
 			else
 			{
+				m_write_transaction_id = m_read_transaction_id = 0;
 				LOG(info) "Open device [" << device_name << "]: success" LOG_END;
 			}
 		}
@@ -305,13 +309,15 @@ bool AlsaChannel::internal_set_audio_params(const audio_channel_params_t &audio_
 	return result;
 }
 
-std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint32_t flags)
+std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint32_t options)
 {
 	std::int32_t result = -1, total = 0;
 
 	auto data_ptr = static_cast<std::int8_t*>(data);
 
-	auto frame_bytes = m_audio_params.audio_format.sample_octets();
+	const auto& audio_format = GetInputFormat();
+
+	auto frame_bytes = audio_format.bytes_per_sample();
 
 	std::int32_t retry_read_count = 0;
 	bool io_complete = false;
@@ -325,54 +331,38 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 		io_complete = false;
 		retry_read_count++;
 
-		auto err = snd_pcm_readi(m_handle, data_ptr, size / frame_bytes /*std::min(size / frame_bytes, 16ul)*/);
+		auto part_size = size / (frame_bytes);
+		part_size = std::min(part_size, max_read_size_part);
 
-		switch(err)
+		auto err = snd_pcm_readi(m_handle, data_ptr, part_size /*std::min(size / frame_bytes, 16ul)*/);
+
+		if (err >= 0)
 		{
-			case -EPIPE:
-				snd_pcm_prepare(m_handle);
-				break;
+			io_complete = (err == 0);
 
-			case -ESTRPIPE:
-			case -EAGAIN:
-
-				// сюда попадаем если устройство не готово, snd_pcm_wait вернет 1,
-				// если устройство освободилось за заданный таймаут в мсек
-
-				if ( snd_pcm_wait( m_handle, m_audio_params.audio_format.duration_ms(size) ) != 1 )
-				{
-					io_complete = true;
-				}
-
-				break;
-
-			default:
+			if (io_complete == false)
 			{
-				if (err > 0)
-				{
-					size -= err * frame_bytes;
-					data_ptr += err * frame_bytes;
-					total += err * frame_bytes;
+				size -= err * frame_bytes;
+				data_ptr += err * frame_bytes;
+				total += err * frame_bytes;
 
-					retry_read_count = 0;
-				}
-				else
-				{
-					// оставшиеся ошибки считаем фатальными
-
-					io_complete = true;
-				}
+				retry_read_count = 0;
 			}
+		}
+		else
+		{
+			err = io_error_process(err, audio_format.duration_ms(size));
 		}
 
 		if (err < 0)
 		{
-			LOG(error) << "Can't read alsa device with error = " << err << ", retry = " << retry_read_count LOG_END;
+			io_complete |= true;
+			LOG(error) << "Can't read alsa device with error = " << err << ", retry = " << retry_read_count << ", trans_id = " << m_read_transaction_id LOG_END;
 		}
 
 		if ((io_complete |= (size == 0) || (retry_read_count >= default_max_io_retry_count)) == true)
 		{
-			result = err <= 0 ? err : total;
+			result = err < 0 ? err : total;
 		}
 	}
 	while(!io_complete);
@@ -385,16 +375,20 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 	{
 		LOG(error) << "Failure read from device, errno = " << result LOG_END;
 	}
+
+	m_read_transaction_id++;
+
 	return result;
 }
 
-std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std::uint32_t flags)
+std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std::uint32_t options)
 {
 	std::int32_t result = 0, total = 0;
 
-	auto frame_bytes = m_audio_params.audio_format.sample_octets();
+	const auto& audio_format = GetOutputFormat();
 
-	static auto trans_id = 0;
+	auto frame_bytes = audio_format.bytes_per_sample();
+
 
 	std::int32_t retry_write_count = 0;
 	bool io_complete = false;
@@ -408,56 +402,42 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		// сбросится при успешной операции ввода-вывода
 
 		io_complete = false;
+
 		retry_write_count++;
 
-		auto err = snd_pcm_writei(m_handle, 	data_ptr, size / (frame_bytes * 2));
+		auto part_size = size / (frame_bytes);
 
-		switch(err)
+		part_size = std::min(part_size, max_write_size_part);
+
+		auto err = snd_pcm_writei(m_handle, data_ptr, part_size);
+
+		if (err >= 0)
 		{
-			case -EPIPE:
-				snd_pcm_prepare(m_handle);
-				break;
+			io_complete = (err == 0);
 
-			case -ESTRPIPE:
-			case -EAGAIN:
-
-				// сюда попадаем если устройство не готово, snd_pcm_wait вернет 1,
-				// если устройство освободилось за заданный таймаут в мсек
-
-				if ( snd_pcm_wait( m_handle, m_audio_params.audio_format.duration_ms(size) ) != 1 )
-				{
-					io_complete = true;
-				}
-
-				break;
-
-			default:
+			if (io_complete == false)
 			{
-				if (err > 0)
-				{
-					size -= err * frame_bytes;
-						data_ptr += err * frame_bytes;
-					total += err * frame_bytes;
+				size -= err * frame_bytes;
+				data_ptr += err * frame_bytes;
+				total += err * frame_bytes;
 
-					retry_write_count = 0;
-				}
-				else
-				{
-					// оставшиеся ошибки считаем фатальными
-
-					io_complete = true;
-				}
+				retry_write_count = 0;
 			}
+		}
+		else
+		{
+			err = io_error_process(err, audio_format.duration_ms(size));
 		}
 
 		if (err < 0)
 		{
-			LOG(error) << "Can't write alsa device with error = " << err << ", retry = " << retry_write_count << ", id = " << trans_id LOG_END;
+			io_complete |= true;
+			LOG(error) << "Can't write alsa device with error = " << err << ", retry = " << retry_write_count << ", id = " << m_write_transaction_id LOG_END;
 		}
 
 		if ((io_complete |= (size == 0) || (retry_write_count >= default_max_io_retry_count)) == true)
 		{
-			result = err <= 0 ? err : total;
+			result = err < 0 ? err : total;
 		}
 	}
 	while(!io_complete);
@@ -471,9 +451,42 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		LOG(error) << "Failure write to device, errno = " << result LOG_END;
 	}
 
-	trans_id++;
+	m_write_transaction_id++;
 
 	return result;
+}
+
+int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
+{
+
+	if (timeout_ms == 0)
+	{
+		timeout_ms = 0xffffffff;
+	}
+
+	switch(error)
+	{
+		case -EPIPE:
+			error = snd_pcm_prepare(m_handle);
+			break;
+
+		case -ESTRPIPE:
+		case -EAGAIN:
+
+			while ((error = snd_pcm_resume(m_handle)) == -EAGAIN && timeout_ms != 0)
+			{
+				usleep(1000);
+				timeout_ms -= 1;
+			}
+
+			if (error < 0)
+			{
+				error = snd_pcm_prepare(m_handle);
+			}
+		break;
+	}
+
+	return error;
 }
 
 std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audio_params)
@@ -527,9 +540,9 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 				}
 
 				//default buffer_size
-				if(audio_params.buffer_size != 0)
+				if(audio_params.period != 0)
 				{
-					snd_pcm_uframes_t period_size = (audio_params.buffer_size * audio_params.audio_format.bit_per_sample) / 8;
+					snd_pcm_uframes_t period_size = audio_params.buffer_size(); // (audio_params.buffer_size * audio_params.audio_format.bytes_per_sample());
 					result = snd_pcm_hw_params_set_buffer_size_near(m_handle, hw_params, &period_size);
 
 					if (result < 0)
@@ -538,7 +551,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 						break;
 					}
 
-					period_size = audio_params.buffer_size;
+					period_size /= audio_params.audio_format.bytes_per_sample();
 					result = snd_pcm_hw_params_set_period_size_near(m_handle, hw_params, &period_size, nullptr);
 					if (result < 0)
 					{

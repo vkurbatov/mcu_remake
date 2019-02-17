@@ -74,7 +74,7 @@ std::size_t DataQueue::internal_get(void *data, std::size_t size)
 
 	std::memcpy(data_ptr, m_buffer.data() + position, size);
 
-	return size;
+	return result;
 }
 
 std::size_t DataQueue::internal_drop(std::size_t size)

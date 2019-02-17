@@ -21,7 +21,7 @@ AudioPoint::AudioPoint(const audio_format_t& input_format, const audio_format_t&
 
 }
 
-std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t flags)
+std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options)
 {
 	std::int32_t result = -EINVAL;
 
@@ -29,7 +29,7 @@ std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_f
 	{
 		if (audio_format == GetOutputFormat())
 		{
-			result = Write(data, size, flags);
+			result = Write(data, size, options);
 		}
 		else
 		{
@@ -39,7 +39,7 @@ std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_f
 
 			if (resample_buffer.size() > 0)
 			{
-				result = Write(resample_buffer.data(), resample_buffer.size(), flags);
+				result = Write(resample_buffer.data(), resample_buffer.size(), options);
 			}
 		}
 	}
@@ -51,7 +51,7 @@ std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_f
 	return result;
 }
 
-std::int32_t AudioPoint::Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t flags)
+std::int32_t AudioPoint::Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options)
 {
 	std::int32_t result = -EINVAL;
 
@@ -59,18 +59,18 @@ std::int32_t AudioPoint::Read(void* data, std::size_t size, const audio_format_t
 	{
 		if (audio_format == GetInputFormat())
 		{
-			result = Read(data, size, flags);
+			result = Read(data, size, options);
 		}
 		else
 		{
-			auto input_size = GetInputFormat().octets_from_format(audio_format, size);
+			auto input_size = GetInputFormat().size_from_format(audio_format, size);
 
 			if (input_size > m_input_resampler_buffer.size())
 			{
 				m_input_resampler_buffer.resize(input_size);
 			}
 
-			result = Read(m_input_resampler_buffer.data(), input_size, flags);
+			result = Read(m_input_resampler_buffer.data(), input_size, options);
 
 			if (result > 0)
 			{

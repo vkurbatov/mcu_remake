@@ -77,7 +77,7 @@ std::size_t rescaling_sample(const void* input_sample
 							 , void* output_sample
 							 , std::size_t output_sample_size
 							 , std::size_t input_channels = 1
-		, std::size_t output_channels = 1)
+							 , std::size_t output_channels = 1)
 {
 	std::size_t result = 0;
 
@@ -126,7 +126,7 @@ std::int32_t AudioResampler::Resampling(
 
 			// cut the sizes on both sides
 
-			auto real_output_size = output_format.octets_from_format(input_format, input_size);
+			auto real_output_size = output_format.size_from_format(input_format, input_size);
 
 			if ((output_size == 0) || (output_size > real_output_size))
 			{
@@ -137,17 +137,17 @@ std::int32_t AudioResampler::Resampling(
 				input_size = (output_size * input_format.bytes_per_second()) / output_format.bytes_per_second();
 			}
 
-			auto input_sample_count = input_size / input_format.sample_octets();
-			auto output_sample_count = output_size / output_format.sample_octets();
+			auto input_sample_count = input_size / input_format.bytes_per_sample();
+			auto output_sample_count = output_size / output_format.bytes_per_sample();
 
 			result = 0;
 
-			for (auto out_idx = 0; out_idx < output_size; out_idx += output_format.sample_octets())
+			for (auto out_idx = 0; out_idx < output_size; out_idx += output_format.bytes_per_sample())
 			{
 
 				auto in_idx = (out_idx * input_sample_count) / output_sample_count;
 
-				in_idx -= in_idx % input_format.sample_octets();
+				in_idx -= in_idx % input_format.bytes_per_sample();
 
 				result += reample_utils::rescaling_sample(
 							static_cast<const std::uint8_t*>(input_data) + in_idx
@@ -182,7 +182,7 @@ int32_t AudioResampler::Resampling(
 		, std::size_t input_size
 		, audio_buffer_t& output_buffer)
 {
-	auto output_size = output_format.octets_from_format(input_format, input_size);
+	auto output_size = output_format.size_from_format(input_format, input_size);
 
 	if (output_buffer.size() != output_size)
 	{
