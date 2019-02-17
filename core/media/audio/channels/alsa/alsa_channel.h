@@ -30,7 +30,8 @@ struct snd_pcm_t;
 struct alsa_channel_info
 {
 	std::string		name;
-	std::string		description;
+	std::string		card_name;
+	std::string		device_name;
 	std::string		hint;
 	bool			input;
 	bool			output;

@@ -48,7 +48,6 @@ static std::string get_field_from_hint(const void* hint, const char* field_name)
 
 	if (filed_value != nullptr)
 	{
-
 		result = filed_value;
 
 		if (std::strcmp(filed_value, "null") != 0)
@@ -60,26 +59,111 @@ static std::string get_field_from_hint(const void* hint, const char* field_name)
 	return std::move(result);
 }
 
-snd_pcm_format_t bits_to_snd_format(std::uint32_t bits)
+bool split_description(std::string& description, std::string& card_name, std::string& device_name, std::string& hint)
+{
+	if (description.empty() == false)
+	{
+		auto delimeter_pos_1 = description.find(", ");
+
+		if (delimeter_pos_1 != std::string::npos)
+		{
+			card_name = description.substr(0, delimeter_pos_1);
+
+			auto delimeter_pos_2 = description.find('\n');
+
+			if (delimeter_pos_2 != std::string::npos)
+			{
+				device_name = description.substr(delimeter_pos_1 + 2, delimeter_pos_2 - delimeter_pos_1 - 2);
+				hint = description.substr(delimeter_pos_2 + 1);
+			}
+			else
+			{
+				device_name = description.substr(delimeter_pos_1 + 2);
+			}
+		}
+		else
+		{
+			hint = description;
+		}
+	}
+}
+
+snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t sample_format)
 {
 	snd_pcm_format_t result = SND_PCM_FORMAT_UNKNOWN;
 
-	switch(bits)
+	switch(sample_format)
 	{
-		case 8:
+		case audio_format_t::sample_format_t::pcm_8:
 			result = SND_PCM_FORMAT_U8;
 			break;
-		case 16:
+		case audio_format_t::sample_format_t::pcm_16:
 			result = SND_PCM_FORMAT_S16_LE;
 			break;
-		case 32:
+		case audio_format_t::sample_format_t::pcm_32:
 			result = SND_PCM_FORMAT_S32_LE;
+			break;
+		case audio_format_t::sample_format_t::float_32:
+			result = SND_PCM_FORMAT_FLOAT_LE;
+			break;
+		case audio_format_t::sample_format_t::float_64:
+			result = SND_PCM_FORMAT_FLOAT64_LE;
 	}
 
 	return result;
 }
 
 } // alsa_utils
+
+/* oldstyle
+const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direction_t direction, const std::string &hw_profile)
+{
+	device_names_list_t device_list;
+
+	std::int32_t card_number = -1;
+
+	snd_ctl_card_info_t * info = NULL;
+	snd_ctl_card_info_alloca(&info);
+
+	snd_pcm_info_t * pcminfo = NULL;
+	snd_pcm_info_alloca(&pcminfo);
+
+	while (snd_card_next(&card_number) >=0 && card_number >=0)
+	{
+		snd_ctl_t *ctl_handle = nullptr;
+		std::string card_id = hw_profile + ":" + std::to_string(card_number);
+
+		if (snd_ctl_open(&ctl_handle, card_id.c_str(), 0) >= 0)
+		{
+			snd_ctl_card_info(ctl_handle, info);
+
+			std::int32_t device_number = -1;
+
+			while (snd_ctl_pcm_next_device(ctl_handle, device_number) >= 0 && device_number >= 0)
+			{
+				snd_pcm_info_set_device(pcminfo, device_number);
+				snd_pcm_info_set_subdevice(pcminfo, 0);
+				snd_pcm_info_set_stream(pcminfo, direction == channel_direction_t::recorder ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK);
+
+				if (snd_ctl_pcm_info(ctl_handle, pcminfo) >= 0)
+				{
+					char* card_name = nullptr;
+
+					snd_card_get_name(card_number, &card_name);
+
+					if (card_name != nullptr)
+					{
+						snd_pcm_info_get_name
+					}
+
+				}
+			}
+		}
+	}
+
+	return std::move(device_list);
+}
+*/
 
 const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direction_t direction, const std::string &hw_profile)
 {
@@ -95,7 +179,7 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 
 		while(*it != nullptr)
 		{
-			alsa_channel_info device_info = { "", "", "", false, false };
+			alsa_channel_info device_info = { "", "", "", "", false, false };
 
 			enum fields_enum_t : std::uint32_t { name, desc, ioid };
 
@@ -125,23 +209,18 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 								{
 									device_info.name = field_value;
 								}
+
+								if (field_value == default_device_name)
+								{
+									device_info.card_name = default_device_name;
+									device_info.device_name = default_device_name;
+								}
+
 								break;
 
 							case fields_enum_t::desc:
-							{
-								auto delimeter_pos = field_value.find('\n');
-								if (delimeter_pos != std::string::npos)
-								{
-									device_info.description = field_value.substr(0, delimeter_pos);
-									device_info.hint = field_value.substr(delimeter_pos + 1);
-								}
-								else
-								{
-									device_info.description = device_info.name;
-									device_info.hint = field_value;
-								}
 
-							}
+								alsa_utils::split_description(field_value, device_info.card_name, device_info.device_name, device_info.hint);
 								break;
 
 							case fields_enum_t::ioid:
@@ -517,10 +596,10 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 					break;
 				}
 
-				result = snd_pcm_hw_params_set_format(m_handle, hw_params, alsa_utils::bits_to_snd_format(audio_params.audio_format.bit_per_sample));
+				result = snd_pcm_hw_params_set_format(m_handle, hw_params, alsa_utils::snd_format_from_sample_format(audio_params.audio_format.sample_format));
 				if (result < 0)
 				{
-					LOG(error) << "Can't set format S" << audio_params.audio_format.bit_per_sample << " hardware params, errno = " << result LOG_END;
+					LOG(error) << "Can't set format S" << static_cast<std::int32_t>(audio_params.audio_format.sample_format) << " hardware params, errno = " << result LOG_END;
 					break;
 				}
 

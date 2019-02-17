@@ -16,6 +16,13 @@ namespace audio
 namespace reample_utils
 {
 
+template<typename T>
+T max_val() { return std::numeric_limits<T>::max(); }
+
+template<> float max_val() { return 1.0f; }
+template<> double max_val() { return 1.0; }
+
+
 template<typename Tin>
 Tin clamp_channel_sample(const Tin* input_sample, std::size_t channels)
 {
@@ -37,67 +44,80 @@ Tin clamp_channel_sample(const Tin* input_sample, std::size_t channels)
 }
 
 template<typename Tin,
-		 typename Tout,
-		 Tin Tin_max = std::numeric_limits<Tin>::max(),
-		 Tout Tout_max = std::numeric_limits<Tout>::max()>
+		 typename Tout>
 std::size_t rescaling_sample(const Tin* input_sample, Tout* output_sample, std::size_t input_channels = 1, std::size_t output_channels = 1)
 {
 
 	for (std::size_t out_idx = 0; out_idx < output_channels; out_idx++)
 	{
 		std::size_t in_idx = (out_idx * input_channels) / output_channels;
-		output_sample[out_idx] = static_cast<Tout>((static_cast<double>(clamp_channel_sample(input_sample + in_idx, input_channels / output_channels)) / static_cast<double>(Tin_max)) * static_cast<double>(Tout_max));
+		output_sample[out_idx] = static_cast<Tout>((static_cast<double>(clamp_channel_sample(input_sample + in_idx, input_channels / output_channels)) / static_cast<double>(max_val<Tin>() ) ) * static_cast<double>(max_val<Tout>() ) );
 	}
 	return sizeof(Tout) * output_channels;
 }
 
 template<typename Tin>
-std::size_t rescaling_sample(const Tin* input_sample, void* output_sample, std::size_t output_sample_size, std::size_t input_channels = 1, std::size_t output_channels = 1)
+std::size_t rescaling_sample(const Tin* input_sample, void* output_sample, audio_format_t::sample_format_t output_sample_format, std::size_t input_channels = 1, std::size_t output_channels = 1)
 {
 
 	std::size_t result = 0;
 
-	switch(output_sample_size)
+	switch(output_sample_format)
 	{
-		case 8:
+		case audio_format_t::sample_format_t::pcm_8:
 			result = rescaling_sample(input_sample, static_cast<std::int8_t*>(output_sample), input_channels, output_channels);
 			break;
-		case 16:
+		case audio_format_t::sample_format_t::pcm_16:
 			result = rescaling_sample(input_sample, static_cast<std::int16_t*>(output_sample), input_channels, output_channels);
 			break;
-		case 32:
+		case audio_format_t::sample_format_t::pcm_32:
 			result = rescaling_sample(input_sample, static_cast<std::int32_t*>(output_sample), input_channels, output_channels);
+			break;
+		case audio_format_t::sample_format_t::float_32:
+			result = rescaling_sample(input_sample, static_cast<float*>(output_sample), input_channels, output_channels);
+			break;
+		case audio_format_t::sample_format_t::float_64:
+			result = rescaling_sample(input_sample, static_cast<double*>(output_sample), input_channels, output_channels);
+
+
 	}
 
 	return result;
 }
 
 std::size_t rescaling_sample(const void* input_sample
-							 , std::size_t input_sample_size
+							 , audio_format_t::sample_format_t input_sample_format
 							 , void* output_sample
-							 , std::size_t output_sample_size
+							 , audio_format_t::sample_format_t output_sample_format
 							 , std::size_t input_channels = 1
 							 , std::size_t output_channels = 1)
 {
 	std::size_t result = 0;
 
-	if (input_sample_size == output_sample_size)
+	if (input_sample_format == output_sample_format)
 	{
-		result = input_sample_size / 8;
+		result = audio_format_t::bit_per_sample(input_sample_format) / 8;
 		std::memcpy(output_sample, input_sample, result);
 	}
 	else
 	{
-		switch(input_sample_size)
+		switch(input_sample_format)
 		{
-			case 8:
-				result = rescaling_sample(static_cast<const std::int8_t*>(input_sample), output_sample, output_sample_size, input_channels, output_channels);
+			case audio_format_t::sample_format_t::pcm_8:
+				result = rescaling_sample(static_cast<const std::int8_t*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 				break;
-			case 16:
-				result = rescaling_sample(static_cast<const std::int16_t*>(input_sample), output_sample, output_sample_size, input_channels, output_channels);
+			case audio_format_t::sample_format_t::pcm_16:
+				result = rescaling_sample(static_cast<const std::int16_t*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 				break;
-			case 32:
-				result = rescaling_sample(static_cast<const std::int32_t*>(input_sample), output_sample, output_sample_size, input_channels, output_channels);
+			case audio_format_t::sample_format_t::pcm_32:
+				result = rescaling_sample(static_cast<const std::int32_t*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
+				break;
+			case audio_format_t::sample_format_t::float_32:
+				result = rescaling_sample(static_cast<const float*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
+				break;
+			case audio_format_t::sample_format_t::float_64:
+				result = rescaling_sample(static_cast<const double*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
+
 		}
 	}
 
@@ -151,9 +171,9 @@ std::int32_t AudioResampler::Resampling(
 
 				result += reample_utils::rescaling_sample(
 							static_cast<const std::uint8_t*>(input_data) + in_idx
-							, input_format.bit_per_sample
+							, input_format.sample_format
 							, static_cast<std::uint8_t*>(output_data) + out_idx
-							, output_format.bit_per_sample
+							, output_format.sample_format
 							, input_format.channels
 							, output_format.channels);
 			}

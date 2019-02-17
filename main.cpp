@@ -19,7 +19,7 @@ int main()
 
 	for (const auto& info : device_playback_list)
     {
-		std::cout << "#" << i << ": " << info.name << ", " << info.description << std::endl;
+		std::cout << "#" << i << ": " << info.name << ", " << info.card_name << ", " << info.device_name << std::endl;
         i++;
     }
 
@@ -29,7 +29,7 @@ int main()
 
 	for (const auto& info : device_recorder_list)
 	{
-		std::cout << "#" << i << ": " << info.name << ", " << info.description << std::endl;;
+		std::cout << "#" << i << ": " << info.name << ", " << info.card_name << ", " << info.device_name << std::endl;;
 		i++;
 	}
 
@@ -48,13 +48,13 @@ int main()
 
     std::thread recorder_thread([&device_recorder_list, &queue_mutex, &queue]()
     {
-		core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, 16, 1 }, duration_ms, true);
+		core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 		core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
 		recorder.Open("default");
 
-        // recorder.SetVolume(1000);
+		recorder.SetVolume(100);
 
 		std::uint8_t buffer[recorder_frame_size];
 
@@ -86,24 +86,22 @@ int main()
 
     std::thread player_thread([&device_playback_list, &queue_mutex, &queue]()
     {
-		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, 16, 1 }, duration_ms, true);
+		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 		core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
 		player.Open("default");
 
-        player.SetVolume(100);
+		player.SetVolume(100);
 
 
 		std::uint8_t buffer[recorder_frame_size];
-
-		std::uint8_t resample_buffer[playback_frame_size];
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         auto start = clock::now();
 
-		core::media::audio::audio_format_t input_format(recorder_sample_rate, 16, 1);
+		core::media::audio::audio_format_t input_format(recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1);
 
         while (player.IsOpen())
         {
@@ -123,14 +121,16 @@ int main()
 			if (q_size > 0)
 			{
 
-				auto rs_size = core::media::audio::AudioResampler::Resampling(input_format, player_params.audio_format, buffer, q_size, resample_buffer);
+				player.Write(buffer, q_size, input_format);
+
+				/*auto rs_size = core::media::audio::AudioResampler::Resampling(input_format, player_params.audio_format, buffer, q_size, resample_buffer);
 
 				auto io_size = player.Write(resample_buffer, rs_size);
 
 				if (io_size != playback_frame_size)
 				{
 					std::cout << "Playback error, q_size = "  << q_size << ":" << q_lost << ", rs_size = " << rs_size << ", io_size = " << io_size << ", frame_size = " << playback_frame_size << std::endl;
-				}
+				}*/
 			}
 
             start += std::chrono::milliseconds(duration_ms);

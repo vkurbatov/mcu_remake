@@ -142,7 +142,7 @@ int32_t AudioPoint::Write(const void* data, std::size_t size, uint32_t flags)
 			m_output_volume_buffer.resize(size);
 		}
 
-		m_volume_controller(GetOutputFormat().bit_per_sample, data, size, m_output_volume_buffer.data());
+		m_volume_controller(GetOutputFormat().sample_format, data, size, m_output_volume_buffer.data());
 
 		data_ptr = m_output_volume_buffer.data();
 	}
@@ -155,7 +155,7 @@ int32_t AudioPoint::Read(void* data, std::size_t size, uint32_t flags)
 
 	auto result = MediaPoint::Read(data, size, flags);
 
-	m_volume_controller(GetInputFormat().bit_per_sample, data, result);
+	m_volume_controller(GetInputFormat().sample_format, data, result);
 
 	return result;
 
