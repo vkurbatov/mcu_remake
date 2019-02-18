@@ -61,7 +61,7 @@ private:
 public:
 
 	AlsaChannel(const audio_channel_params_t& audio_params);
-	~AlsaChannel();
+	~AlsaChannel() override;
 
 	static const device_names_list_t GetDeviceList(channel_direction_t direction, const std::string& hw_profile = "");
 
@@ -75,7 +75,7 @@ public:
 	bool IsRecorder() const override;
 	bool IsPlayback() const override;
 
-	const std::string &GetName() const;
+	const std::string &GetName() const override;
 
 	// MediaPoint interface
 public:

@@ -23,6 +23,7 @@ class AudioChannel : public IAudoChannel, public AudioPoint
 public:
 
 	AudioChannel(const audio_channel_params_t& audio_params = null_audio_params);
+	virtual ~AudioChannel() override = default;
 
 	// IAudoChannel interface
 public:
@@ -36,10 +37,10 @@ public:
 	// IAudioFormatter interface
 public:
 
-	const audio_format_t &GetInputFormat() const;
-	const audio_format_t &GetOutputFormat() const;
-	void SetInputFormat(const audio_format_t &input_fromat);
-	void SetOutputFormat(const audio_format_t &output_fromat);
+	const audio_format_t &GetInputFormat() const override;
+	const audio_format_t &GetOutputFormat() const override;
+	void SetInputFormat(const audio_format_t &input_fromat) override;
+	void SetOutputFormat(const audio_format_t &output_fromat) override;
 
 protected:
 

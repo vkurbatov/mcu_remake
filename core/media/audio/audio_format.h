@@ -68,16 +68,16 @@ struct audio_format_t
 		switch(bit_per_sample)
 		{
 			case 8:
-				result == sample_format_t::pcm_8;
+				result = sample_format_t::pcm_8;
 				break;
 			case 16:
-				result == sample_format_t::pcm_16;
+				result = sample_format_t::pcm_16;
 				break;
 			case 32:
-				result == sample_format_t::float_32;
+				result = sample_format_t::float_32;
 				break;
 			case 64:
-				result == sample_format_t::float_64;
+				result = sample_format_t::float_64;
 		}
 
 		return result;

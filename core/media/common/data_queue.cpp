@@ -7,8 +7,8 @@ namespace core
 namespace media
 {
 
-DataQueue::DataQueue(std::size_t size)
-	: m_buffer(size + 1)
+DataQueue::DataQueue(std::size_t capacity)
+	: m_buffer(capacity + 1)
 	, m_position(0)
 	, m_size(0)
 {
@@ -20,9 +20,9 @@ size_t DataQueue::Pop(void* data, std::size_t size)
 	return internal_pop(data, size);
 }
 
-std::size_t DataQueue::Get(void *data, std::size_t size)
+std::size_t DataQueue::Read(void *data, std::size_t size) const
 {
-	return internal_get(data, size);
+	return internal_read(data, size);
 }
 
 std::size_t DataQueue::Drop(std::size_t size)
@@ -41,12 +41,22 @@ void DataQueue::Reset(std::size_t capacity)
 	internal_reset(capacity);
 }
 
-std::size_t DataQueue::internal_pop(void *data, std::size_t size)
+std::size_t DataQueue::Size() const
 {
-	return internal_drop(internal_get(data, size));
+	return m_size;
 }
 
-std::size_t DataQueue::internal_get(void *data, std::size_t size)
+std::size_t DataQueue::Capacity() const
+{
+	return m_buffer.size();
+}
+
+std::size_t DataQueue::internal_pop(void *data, std::size_t size)
+{
+	return internal_drop(internal_read(data, size));
+}
+
+std::size_t DataQueue::internal_read(void *data, std::size_t size) const
 {
 	std::size_t result = 0;
 
@@ -96,11 +106,11 @@ std::size_t DataQueue::internal_push(const void *data, std::size_t size)
 
 	if ( size >= buffer_size)
 	{
-		data_ptr += (size - buffer_size);
+		data_ptr += (size - buffer_size + 1);
 		size = buffer_size - 1;
 	}
 
-	if (size <= m_buffer.size())
+	if (size > 0)
 	{
 
 		auto tail = m_position + size;
@@ -126,6 +136,8 @@ std::size_t DataQueue::internal_push(const void *data, std::size_t size)
 		{
 			m_size = buffer_size - 1;
 		}
+
+		result = size;
 	}
 
 	return result;

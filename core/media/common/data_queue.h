@@ -1,7 +1,7 @@
 #ifndef DATA_QUEUE_H
 #define DATA_QUEUE_H
 
-#include <cstdint>
+#include "media/common/i_data_queue.h"
 #include <vector>
 
 namespace core
@@ -10,7 +10,7 @@ namespace core
 namespace media
 {
 
-class DataQueue
+class DataQueue : public IDataQueue
 {
 	typedef std::vector<std::uint8_t> queue_buffer_t;
 
@@ -20,21 +20,24 @@ class DataQueue
 
 public:
 
-	DataQueue(std::size_t size);
+	DataQueue(std::size_t capacity);
+	virtual ~DataQueue() override = default;
 
-	std::size_t Pop(void* data, std::size_t size);
-	std::size_t Get(void* data, std::size_t size);
-	std::size_t Drop(std::size_t size);
-	std::size_t Push(const void* data, std::size_t size);
+	// IDataQueue interface
+public:
+	std::size_t Pop(void* data, std::size_t size) override;
+	std::size_t Read(void* data, std::size_t size) const override;
+	std::size_t Drop(std::size_t size) override;
+	std::size_t Push(const void* data, std::size_t size) override;
 
-	void Reset(std::size_t capacity = 0);
-	inline std::size_t Size() const { return m_size; }
-	inline std::size_t Capacity() const { return m_buffer.size(); }
+	void Reset(std::size_t capacity = 0) override;
+	std::size_t Size() const override;
+	std::size_t Capacity() const override;
 
 private:
 
 	std::size_t internal_pop(void* data, std::size_t size);
-	std::size_t internal_get(void* data, std::size_t size);
+	std::size_t internal_read(void* data, std::size_t size) const;
 	std::size_t internal_drop(std::size_t size);
 	std::size_t internal_push(const void* data, std::size_t size);
 	void internal_reset(std::size_t capacity = 0);

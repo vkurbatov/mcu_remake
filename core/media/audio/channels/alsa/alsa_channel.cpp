@@ -59,8 +59,9 @@ static std::string get_field_from_hint(const void* hint, const char* field_name)
 	return std::move(result);
 }
 
-bool split_description(std::string& description, std::string& card_name, std::string& device_name, std::string& hint)
+void split_description(std::string& description, std::string& card_name, std::string& device_name, std::string& hint)
 {
+
 	if (description.empty() == false)
 	{
 		auto delimeter_pos_1 = description.find(", ");
@@ -86,28 +87,28 @@ bool split_description(std::string& description, std::string& card_name, std::st
 			hint = description;
 		}
 	}
+
 }
 
 snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t sample_format)
 {
 	snd_pcm_format_t result = SND_PCM_FORMAT_UNKNOWN;
-
 	switch(sample_format)
 	{
 		case audio_format_t::sample_format_t::pcm_8:
 			result = SND_PCM_FORMAT_U8;
 			break;
 		case audio_format_t::sample_format_t::pcm_16:
-			result = SND_PCM_FORMAT_S16_LE;
+			result = SND_PCM_FORMAT_S16;
 			break;
 		case audio_format_t::sample_format_t::pcm_32:
-			result = SND_PCM_FORMAT_S32_LE;
+			result = SND_PCM_FORMAT_S32;
 			break;
 		case audio_format_t::sample_format_t::float_32:
-			result = SND_PCM_FORMAT_FLOAT_LE;
+			result = SND_PCM_FORMAT_FLOAT;
 			break;
 		case audio_format_t::sample_format_t::float_64:
-			result = SND_PCM_FORMAT_FLOAT64_LE;
+			result = SND_PCM_FORMAT_FLOAT64;
 	}
 
 	return result;
@@ -221,6 +222,7 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 							case fields_enum_t::desc:
 
 								alsa_utils::split_description(field_value, device_info.card_name, device_info.device_name, device_info.hint);
+
 								break;
 
 							case fields_enum_t::ioid:

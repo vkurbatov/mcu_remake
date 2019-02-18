@@ -21,7 +21,9 @@ set(WEBRTCAP_INC_ALSA "/usr/include/alsa/")
 set(SOURCES
     "main.cpp"
     "core/media/common/data_queue.cpp"
+    "core/media/common/multipoint_data_queue.cpp"
     "core/media/common/media_point.cpp"
+    "core/media/common/media_queue.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_point.cpp"
     "core/media/audio/volume_controller.cpp"
@@ -30,7 +32,13 @@ set(SOURCES
     )
 
 set(HEADERS
+    "core/media/common/i_data_queue.h"
     "core/media/common/data_queue.h"
+    "core/media/common/i_multipoint_data_queue.h"
+    "core/media/common/multipoint_data_queue.h"
+    "core/media/common/i_media_queue.h"
+    "core/media/common/media_queue.h"
+    "core/media/common/i_media_point.h"
     "core/media/common/media_point.h"
     "core/media/common/media_types.h"
     "core/media/audio/i_audio_formatter.h"
