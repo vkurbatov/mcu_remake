@@ -14,8 +14,6 @@ using media_slot_id_t = std::uint32_t;
 class IMediaSlot : public IDataQueue
 {
 
-friend class IMediaQueue;
-
 protected:
 	virtual ~IMediaSlot() override = default;
 

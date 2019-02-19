@@ -43,7 +43,16 @@ IMediaSlot* MediaQueue::AddSlot(media_slot_id_t media_slot_id)
 
 bool MediaQueue::RemoveSlot(media_slot_id_t media_slot_id)
 {
-	return false;
+	auto it = m_media_slots.find(media_slot_id);
+
+	bool result = (it != m_media_slots.end());
+
+	if (result == true)
+	{
+		m_media_slots.erase(it);
+	}
+
+	return result;
 }
 
 void MediaQueue::Reset()

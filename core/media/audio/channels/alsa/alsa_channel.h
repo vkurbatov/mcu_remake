@@ -55,9 +55,6 @@ private:
 	std::uint32_t					m_write_transaction_id;
 	std::uint32_t					m_read_transaction_id;
 
-	// sample_buffer_t                 m_sample_buffer;
-
-
 public:
 
 	AlsaChannel(const audio_channel_params_t& audio_params);

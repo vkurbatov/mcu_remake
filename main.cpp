@@ -276,11 +276,60 @@ void test_queue()
 
 }
 
+#include "media/common/media_queue.h"
+
+void test_media_queue()
+{
+	const auto queue_size = 14;
+
+	const core::media::media_slot_id_t slot_id_1 = 1, slot_id_2 = 2;
+
+	core::media::MediaQueue media_queue(queue_size);
+
+	core::media::IMediaQueue& queue = media_queue;
+
+	std::uint8_t w_buffer_1[] = { 1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18 };
+	std::uint8_t w_buffer_2[] = { 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118 };
+
+	std::uint8_t r_buffer_1[sizeof(w_buffer_1)] = { 0 };
+	std::uint8_t r_buffer_2[sizeof(w_buffer_2)] = { 0 };
+
+	queue.AddSlot(slot_id_1);
+	queue.AddSlot(slot_id_2);
+
+	auto w_res_1 = queue[slot_id_1]->Push(w_buffer_1, 8 /*sizeof(w_buffer_1)*/);
+	auto w_res_2 = queue[slot_id_2]->Push(w_buffer_2, 4);
+
+	auto r_res_1 = queue[slot_id_1]->Read(r_buffer_1, sizeof(r_buffer_1));
+	auto r_res_2 = queue[slot_id_2]->Read(r_buffer_2, sizeof(r_buffer_2), true);
+
+	auto rem_res_1 = queue.RemoveSlot(slot_id_1);
+	auto rem_res_2 = queue.RemoveSlot(slot_id_2);
+
+	std::cout << "/nTest 1. Media Queue. Add and Remove slots. Write and Read two slots." << std::endl;
+	std::cout << "Test status: w_res_1 = " << w_res_1
+							<< ", w_res_2 = " << w_res_2
+							<< ", r_res_1 = " << r_res_1
+							<< ", r_res_2 = " << r_res_2
+							<< ", rem_res_1 = " << rem_res_1
+							<< ", rem_res_2 = " << rem_res_2
+							<< std::endl;
+
+	std::cout << "Buffer 1: " << std::endl;
+	print_buffer_ln(r_buffer_1, r_res_1);
+
+	std::cout << "Buffer 2: " << std::endl;
+	print_buffer_ln(r_buffer_2, r_res_2);
+
+}
+
 int main()
 {
-	test_queue();
+	// test_queue();
 
 	// test_alsa();
+
+	test_media_queue();
 
 	return 0;
 }

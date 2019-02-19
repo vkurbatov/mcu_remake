@@ -59,19 +59,38 @@ media_slot_id_t MediaSlot::GetSlotId() const
 
 std::size_t MediaSlot::internal_pop(void* data, std::size_t size)
 {
-	return internal_drop(internal_read(data, size, false));
+
+	size = std::min(size, Size());
+
+	auto result = internal_read(data, size, false);
+
+	internal_drop(size);
+
+	return result;
 }
 
 std::size_t MediaSlot::internal_read(void* data, std::size_t size, bool from_tail) const
 {
-	return m_multipoint_data_queue.Read(from_tail ? m_write_cursor : m_read_cursor, data, size);
+	auto cursor = m_write_cursor;
+
+	if (from_tail == false)
+	{
+		cursor = m_read_cursor;
+		size = std::min(size, Size());
+	}
+
+	return m_multipoint_data_queue.Read(cursor, data, size);
 }
 
 std::size_t MediaSlot::internal_drop(std::size_t size)
 {
-	size = std::min(size, Size());
 
-	m_read_cursor = (m_read_cursor + size) % Capacity();
+	m_read_cursor += size;
+
+	if (m_read_cursor > m_write_cursor)
+	{
+		m_read_cursor = m_write_cursor;
+	}
 
 	return size;
 }
