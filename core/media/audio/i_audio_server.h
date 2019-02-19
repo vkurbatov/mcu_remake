@@ -22,7 +22,8 @@ public:
 	virtual IAudioStream* operator[](media_stream_id_t stream_id) = 0;
 	virtual const IAudioStream* operator[](media_stream_id_t stream_id) const = 0;
 
-	virtual AddStream(media_stream_id_t stream_id, IAudioPoint& audio_point);
+	virtual IAudioStream* AddStream(media_stream_id_t stream_id, IAudioPoint& audio_point) = 0;
+	virtual bool RemoveStream(media_stream_id_t stream_id) = 0;
 };
 
 } // audio

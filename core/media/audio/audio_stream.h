@@ -15,7 +15,7 @@ namespace audio
 class AudioStream : public IAudioStream
 {
 
-	IAudioPoint& m_audio_point;
+	// IAudioPoint& m_audio_point;
 
 public:
 	AudioStream();
