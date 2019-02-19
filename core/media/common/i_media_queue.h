@@ -9,19 +9,18 @@ namespace core
 namespace media
 {
 
-class IMediaQueue
+class IMediaQueue : public IDataQueueControl
 {
 
 public:
 
-	virtual ~IMediaQueue() = default;
+	virtual ~IMediaQueue() override = default;
 
 	virtual IMediaSlot* operator[](media_slot_id_t media_slot_id) = 0;
+	virtual const IMediaSlot* operator[](media_slot_id_t media_slot_id) const = 0;
 	virtual IMediaSlot* AddSlot(media_slot_id_t media_slot_id) = 0;
 	virtual bool RemoveSlot(media_slot_id_t media_slot_id) = 0;
 
-	virtual void Reset(std::size_t capacity) = 0;
-	virtual std::size_t Capacity(std::size_t capacity) = 0;
 };
 
 } //media

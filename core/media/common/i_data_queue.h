@@ -9,21 +9,46 @@ namespace core
 namespace media
 {
 
-class IDataQueue
+class IDataQueueControl
+{
+public:
+	virtual ~IDataQueueControl() = default;
+
+	virtual void Reset() = 0;
+	virtual std::size_t Size() const = 0;
+	virtual std::size_t Capacity() const = 0;
+};
+
+class IDataQueueReader
+{
+public:
+	virtual ~IDataQueueReader() = default;
+
+	virtual std::size_t Pop(void* data, std::size_t size) = 0;
+	virtual std::size_t Read(void* data, std::size_t size, bool from_tail = false) const = 0;
+	virtual std::size_t Drop(std::size_t size) = 0;
+};
+
+class IDataQueueWriter
+{
+public:
+	virtual ~IDataQueueWriter() = default;
+
+	virtual std::size_t Push(const void* data, std::size_t size) = 0;
+};
+
+class IDataQueueIO : public IDataQueueReader, public IDataQueueWriter
+{
+public:
+	virtual ~IDataQueueIO() override = default;
+};
+
+class IDataQueue : public IDataQueueControl, public IDataQueueIO
 {
 
 public:
 
-	virtual ~IDataQueue() = default;
-
-	virtual std::size_t Pop(void* data, std::size_t size) = 0;
-	virtual std::size_t Read(void* data, std::size_t size) const = 0;
-	virtual std::size_t Drop(std::size_t size) = 0;
-	virtual std::size_t Push(const void* data, std::size_t size) = 0;
-
-	virtual void Reset(std::size_t capacity = 0) = 0;
-	virtual std::size_t Size() const = 0;
-	virtual std::size_t Capacity() const = 0;
+	virtual ~IDataQueue() override = default;
 
 };
 

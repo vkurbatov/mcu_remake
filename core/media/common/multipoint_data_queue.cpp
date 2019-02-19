@@ -25,9 +25,9 @@ std::size_t MultipointDataQueue::Write(cursor_t cursor, const void* data, std::s
 	return internal_write(cursor, data, size);
 }
 
-void MultipointDataQueue::Reset(std::size_t capacity)
+void MultipointDataQueue::Reset()
 {
-	return internal_reset(capacity);
+	return internal_reset();
 }
 
 std::size_t MultipointDataQueue::Size() const
@@ -53,6 +53,11 @@ cursor_t MultipointDataQueue::GetWriteCursor() const
 cursor_t MultipointDataQueue::GetReadCursor() const
 {
 	return m_cursor - m_size;
+}
+
+void MultipointDataQueue::Resize(std::size_t capacity)
+{
+	internal_resize(capacity);
 }
 
 std::size_t MultipointDataQueue::internal_read(cursor_t cursor, void* data, std::size_t size) const
@@ -151,16 +156,21 @@ std::size_t MultipointDataQueue::internal_write(cursor_t cursor, const void* dat
 	return result;
 }
 
-void MultipointDataQueue::internal_reset(std::size_t capacity)
+void MultipointDataQueue::internal_reset()
 {
 	m_cursor = 0;
 	m_size = 0;
+}
 
-	if (capacity != 0)
+void MultipointDataQueue::internal_resize(std::size_t capacity)
+{
+	if (capacity != m_buffer.size())
 	{
 		m_buffer.resize(capacity + 1);
+		internal_reset();
 	}
 }
+
 
 bool MultipointDataQueue::is_valid_cursor(cursor_t cursor) const
 {

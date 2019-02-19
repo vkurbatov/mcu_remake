@@ -21,7 +21,7 @@ public:
 	virtual std::size_t Read(cursor_t cursor, void* data, std::size_t size) const = 0;
 	virtual std::size_t Write(cursor_t cursor, const void* data, std::size_t size) = 0;
 
-	virtual void Reset(std::size_t capacity = 0) = 0;
+	virtual void Reset() = 0;
 	virtual std::size_t Size() const = 0;
 	virtual std::size_t Capacity() const = 0;
 	virtual std::size_t GetDataSize(cursor_t cursor, bool is_before = false) const = 0;

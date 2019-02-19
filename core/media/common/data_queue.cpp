@@ -20,9 +20,9 @@ size_t DataQueue::Pop(void* data, std::size_t size)
 	return internal_pop(data, size);
 }
 
-std::size_t DataQueue::Read(void *data, std::size_t size) const
+std::size_t DataQueue::Read(void *data, std::size_t size, bool from_tail) const
 {
-	return internal_read(data, size);
+	return internal_read(data, size, from_tail);
 }
 
 std::size_t DataQueue::Drop(std::size_t size)
@@ -36,10 +36,16 @@ size_t DataQueue::Push(const void* data, std::size_t size)
 	return internal_push(data, size);
 }
 
-void DataQueue::Reset(std::size_t capacity)
+void DataQueue::Reset()
 {
-	internal_reset(capacity);
+	internal_reset();
 }
+
+void DataQueue::Resize(std::size_t capacity)
+{
+	internal_resize(capacity);
+}
+
 
 std::size_t DataQueue::Size() const
 {
@@ -53,10 +59,10 @@ std::size_t DataQueue::Capacity() const
 
 std::size_t DataQueue::internal_pop(void *data, std::size_t size)
 {
-	return internal_drop(internal_read(data, size));
+	return internal_drop(internal_read(data, size, false));
 }
 
-std::size_t DataQueue::internal_read(void *data, std::size_t size) const
+std::size_t DataQueue::internal_read(void *data, std::size_t size, bool from_tail) const
 {
 	std::size_t result = 0;
 
@@ -65,7 +71,7 @@ std::size_t DataQueue::internal_read(void *data, std::size_t size) const
 
 	size = std::min(size, m_size);
 
-	auto position = (buffer_size + m_position - m_size) % buffer_size;
+	auto position = (buffer_size + m_position - (from_tail ? size : m_size)) % buffer_size;
 	auto tail = position + size;
 
 	result = size;
@@ -143,14 +149,18 @@ std::size_t DataQueue::internal_push(const void *data, std::size_t size)
 	return result;
 }
 
-void DataQueue::internal_reset(std::size_t capacity)
+void DataQueue::internal_reset()
 {
 	m_position = 0;
 	m_size = 0;
+}
 
-	if (capacity != 0)
+void DataQueue::internal_resize(std::size_t capacity)
+{
+	if (capacity != m_buffer.size())
 	{
 		m_buffer.resize(capacity + 1);
+		internal_reset();
 	}
 }
 
