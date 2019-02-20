@@ -14,6 +14,7 @@ AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
 	, m_palyback_queue(media_slot.Capacity())
+	, m_ref_count(1)
 {
 
 }

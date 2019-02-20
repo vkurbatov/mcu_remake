@@ -20,14 +20,7 @@ class AudioComposer : public IAudioComposer
 {
 
 	using audio_slot_t = std::shared_ptr<IAudioSlot>;
-
-	struct slot_descriptor_t
-	{
-		audio_slot_t		audio_slot;
-		std::uint32_t		ref_count;
-	};
-
-	using audio_slot_map_t = std::unordered_map<audio_slot_id_t, slot_descriptor_t>;
+	using audio_slot_map_t = std::unordered_map<audio_slot_id_t, audio_slot_t>;
 
 	audio_format_t				m_audio_format;
 	MediaQueue					m_media_queue;
@@ -45,11 +38,11 @@ public:
 
 	// IAudioComposer interface
 public:
-	IAudioSlot* operator [](audio_slot_id_t media_slot_id) override;
-	const IAudioSlot* operator [](audio_slot_id_t media_slot_id) const override;
+	IAudioSlot* operator [](audio_slot_id_t audio_slot_id) override;
+	const IAudioSlot* operator [](audio_slot_id_t audio_slot_id) const override;
 
 	IAudioSlot* AddAudioSlot(audio_slot_id_t audio_slot_id) override;
-	uint32_t RemoveAudioSlot(audio_slot_id_t audio_slot_id) override;
+	std::size_t RemoveAudioSlot(audio_slot_id_t audio_slot_id) override;
 
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;

@@ -24,11 +24,11 @@ class IAudioComposer : public IDataQueueControl
 public:
 	virtual ~IAudioComposer() override = default;
 
-	virtual IAudioSlot* operator[](audio_slot_id_t media_slot_id) = 0;
-	virtual const IAudioSlot* operator[](audio_slot_id_t media_slot_id) const = 0;
+	virtual IAudioSlot* operator[](audio_slot_id_t audio_slot_id) = 0;
+	virtual const IAudioSlot* operator[](audio_slot_id_t audio_slot_id) const = 0;
 
 	virtual IAudioSlot* AddAudioSlot(audio_slot_id_t audio_slot_id) = 0;
-	virtual std::uint32_t RemoveAudioSlot(audio_slot_id_t audio_slot_id) = 0;
+	virtual std::size_t RemoveAudioSlot(audio_slot_id_t audio_slot_id) = 0;
 
 	virtual const audio_format_t& GetAudioFormat() const = 0;
 	virtual bool SetAudioFormat(const audio_format_t& audio_format) = 0;

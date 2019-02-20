@@ -51,6 +51,7 @@ set(HEADERS
     "core/media/audio/i_audio_server.h"
     "core/media/audio/i_audio_composer.h"
     "core/media/audio/i_audio_slot.h"
+    "core/media/audio/i_audio_mixer.h"
     "core/media/audio/channels/i_audio_channel.h"
     "core/media/common/media_types.h"
     "core/media/common/data_queue.h"

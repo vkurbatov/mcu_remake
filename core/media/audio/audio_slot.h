@@ -23,6 +23,8 @@ class AudioSlot : public IAudioSlot
 {
 	friend class AudioComposer;
 
+	std::size_t					m_ref_count;
+
 	DataQueue					m_palyback_queue;
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;

@@ -35,7 +35,7 @@ IMediaSlot* MediaQueue::AddSlot(media_slot_id_t media_slot_id)
 	{
 		media_slot_t media_slot(new MediaSlot(media_slot_id, m_multipoint_data_queue), [](IMediaSlot* slot){ delete static_cast<MediaSlot*>(slot); });
 		result = media_slot.get();
-		m_media_slots.emplace(std::make_pair(media_slot_id, media_slot));
+		m_media_slots.emplace(std::make_pair(media_slot_id, std::move(media_slot)));
 	}
 
 	return result;
