@@ -1,7 +1,8 @@
 #ifndef I_AUDIO_POINTH_H
 #define I_AUDIO_POINTH_H
 
-#include "media/audio/audio_format.h"
+// #include "media/audio/audio_format.h"
+#include <cstdint>
 
 namespace core
 {
@@ -11,6 +12,10 @@ namespace media
 
 namespace audio
 {
+
+#ifndef AUDIO_FORMAT_H
+struct audio_format_t;
+#endif
 
 class IAudioPoint
 {

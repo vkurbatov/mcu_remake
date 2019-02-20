@@ -55,9 +55,19 @@ bool MediaQueue::RemoveSlot(media_slot_id_t media_slot_id)
 	return result;
 }
 
+std::size_t MediaQueue::Count() const
+{
+	return m_media_slots.size();
+}
+
 void MediaQueue::Reset()
 {
 	m_multipoint_data_queue.Reset();
+
+	for (auto &s : m_media_slots)
+	{
+		s.second->Reset();
+	}
 }
 
 std::size_t MediaQueue::Size() const

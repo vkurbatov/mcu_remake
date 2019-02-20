@@ -18,8 +18,11 @@ public:
 
 	virtual IMediaSlot* operator[](media_slot_id_t media_slot_id) = 0;
 	virtual const IMediaSlot* operator[](media_slot_id_t media_slot_id) const = 0;
+
 	virtual IMediaSlot* AddSlot(media_slot_id_t media_slot_id) = 0;
 	virtual bool RemoveSlot(media_slot_id_t media_slot_id) = 0;
+
+	virtual std::size_t Count() const = 0;
 
 };
 

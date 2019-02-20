@@ -27,14 +27,16 @@ public:
 	virtual std::size_t Read(cursor_t cursor, void* data, std::size_t size) const override;
 	virtual std::size_t Write(cursor_t cursor, const void* data, std::size_t size) override;
 
-	void Reset() override;
-	std::size_t Size() const override;
-	std::size_t Capacity() const override;
-
 	std::size_t GetDataSize(cursor_t cursor, bool is_before = false) const override;
 
 	cursor_t GetWriteCursor() const override;
 	cursor_t GetReadCursor() const override;
+
+public:
+	// IDataQueueControl interface
+	void Reset() override;
+	std::size_t Size() const override;
+	std::size_t Capacity() const override;
 
 public:
 

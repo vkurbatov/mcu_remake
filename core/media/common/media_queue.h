@@ -33,6 +33,8 @@ public:
 	IMediaSlot* AddSlot(media_slot_id_t media_slot_id) override;
 	bool RemoveSlot(media_slot_id_t media_slot_id) override;
 
+	std::size_t Count() const override;
+
 	// IDataQueueControl interface
 public:
 	void Reset() override;

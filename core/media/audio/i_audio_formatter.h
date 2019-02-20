@@ -1,7 +1,7 @@
 #ifndef AUDIO_FORMATTER_H
 #define AUDIO_FORMATTER_H
 
-#include "media/audio/audio_format.h"
+//#include "media/audio/audio_format.h"
 
 namespace core
 {
@@ -14,6 +14,10 @@ namespace audio
 
 class IAudioFormatter
 {
+
+#ifndef AUDIO_FORMAT_H
+struct audio_format_t;
+#endif
 
 public:
 

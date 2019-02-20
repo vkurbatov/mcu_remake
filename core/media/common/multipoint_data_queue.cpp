@@ -40,6 +40,7 @@ std::size_t MultipointDataQueue::GetDataSize(cursor_t cursor, bool is_before) co
 	return get_data_size(cursor, is_before);
 }
 
+
 std::size_t MultipointDataQueue::Capacity() const
 {
 	return m_buffer.size();

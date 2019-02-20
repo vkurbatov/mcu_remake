@@ -1,6 +1,8 @@
 #ifndef AUDIO_RESAMPLER_H
 #define AUDIO_RESAMPLER_H
 
+#include "media/audio/audio_format.h"
+
 #include "i_audio_formatter.h"
 
 #include <vector>
