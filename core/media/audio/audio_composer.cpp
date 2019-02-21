@@ -97,8 +97,21 @@ bool AudioComposer::SetAudioFormat(const audio_format_t& audio_format)
 	if (m_audio_format != audio_format)
 	{
 		m_audio_format = audio_format;
+
+		for (auto& s : m_audio_slots)
+		{
+			static_cast<AudioSlot*>(s.second.get())->m_palyback_queue.Reset();
+		}
+
 		Reset();
 	}
+
+	return true;
+}
+
+std::size_t AudioComposer::Count() const
+{
+	return m_audio_slots.size();
 }
 
 } // audio

@@ -1,4 +1,5 @@
 #include "media/audio/audio_resampler.h"
+#include "media/audio/audio_mixer.h"
 #include "audio_slot.h"
 
 namespace core
@@ -29,6 +30,15 @@ std::int32_t AudioSlot::Write(const void* data, std::size_t size, const audio_fo
 	}
 
 	output_size = AudioResampler::Resampling(audio_format, m_audio_format, data, size, m_output_resampler_buffer.data(), m_output_resampler_buffer.size());
+
+	if (output_size > m_mix_data.size())
+	{
+		m_mix_data.resize(output_size);
+	}
+
+	auto mix_size = m_media_slot.Read(m_mix_data.data(), m_mix_data.size(), true);
+
+	// AudioMixer::Mixed(m_audio_format, m_media_slot.);
 
 	output_size = m_media_slot.Push(m_output_resampler_buffer.data(), output_size);
 

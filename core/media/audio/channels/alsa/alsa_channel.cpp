@@ -92,26 +92,15 @@ void split_description(std::string& description, std::string& card_name, std::st
 
 snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t sample_format)
 {
-	snd_pcm_format_t result = SND_PCM_FORMAT_UNKNOWN;
-	switch(sample_format)
-	{
-		case audio_format_t::sample_format_t::pcm_8:
-			result = SND_PCM_FORMAT_U8;
-			break;
-		case audio_format_t::sample_format_t::pcm_16:
-			result = SND_PCM_FORMAT_S16;
-			break;
-		case audio_format_t::sample_format_t::pcm_32:
-			result = SND_PCM_FORMAT_S32;
-			break;
-		case audio_format_t::sample_format_t::float_32:
-			result = SND_PCM_FORMAT_FLOAT;
-			break;
-		case audio_format_t::sample_format_t::float_64:
-			result = SND_PCM_FORMAT_FLOAT64;
-	}
 
-	return result;
+	const static snd_pcm_format_t transform_format_array[] = { SND_PCM_FORMAT_UNKNOWN,
+														 SND_PCM_FORMAT_S8,
+														 SND_PCM_FORMAT_S16,
+														 SND_PCM_FORMAT_S32,
+														 SND_PCM_FORMAT_FLOAT,
+														 SND_PCM_FORMAT_FLOAT64 };
+
+	return transform_format_array[static_cast<std::int32_t>(sample_format)];
 }
 
 } // alsa_utils

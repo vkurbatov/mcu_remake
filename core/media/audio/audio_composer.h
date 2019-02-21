@@ -46,6 +46,10 @@ public:
 
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;
+
+	// IDataCollection interface
+public:
+	std::size_t Count() const override;
 };
 
 

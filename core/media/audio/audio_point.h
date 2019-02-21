@@ -54,15 +54,15 @@ public:
 public:
 
 	virtual std::uint32_t GetVolume() const override;
-	virtual void SetVolume(uint32_t volume) override;
+	virtual void SetVolume(std::uint32_t volume) override;
 
 	virtual bool IsMute() const override;
 	virtual void SetMute(bool mute) override;
 
 	// MediaPoint interface
 public:
-	virtual std::int32_t Write(const void* data, std::size_t size, uint32_t flags = 0) override final;
-	virtual std::int32_t Read(void* data, std::size_t size, uint32_t flags = 0) override final;
+	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t flags = 0) override final;
+	virtual std::int32_t Read(void* data, std::size_t size, std::uint32_t flags = 0) override final;
 
 };
 

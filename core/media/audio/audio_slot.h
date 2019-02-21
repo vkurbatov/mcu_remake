@@ -2,6 +2,7 @@
 #define AUDIO_SLOT_H
 
 #include "media/common/data_queue.h"
+#include "media/common/i_data_collection.h"
 #include "media/common/i_media_slot.h"
 #include "media/audio/i_audio_slot.h"
 
@@ -26,13 +27,16 @@ class AudioSlot : public IAudioSlot
 	std::size_t					m_ref_count;
 
 	DataQueue					m_palyback_queue;
+	std::vector<std::uint8_t>	m_mix_data;
+
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;
+	const IDataCollection&		m_slots_collection;
 
 	std::vector<std::uint32_t>	m_input_resampler_buffer;
 	std::vector<std::uint32_t>	m_output_resampler_buffer;
 
-	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot);
+	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection);
 	~AudioSlot() override = default;
 
 public:

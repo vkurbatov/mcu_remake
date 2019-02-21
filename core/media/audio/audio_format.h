@@ -52,7 +52,6 @@ struct audio_format_t
 	{}
 
 	static inline bool is_valid_sample_rate(std::int32_t sr) { return sr >= min_sample_rate && sr <= max_sample_rate; }
-	//static inline bool is_valid_bit_per_sample(std::int32_t bps) { return bps >= min_bit_per_sample && bps <= max_bit_per_sample; }
 	static inline bool is_valid_sample_format(sample_format_t sf) { return sf >= sample_format_t::pcm_8 && sf <= sample_format_t::float_64; }
 	static inline bool is_valid_channels(std::int32_t c) { return c >= min_channels && c <= max_channels; }
 	static inline std::uint32_t bit_per_sample(sample_format_t sf)
