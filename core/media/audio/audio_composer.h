@@ -26,6 +26,16 @@ class AudioComposer : public IAudioComposer
 	MediaQueue					m_media_queue;
 	audio_slot_map_t			m_audio_slots;
 
+	class SlotCollectionWrapper : public IDataCollection
+	{
+		audio_slot_map_t& m_audio_slots;
+	public:
+		explicit SlotCollectionWrapper(audio_slot_map_t& audio_slots);
+		// IDataCollection interface
+	public:
+		std::size_t Count() const override;
+	};
+
 public:
 	AudioComposer(const audio_format_t& audio_format, std::uint32_t queue_duration_ms);
 	~AudioComposer() override = default;

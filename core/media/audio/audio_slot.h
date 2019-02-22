@@ -27,7 +27,9 @@ class AudioSlot : public IAudioSlot
 	std::size_t					m_ref_count;
 
 	DataQueue					m_palyback_queue;
-	std::vector<std::uint8_t>	m_mix_data;
+
+	std::vector<std::uint8_t>	m_mix_buffer;
+	std::vector<std::uint8_t>	m_demix_buffer;
 
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;
@@ -50,6 +52,11 @@ public:
 public:
 	audio_slot_id_t GetSlotId() const override;
 	bool IsSkip() const override;
+
+private:
+	std::int32_t internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options);
+	std::int32_t internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options);
+
 };
 
 } // audio

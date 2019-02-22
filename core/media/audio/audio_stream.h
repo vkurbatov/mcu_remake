@@ -36,7 +36,7 @@ public:
 
 	// IAudioStream interface
 public:
-	const session_id_t& GetSessionId() const;
+	const session_id_t& GetSessionId() const override;
 
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;

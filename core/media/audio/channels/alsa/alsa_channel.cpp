@@ -342,7 +342,7 @@ bool AlsaChannel::IsPlayback() const
 	return m_audio_params.direction == channel_direction_t::playback || m_audio_params.direction == channel_direction_t::both;
 }
 
-const std::string &AlsaChannel::GetName() const
+const std::string& AlsaChannel::GetName() const
 {
 	return m_device_name;
 }
@@ -404,7 +404,7 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 		auto part_size = size / (frame_bytes);
 		part_size = std::min(part_size, max_read_size_part);
 
-		auto err = snd_pcm_readi(m_handle, data_ptr, part_size /*std::min(size / frame_bytes, 16ul)*/);
+		auto err = snd_pcm_readi(m_handle, data_ptr, part_size);
 
 		if (err >= 0)
 		{
@@ -472,11 +472,9 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		// сбросится при успешной операции ввода-вывода
 
 		io_complete = false;
-
 		retry_write_count++;
 
 		auto part_size = size / (frame_bytes);
-
 		part_size = std::min(part_size, max_write_size_part);
 
 		auto err = snd_pcm_writei(m_handle, data_ptr, part_size);
@@ -640,7 +638,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 						snd_pcm_wait(m_handle, 1);
 					}
 				}
-				while(result == -EAGAIN || max_try-- > 0);
+				while((result == -EAGAIN) || (max_try-- > 0));
 
 				if(result < 0)
 				{
@@ -648,7 +646,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 					break;
 				}
 
-				result = snd_pcm_nonblock(m_handle, static_cast<int>(audio_params.nonblock_mode));
+				result = snd_pcm_nonblock(m_handle, static_cast<std::int32_t>(audio_params.nonblock_mode));
 				if(result < 0)
 				{
 					LOG(error) << "Can't set " << (audio_params.nonblock_mode ? "nonblock" : "block") << " mode, errno = " << result LOG_END;

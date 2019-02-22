@@ -1,6 +1,7 @@
 #ifndef I_AUDIO_SERVER_H
 #define I_AUDIO_SERVER_H
 
+#include "media/common/i_data_collection.h"
 #include "media/audio/i_audio_stream.h"
 
 namespace core
@@ -16,7 +17,7 @@ namespace audio
 struct audio_format_t;
 #endif
 
-class IAudioServer
+class IAudioServer: public IDataCollection
 {
 
 public:

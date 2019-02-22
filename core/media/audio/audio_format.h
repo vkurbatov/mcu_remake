@@ -12,10 +12,6 @@ namespace media
 namespace audio
 {
 
-/*static const sample_format_t min_sample_format = sample_format_t::pcm_8;
-static const sample_format_t max_sample_format = sample_format_t::float_64;
-static const sample_format_t default_sample_format = sample_format_t::pcm_16;*/
-
 struct audio_format_t
 {
 

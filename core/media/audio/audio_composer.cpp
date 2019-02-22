@@ -1,6 +1,8 @@
 #include "audio_composer.h"
 #include "media/audio/audio_slot.h"
 
+#include <algorithm>
+
 namespace core
 {
 
@@ -53,7 +55,7 @@ IAudioSlot* AudioComposer::AddAudioSlot(audio_slot_id_t audio_slot_id)
 	if (result == nullptr)
 	{
 		audio_slot_t audio_slot(
-					new AudioSlot(m_audio_format, *m_media_queue.AddSlot(audio_slot_id))
+					new AudioSlot(m_audio_format, *m_media_queue.AddSlot(audio_slot_id), *this)
 					, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
 		);
 
@@ -112,6 +114,17 @@ bool AudioComposer::SetAudioFormat(const audio_format_t& audio_format)
 std::size_t AudioComposer::Count() const
 {
 	return m_audio_slots.size();
+}
+
+AudioComposer::SlotCollectionWrapper::SlotCollectionWrapper(AudioComposer::audio_slot_map_t& audio_slots)
+	: m_audio_slots(audio_slots)
+{
+
+}
+
+std::size_t AudioComposer::SlotCollectionWrapper::Count() const
+{
+	return std::count_if(m_audio_slots.begin(), m_audio_slots.end(), [](const std::pair<audio_slot_id_t, audio_slot_t>& it) { return it.second->IsSkip() == false; });
 }
 
 } // audio
