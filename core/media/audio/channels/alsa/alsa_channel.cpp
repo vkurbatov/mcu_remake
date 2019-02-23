@@ -274,7 +274,7 @@ bool AlsaChannel::Open(const std::string &device_name)
 		Close();
 	}
 
-	if ( m_audio_params.is_init() )
+	if ( m_audio_params.is_valid() )
 	{
 
 		auto err = snd_pcm_open(&m_handle
@@ -364,7 +364,7 @@ const audio_channel_params_t &AlsaChannel::internal_get_audio_params() const
 
 bool AlsaChannel::internal_set_audio_params(const audio_channel_params_t &audio_params)
 {
-	bool result = audio_params.is_init() && (!IsOpen() || set_hardware_params(audio_params) >= 0);
+	bool result = audio_params.is_valid() && (!IsOpen() || set_hardware_params(audio_params) >= 0);
 
 	if (result == true)
 	{
@@ -561,7 +561,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 {
 	std::int32_t result = -EINVAL;
 
-	if ( audio_params.is_init() )
+	if ( audio_params.is_valid() )
 	{
 		snd_pcm_hw_params_t* hw_params = nullptr;
 		snd_pcm_hw_params_alloca(&hw_params);

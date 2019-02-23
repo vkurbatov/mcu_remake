@@ -15,6 +15,7 @@ namespace audio
 AudioComposer::AudioComposer(const audio_format_t& audio_format, uint32_t queue_duration_ms)
 	: m_audio_format(audio_format)
 	, m_media_queue(audio_format.size_from_duration(queue_duration_ms))
+	, m_slot_collection(m_audio_slots)
 {
 
 }
@@ -48,14 +49,14 @@ const IAudioSlot* AudioComposer::operator [](audio_slot_id_t media_slot_id) cons
 	return it != m_audio_slots.end() ? it->second.get() : nullptr;
 }
 
-IAudioSlot* AudioComposer::AddAudioSlot(audio_slot_id_t audio_slot_id)
+IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 {
 	auto result = static_cast<AudioSlot*>(operator [](audio_slot_id));
 
 	if (result == nullptr)
 	{
 		audio_slot_t audio_slot(
-					new AudioSlot(m_audio_format, *m_media_queue.AddSlot(audio_slot_id), *this)
+					new AudioSlot(m_audio_format, *m_media_queue.AddSlot(audio_slot_id), m_slot_collection)
 					, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
 		);
 
@@ -69,7 +70,7 @@ IAudioSlot* AudioComposer::AddAudioSlot(audio_slot_id_t audio_slot_id)
 	return result;
 }
 
-std::size_t AudioComposer::RemoveAudioSlot(audio_slot_id_t audio_slot_id)
+std::size_t AudioComposer::ReleaseAudioSlot(audio_slot_id_t audio_slot_id)
 {
 	std::size_t result = 0;
 

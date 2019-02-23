@@ -8,7 +8,16 @@ namespace media
 namespace audio
 {
 
-AudioStream::~AudioStream()
+AudioStream::AudioStream(media_stream_id_t stream_id
+						 , const session_id_t &session_id
+						 , const audio_format_t &audio_format
+						 , IAudioPoint &audio_point
+						 , bool is_writer)
+	: m_stream_id(stream_id)
+	, m_session_id(session_id)
+	, m_audio_format(audio_format)
+	, m_audio_point(audio_point)
+	, m_is_writer(is_writer)
 {
 
 }
@@ -30,63 +39,51 @@ const audio_format_t& AudioStream::GetAudioFormat() const
 
 bool AudioStream::SetAudioFormat(const audio_format_t& audio_format)
 {
-	return false;
+	m_audio_format = audio_format;
+
+	return true;
 }
 
-std::size_t AudioStream::Push(const void* data, std::size_t size)
+std::int32_t AudioStream::Write(const void *data, std::size_t size, uint32_t options)
 {
-	return internal_push(data, size);
+	return internal_write(m_audio_format, data, size, options);
 }
 
-std::size_t AudioStream::Pop(void* data, std::size_t size)
+std::int32_t AudioStream::Read(void *data, std::size_t size, uint32_t options)
 {
-	return internal_pop(data, size);
+	return internal_read(m_audio_format, data, size, options);
 }
 
-std::size_t AudioStream::Read(void* data, std::size_t size, bool from_tail) const
+bool AudioStream::CanRead() const
 {
-	return internal_read(data, size, from_tail);
+	return !m_is_writer;
 }
 
-std::size_t AudioStream::Drop(std::size_t size)
+bool AudioStream::CanWrite() const
 {
-	return internal_drop(size);
+	return m_is_writer;
 }
 
-void AudioStream::Reset()
+std::int32_t AudioStream::Write(const audio_format_t &audio_format, const void *data, std::size_t size, std::uint32_t options)
 {
-
+	return internal_write(audio_format, data, size, options);
 }
 
-std::size_t AudioStream::Size() const
+std::int32_t AudioStream::Read(const audio_format_t &audio_format, void *data, std::size_t size, std::uint32_t options)
 {
-
+	return internal_read(audio_format, data, size, options);
 }
 
-std::size_t AudioStream::Capacity() const
+std::size_t AudioStream::internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options)
 {
-
+	return CanWrite() ? m_audio_point.Write(audio_format, data, size, options) : -EACCES;
 }
 
-std::size_t AudioStream::internal_push(const void* data, std::size_t size)
+std::size_t AudioStream::internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options)
 {
-
+	return CanRead() ? m_audio_point.Read(audio_format, data, size, options) : -EACCES;
 }
 
-std::size_t AudioStream::internal_pop(void* data, std::size_t size)
-{
-
-}
-
-std::size_t AudioStream::internal_read(void* data, std::size_t size, bool from_tail) const
-{
-
-}
-
-std::size_t AudioStream::internal_drop(std::size_t size)
-{
-
-}
 
 } // audio
 

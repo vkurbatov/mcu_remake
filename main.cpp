@@ -120,7 +120,7 @@ void test_alsa()
 			if (q_size > 0)
 			{
 
-				player.Write(buffer, q_size, input_format);
+				player.Write(input_format, buffer, q_size);
 
 				/*auto rs_size = core::media::audio::AudioResampler::Resampling(input_format, player_params.audio_format, buffer, q_size, resample_buffer);
 

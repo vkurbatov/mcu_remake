@@ -36,12 +36,12 @@ AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot,
 
 }
 
-std::int32_t AudioSlot::Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options)
+std::int32_t AudioSlot::Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options)
 {
 	return internal_write(data, size, audio_format, options);
 }
 
-std::int32_t AudioSlot::Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options)
+std::int32_t AudioSlot::Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options)
 {
 	return internal_read(data, size, audio_format, options);
 }

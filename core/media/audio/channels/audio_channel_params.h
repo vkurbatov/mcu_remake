@@ -37,11 +37,13 @@ struct audio_channel_params_t
 		, nonblock_mode(nonblock)
 	{}
 
-	inline bool is_init() const { return direction != channel_direction_t::none && audio_format.is_valid(); }
+	inline bool is_valid() const { return direction != channel_direction_t::none && audio_format.is_valid(); }
 	inline bool is_null() const { return direction == channel_direction_t::none && audio_format.is_null(); }
 	inline std::size_t buffer_size() const { return audio_format.size_from_duration(period); }
-	inline bool is_recorder() const { return direction == channel_direction_t::both || direction == channel_direction_t::recorder; }
-	inline bool is_playback() const { return direction == channel_direction_t::both || direction == channel_direction_t::playback; }
+	inline bool is_recorder_only() const { return direction == channel_direction_t::recorder; }
+	inline bool is_playback_only() const { return direction == channel_direction_t::playback; }
+	inline bool is_recorder() const { return direction == channel_direction_t::both || is_recorder_only(); }
+	inline bool is_playback() const { return direction == channel_direction_t::both || is_recorder_only(); }
 
 	bool operator == (const audio_channel_params_t& acp) { return direction == acp.direction
 																	&& period == acp.period

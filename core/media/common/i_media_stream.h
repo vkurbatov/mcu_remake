@@ -1,7 +1,8 @@
 #ifndef I_MEDIA_STREAM_H
 #define I_MEDIA_STREAM_H
 
-#include <cstdint>
+#include "media/common/i_media_point.h"
+//#include <cstdint>
 
 namespace core
 {
@@ -11,7 +12,7 @@ namespace media
 
 using media_stream_id_t = std::uint32_t;
 
-class IMediaStream
+class IMediaStream : public IMediaPoint
 {
 public:
 	virtual ~IMediaStream() = default;

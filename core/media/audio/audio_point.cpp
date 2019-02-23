@@ -21,7 +21,7 @@ AudioPoint::AudioPoint(const audio_format_t& input_format, const audio_format_t&
 
 }
 
-std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options)
+std::int32_t AudioPoint::Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options)
 {
 	std::int32_t result = -EINVAL;
 
@@ -51,7 +51,7 @@ std::int32_t AudioPoint::Write(const void* data, std::size_t size, const audio_f
 	return result;
 }
 
-std::int32_t AudioPoint::Read(void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options)
+std::int32_t AudioPoint::Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options)
 {
 	std::int32_t result = -EINVAL;
 

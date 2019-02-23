@@ -34,7 +34,9 @@ class AudioComposer : public IAudioComposer
 		// IDataCollection interface
 	public:
 		std::size_t Count() const override;
-	};
+	} m_slot_collection;
+
+	//SlotCollectionWrapper		m_slot_collection;
 
 public:
 	AudioComposer(const audio_format_t& audio_format, std::uint32_t queue_duration_ms);
@@ -51,8 +53,8 @@ public:
 	IAudioSlot* operator [](audio_slot_id_t audio_slot_id) override;
 	const IAudioSlot* operator [](audio_slot_id_t audio_slot_id) const override;
 
-	IAudioSlot* AddAudioSlot(audio_slot_id_t audio_slot_id) override;
-	std::size_t RemoveAudioSlot(audio_slot_id_t audio_slot_id) override;
+	IAudioSlot* QueryAudioSlot(audio_slot_id_t audio_slot_id) override;
+	std::size_t ReleaseAudioSlot(audio_slot_id_t audio_slot_id) override;
 
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;

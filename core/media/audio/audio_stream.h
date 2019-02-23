@@ -23,12 +23,17 @@ class AudioStream : public IAudioStream
 	media_stream_id_t		m_stream_id;
 	session_id_t			m_session_id;
 	audio_format_t			m_audio_format;
-	bool					m_is_reader;
-	IAudioPoint&			m_source_point;
+	bool					m_is_writer;
+	IAudioPoint&			m_audio_point;
 
 private:
-	AudioStream(media_stream_id_t  stream_id, const session_id_t& session_id, const audio_format_t& audio_format, IAudioPoint& audio_point);
-	virtual ~AudioStream() override;
+	AudioStream(media_stream_id_t stream_id
+				, const session_id_t& session_id
+				, const audio_format_t& audio_format
+				, IAudioPoint& audio_point
+				, bool is_writer = false);
+
+	virtual ~AudioStream() override = default;
 
 	// IMediaStream interface
 public:
@@ -41,27 +46,22 @@ public:
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;
 
-	// IDataQueueWriter interface
+	// IMediaPoint interface
 public:
-	std::size_t Push(const void* data, std::size_t size) override;
+	std::int32_t Write(const void *data, std::size_t size, std::uint32_t options = 0) override;
+	std::int32_t Read(void *data, std::size_t size, std::uint32_t options = 0) override;
 
-	// IDataQueueReader interface
-public:
-	std::size_t Pop(void* data, std::size_t size) override;
-	std::size_t Read(void* data, std::size_t size, bool from_tail) const override;
-	std::size_t Drop(std::size_t size) override;
+	bool CanRead() const override;
+	bool CanWrite() const override;
 
-	// IDataQueueControl interface
+	// IAudioPoint interface
 public:
-	void Reset() override;
-	std::size_t Size() const override;
-	std::size_t Capacity() const override;
+	std::int32_t Write(const audio_format_t &audio_format, const void *data, std::size_t size, std::uint32_t options = 0) override;
+	std::int32_t Read(const audio_format_t &audio_format, void *data, std::size_t size, std::uint32_t options = 0) override;
 
 private:
-	std::size_t internal_push(const void* data, std::size_t size);
-	std::size_t internal_pop(void* data, std::size_t size);
-	std::size_t internal_read(void* data, std::size_t size, bool from_tail = false) const;
-	std::size_t internal_drop(std::size_t size);
+	std::size_t internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options = 0);
+	std::size_t internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options = 0);
 };
 
 } // audio

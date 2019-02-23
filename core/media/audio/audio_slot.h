@@ -45,8 +45,8 @@ public:
 
 	// IAudioPoint interface
 public:
-	std::int32_t Write(const void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options = 0) override;
-	std::int32_t Read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options = 0) override;
+	std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0) override;
+	std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) override;
 
 	// IAudioSlot interface
 public:

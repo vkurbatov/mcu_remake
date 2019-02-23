@@ -35,6 +35,7 @@ set(SOURCES
     "core/media/audio/volume_controller.cpp"
     "core/media/audio/channels/audio_channel.cpp"
     "core/media/audio/channels/alsa/alsa_channel.cpp"
+    "core/media/audio/channels/file/file_channel.cpp"
     )
 
 set(HEADERS   
@@ -73,6 +74,7 @@ set(HEADERS
     "core/media/audio/channels/audio_channel.h"
     "core/media/audio/channels/audio_channel_params.h"
     "core/media/audio/channels/alsa/alsa_channel.h"
+    "core/media/audio/channels/file/file_channel.h"
     )
 
 include_directories(

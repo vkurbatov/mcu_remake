@@ -1,0 +1,62 @@
+#ifndef FILE_CHANNEL_H
+#define FILE_CHANNEL_H
+
+#include <vector>
+#include <fstream>
+
+#include "media/audio/channels/audio_channel.h"
+
+namespace core
+{
+
+namespace media
+{
+
+namespace audio
+{
+
+namespace channels
+{
+
+namespace file
+{
+
+class FileChannel : public AudioChannel
+{
+	audio_channel_params_t	m_audio_params;
+	std::string				m_file_name;
+	std::fstream			m_file;
+
+
+public:
+	FileChannel(const audio_channel_params_t& audio_params = null_audio_params);
+
+	// MediaPoint interface
+protected:
+	int32_t internal_write(const void *data, std::size_t size, uint32_t options) override;
+	int32_t internal_read(void *data, std::size_t size, uint32_t options) override;
+
+	// IAudoChannel interface
+public:
+	bool Open(const std::string &device_name = "") override;
+	bool Close() override;
+	bool IsOpen() const override;
+	const std::string &GetName() const override;
+
+	// AudioChannel interface
+protected:
+	const audio_channel_params_t &internal_get_audio_params() const override;
+	bool internal_set_audio_params(const audio_channel_params_t &audio_params) override;
+};
+
+} // file
+
+} // channel
+
+} // audio
+
+} // media
+
+} // common
+
+#endif // FILE_CHANNEL_H

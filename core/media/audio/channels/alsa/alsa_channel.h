@@ -1,10 +1,8 @@
 #ifndef ALSA_CHANNEL_H
 #define ALSA_CHANNEL_H
 
-#include <string>
 #include <vector>
 
-//#include "media/audio/channels/audio_channel_params.h"
 #include "media/audio/channels/audio_channel.h"
 
 namespace core

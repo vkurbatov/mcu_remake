@@ -1,7 +1,6 @@
 #ifndef I_AUDIO_CHANNEL_H
 #define I_AUDIO_CHANNEL_H
 
-//#include <cstdint>
 #include <string>
 
 

@@ -2,7 +2,7 @@
 #define I_AUDIO_STREAM_H
 
 #include "media/common/i_media_stream.h"
-#include "media/common/i_data_queue.h"
+#include "media/audio/i_audio_point.h"
 
 #include <string>
 
@@ -21,7 +21,7 @@ using session_id_t = std::string;
 struct audio_format_t;
 #endif
 
-class IAudioStream : public IMediaStream, public IDataQueue
+class IAudioStream : public IMediaStream, public IAudioPoint
 {
 
 protected:
