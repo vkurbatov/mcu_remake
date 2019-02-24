@@ -27,9 +27,12 @@ class FileChannel : public AudioChannel
 	std::string				m_file_name;
 	std::fstream			m_file;
 
+	std::size_t				m_total_bytes;
+
 
 public:
 	FileChannel(const audio_channel_params_t& audio_params = null_audio_params);
+	~FileChannel() override;
 
 	// MediaPoint interface
 protected:
@@ -38,7 +41,7 @@ protected:
 
 	// IAudoChannel interface
 public:
-	bool Open(const std::string &device_name = "") override;
+	bool Open(const std::string &device_name) override;
 	bool Close() override;
 	bool IsOpen() const override;
 	const std::string &GetName() const override;
@@ -47,6 +50,10 @@ public:
 protected:
 	const audio_channel_params_t &internal_get_audio_params() const override;
 	bool internal_set_audio_params(const audio_channel_params_t &audio_params) override;
+
+private:
+	bool save_header(const audio_format_t& audio_format, std::size_t data_size = 0);
+	bool load_header(audio_format_t& audio_format, std::size_t& data_size);
 };
 
 } // file

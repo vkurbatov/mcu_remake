@@ -50,13 +50,16 @@ struct audio_format_t
 	static inline bool is_valid_sample_rate(std::int32_t sr) { return sr >= min_sample_rate && sr <= max_sample_rate; }
 	static inline bool is_valid_sample_format(sample_format_t sf) { return sf >= sample_format_t::pcm_8 && sf <= sample_format_t::float_64; }
 	static inline bool is_valid_channels(std::int32_t c) { return c >= min_channels && c <= max_channels; }
+	static inline bool is_float_format(sample_format_t sf) { return sf == sample_format_t::float_32 || sf == sample_format_t::float_64; }
+	static inline bool is_integer_format(sample_format_t sf) { return sf == sample_format_t::pcm_8 || sf == sample_format_t::pcm_16 || sf == sample_format_t::pcm_32; }
+
 	static inline std::uint32_t bit_per_sample(sample_format_t sf)
 	{
 		static const std::uint32_t size_arr[] = { 0, 8, 16, 32, 32, 64 };
 		return size_arr[static_cast<std::int32_t>(sf)];
 	}
 
-	static sample_format_t format_from_bits(std::uint32_t bit_per_sample)
+	static sample_format_t format_from_bits(std::uint32_t bit_per_sample, bool integer_proirity = false)
 	{
 		sample_format_t result = sample_format_t::unknown;
 
@@ -69,7 +72,7 @@ struct audio_format_t
 				result = sample_format_t::pcm_16;
 				break;
 			case 32:
-				result = sample_format_t::float_32;
+				result = integer_proirity ? sample_format_t::pcm_32 : sample_format_t::float_32;
 				break;
 			case 64:
 				result = sample_format_t::float_64;
@@ -82,6 +85,10 @@ struct audio_format_t
 
 	inline bool is_valid() const { return is_valid_sample_rate(sample_rate) && is_valid_sample_format(sample_format) && is_valid_channels(channels); }
 	inline bool is_null() const { return sample_rate == 0 && sample_format == sample_format_t::unknown && channels == 0; }
+
+	inline bool is_float_format() const { return is_float_format(sample_format); }
+	inline bool is_integer_format() const { return is_integer_format(sample_format); }
+
 	inline std::uint32_t bit_per_sample() const { return bit_per_sample(sample_format); }
 
 	inline bool operator == (const audio_format_t& af) const { return sample_rate == af.sample_rate

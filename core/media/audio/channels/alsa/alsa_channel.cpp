@@ -93,12 +93,13 @@ void split_description(std::string& description, std::string& card_name, std::st
 snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t sample_format)
 {
 
-	const static snd_pcm_format_t transform_format_array[] = { SND_PCM_FORMAT_UNKNOWN,
-														 SND_PCM_FORMAT_S8,
-														 SND_PCM_FORMAT_S16,
-														 SND_PCM_FORMAT_S32,
-														 SND_PCM_FORMAT_FLOAT,
-														 SND_PCM_FORMAT_FLOAT64 };
+	const static snd_pcm_format_t transform_format_array[] = {
+		SND_PCM_FORMAT_UNKNOWN,
+		SND_PCM_FORMAT_S8,
+		SND_PCM_FORMAT_S16,
+		SND_PCM_FORMAT_S32,
+		SND_PCM_FORMAT_FLOAT,
+		SND_PCM_FORMAT_FLOAT64 };
 
 	return transform_format_array[static_cast<std::int32_t>(sample_format)];
 }

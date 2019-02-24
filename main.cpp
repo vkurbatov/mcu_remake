@@ -323,13 +323,71 @@ void test_media_queue()
 
 }
 
+#include "media/audio/channels/file/file_channel.h"
+
+void test_audio_file()
+{
+	core::media::audio::channels::audio_channel_params_t r_params;
+	r_params.direction = core::media::audio::channels::channel_direction_t::recorder;
+
+	core::media::audio::channels::file::FileChannel r_file(r_params);
+
+
+	if (r_file.Open("/home/vkurbatov/ivcscodec/test_sound/dialtone.wav"))
+	{
+		const auto& params = r_file.GetAudioParams();
+		std::cout << "sample_rate = " << params.audio_format.sample_rate
+				  << "Hz , bit_per_sample = " << params.audio_format.bit_per_sample()
+				  << ", channels = " << params.audio_format.channels
+				  << std::endl;
+	}
+
+	auto w_param = r_file.GetAudioParams();
+
+	w_param.audio_format.sample_rate = 48000;
+	w_param.period = 10;
+	w_param.nonblock_mode = 1;
+
+	w_param.direction = core::media::audio::channels::channel_direction_t::playback;
+
+	core::media::audio::channels::file::FileChannel w_file(w_param);
+
+	core::media::audio::channels::alsa::AlsaChannel w_alsa(w_param);
+
+	w_file.Open("/home/vkurbatov/ivcscodec/test_sound/dialtone2.wav");
+
+	w_alsa.Open("default");
+
+	core::media::audio::channels::IAudoChannel& w_channel = w_alsa;
+
+	core::media::audio::IAudioPoint& w_point = w_alsa;
+
+	auto t_1 = std::chrono::high_resolution_clock::now();
+
+	if (w_channel.IsOpen())
+	{
+		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.period);
+
+		char buffer[10000];
+
+		while (auto ret = r_file.Read(buffer, part_size))
+		{
+			w_point.Write(r_file.GetAudioParams().audio_format, buffer, ret);
+			t_1 += std::chrono::milliseconds(w_param.period);
+			std::this_thread::sleep_for(t_1 - std::chrono::high_resolution_clock::now());
+		}
+	}
+}
+
 int main()
 {
 	// test_queue();
 
 	// test_alsa();
 
-	test_media_queue();
+	// test_media_queue();
+
+	test_audio_file();
 
 	return 0;
 }

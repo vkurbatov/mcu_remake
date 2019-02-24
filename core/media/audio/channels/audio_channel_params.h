@@ -43,7 +43,7 @@ struct audio_channel_params_t
 	inline bool is_recorder_only() const { return direction == channel_direction_t::recorder; }
 	inline bool is_playback_only() const { return direction == channel_direction_t::playback; }
 	inline bool is_recorder() const { return direction == channel_direction_t::both || is_recorder_only(); }
-	inline bool is_playback() const { return direction == channel_direction_t::both || is_recorder_only(); }
+	inline bool is_playback() const { return direction == channel_direction_t::both || is_playback_only(); }
 
 	bool operator == (const audio_channel_params_t& acp) { return direction == acp.direction
 																	&& period == acp.period
