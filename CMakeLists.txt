@@ -26,6 +26,7 @@ set(SOURCES
     "core/media/common/media_point.cpp"
     "core/media/common/media_queue.cpp"
     "core/media/audio/audio_resampler.cpp"
+    "core/media/audio/audio_format.cpp"
     "core/media/audio/audio_point.cpp"
     "core/media/audio/audio_stream.cpp"
     "core/media/audio/audio_server.cpp"
@@ -34,6 +35,7 @@ set(SOURCES
     "core/media/audio/audio_mixer.cpp"
     "core/media/audio/volume_controller.cpp"
     "core/media/audio/channels/audio_channel.cpp"
+    "core/media/audio/channels/audio_channel_params.cpp"
     "core/media/audio/channels/alsa/alsa_channel.cpp"
     "core/media/audio/channels/file/file_channel.cpp"
     )

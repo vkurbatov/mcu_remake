@@ -47,8 +47,8 @@ public:
 	virtual const audio_format_t& GetInputFormat() const override;
 	virtual const audio_format_t& GetOutputFormat() const override;
 
-	virtual void SetInputFormat(const audio_format_t& input_fromat) override;
-	virtual void SetOutputFormat(const audio_format_t& output_fromat) override;
+	virtual void SetInputFormat(const audio_format_t& input_format) override;
+	virtual void SetOutputFormat(const audio_format_t& output_format) override;
 
 	// IVolumeController interface
 public:

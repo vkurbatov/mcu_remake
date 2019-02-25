@@ -458,7 +458,7 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	const auto& audio_format = GetOutputFormat();
 
-	auto frame_bytes = audio_format.bytes_per_sample();
+	std::size_t frame_bytes = audio_format.bytes_per_sample();
 
 
 	std::int32_t retry_write_count = 0;
@@ -537,6 +537,7 @@ int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
 	{
 		case -EPIPE:
 			error = snd_pcm_prepare(m_handle);
+			LOG(error) << "EPIPE!!!" LOG_END;
 			break;
 
 		case -ESTRPIPE:
@@ -609,7 +610,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 				}
 
 				//default buffer_size
-				if(audio_params.period != 0)
+				if(audio_params.duration != 0)
 				{
 					snd_pcm_uframes_t period_size = audio_params.buffer_size(); // (audio_params.buffer_size * audio_params.audio_format.bytes_per_sample());
 					result = snd_pcm_hw_params_set_buffer_size_near(m_handle, hw_params, &period_size);

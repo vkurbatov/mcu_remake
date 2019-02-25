@@ -41,67 +41,38 @@ struct audio_format_t
 	sample_format_t sample_format;
 	std::uint32_t   channels;
 
-	audio_format_t(std::uint32_t sr = 0, sample_format_t sf = sample_format_t::unknown, std::uint32_t c = 0)
-		: sample_rate(sr)
-		, sample_format(sf)
-		, channels(c)
-	{}
 
-	static inline bool is_valid_sample_rate(std::int32_t sr) { return sr >= min_sample_rate && sr <= max_sample_rate; }
-	static inline bool is_valid_sample_format(sample_format_t sf) { return sf >= sample_format_t::pcm_8 && sf <= sample_format_t::float_64; }
-	static inline bool is_valid_channels(std::int32_t c) { return c >= min_channels && c <= max_channels; }
-	static inline bool is_float_format(sample_format_t sf) { return sf == sample_format_t::float_32 || sf == sample_format_t::float_64; }
-	static inline bool is_integer_format(sample_format_t sf) { return sf == sample_format_t::pcm_8 || sf == sample_format_t::pcm_16 || sf == sample_format_t::pcm_32; }
+	static bool is_valid_sample_rate(std::int32_t sr);
+	static bool is_valid_sample_format(sample_format_t sf);
+	static bool is_valid_channels(std::int32_t c);
+	static bool is_float_format(sample_format_t sf);
+	static bool is_integer_format(sample_format_t sf);
 
-	static inline std::uint32_t bit_per_sample(sample_format_t sf)
-	{
-		static const std::uint32_t size_arr[] = { 0, 8, 16, 32, 32, 64 };
-		return size_arr[static_cast<std::int32_t>(sf)];
-	}
+	static std::uint32_t bit_per_sample(sample_format_t sf);
 
-	static sample_format_t format_from_bits(std::uint32_t bit_per_sample, bool integer_proirity = false)
-	{
-		sample_format_t result = sample_format_t::unknown;
+	static sample_format_t format_from_bits(std::uint32_t bit_per_sample, bool integer_proirity = false);
 
-		switch(bit_per_sample)
-		{
-			case 8:
-				result = sample_format_t::pcm_8;
-				break;
-			case 16:
-				result = sample_format_t::pcm_16;
-				break;
-			case 32:
-				result = integer_proirity ? sample_format_t::pcm_32 : sample_format_t::float_32;
-				break;
-			case 64:
-				result = sample_format_t::float_64;
-		}
-
-		return result;
-	}
+	audio_format_t(std::uint32_t sr = 0, sample_format_t sf = sample_format_t::unknown, std::uint32_t c = 0);
 
 	// static sample_format_t sample_format(std::int32_t bps) { return switch (bps) { case }; }
 
-	inline bool is_valid() const { return is_valid_sample_rate(sample_rate) && is_valid_sample_format(sample_format) && is_valid_channels(channels); }
-	inline bool is_null() const { return sample_rate == 0 && sample_format == sample_format_t::unknown && channels == 0; }
+	bool is_valid() const;
+	bool is_null() const;
 
-	inline bool is_float_format() const { return is_float_format(sample_format); }
-	inline bool is_integer_format() const { return is_integer_format(sample_format); }
+	bool is_float_format() const;
+	bool is_integer_format() const;
 
-	inline std::uint32_t bit_per_sample() const { return bit_per_sample(sample_format); }
+	std::uint32_t bit_per_sample() const;
 
-	inline bool operator == (const audio_format_t& af) const { return sample_rate == af.sample_rate
-				&& sample_format == af.sample_format
-				&& channels == af.channels; }
+	bool operator == (const audio_format_t& af) const;
 
-	inline bool operator != (const audio_format_t& af) const { return !(af == *this); }
-	inline std::uint32_t bytes_per_sample() const { return (bit_per_sample() * channels) / 8; }
-	inline std::uint32_t bytes_per_second() const { return (sample_rate * bit_per_sample() * channels) / 8; }
-	inline std::uint32_t duration_ms(std::size_t size) const { return is_valid() ? (size * 1000) / bytes_per_second() : 0; }
-	inline std::size_t size_from_duration(std::uint32_t duration_ms) const { return (duration_ms * bytes_per_second()) / 1000; }
-	inline std::size_t size_from_format(const audio_format_t& af, std::size_t size) const { return is_valid() ? size * bytes_per_second() / af.bytes_per_second() : 0; }
-	inline std::uint32_t samples_from_size(std::size_t size) const { return is_valid() ? size / bytes_per_sample() : 0; }
+	bool operator != (const audio_format_t& af) const;
+	std::uint32_t bytes_per_sample() const;
+	std::uint32_t bytes_per_second() const;
+	std::uint32_t duration_ms(std::size_t size) const;
+	std::size_t size_from_duration(std::uint32_t duration_ms) const;
+	std::size_t size_from_format(const audio_format_t& af, std::size_t size) const;
+	std::uint32_t samples_from_size(std::size_t size) const;
 
 };
 

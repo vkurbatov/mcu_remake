@@ -121,7 +121,10 @@ std::size_t rescaling_sample(const void* input_sample
 				break;
 			case audio_format_t::sample_format_t::float_64:
 				result = rescaling_sample(static_cast<const double*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
-
+				break;
+			case audio_format_t::sample_format_t::unknown:
+				// ??
+				break;
 		}
 	}
 

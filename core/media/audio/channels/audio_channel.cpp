@@ -64,32 +64,32 @@ const audio_format_t &AudioChannel::GetOutputFormat() const
 	return IsPlayback() ? GetAudioParams().audio_format : null_audio_format;
 }
 
-void AudioChannel::SetInputFormat(const audio_format_t &input_fromat)
+void AudioChannel::SetInputFormat(const audio_format_t &input_format)
 {
 	if (IsRecorder() == true)
 	{
 		auto audio_params = GetAudioParams();
 
-		audio_params.audio_format = input_fromat;
+		audio_params.audio_format = input_format;
 
 		if (SetAudioParams(audio_params))
 		{
-			AudioPoint::SetInputFormat(input_fromat);
+			AudioPoint::SetInputFormat(input_format);
 		}
 	}
 }
 
-void AudioChannel::SetOutputFormat(const audio_format_t &output_fromat)
+void AudioChannel::SetOutputFormat(const audio_format_t &output_format)
 {
 	if (IsPlayback() == true)
 	{
 		auto audio_params = GetAudioParams();
 
-		audio_params.audio_format = output_fromat;
+		audio_params.audio_format = output_format;
 
 		if (SetAudioParams(audio_params))
 		{
-			AudioPoint::SetInputFormat(output_fromat);
+			AudioPoint::SetInputFormat(output_format);
 		}
 	}
 }

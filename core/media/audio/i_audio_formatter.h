@@ -26,8 +26,8 @@ public:
 	virtual const audio_format_t& GetInputFormat() const = 0;
 	virtual const audio_format_t& GetOutputFormat() const = 0;
 
-	virtual void SetInputFormat(const audio_format_t& input_fromat) = 0;
-	virtual void SetOutputFormat(const audio_format_t& output_fromat) = 0;
+	virtual void SetInputFormat(const audio_format_t& input_format) = 0;
+	virtual void SetOutputFormat(const audio_format_t& output_format) = 0;
 
 };
 

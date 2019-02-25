@@ -100,14 +100,14 @@ const audio_format_t& AudioPoint::GetOutputFormat() const
 	return m_output_resampler.GetOutputFormat();
 }
 
-void AudioPoint::SetInputFormat(const audio_format_t& input_fromat)
+void AudioPoint::SetInputFormat(const audio_format_t& input_format)
 {
-	m_input_resampler.SetInputFormat(input_fromat);
+	m_input_resampler.SetInputFormat(input_format);
 }
 
-void AudioPoint::SetOutputFormat(const audio_format_t& output_fromat)
+void AudioPoint::SetOutputFormat(const audio_format_t& output_format)
 {
-	m_output_resampler.SetOutputFormat(output_fromat);
+	m_output_resampler.SetOutputFormat(output_format);
 }
 
 uint32_t AudioPoint::GetVolume() const

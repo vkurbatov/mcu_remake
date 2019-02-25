@@ -333,7 +333,7 @@ void test_audio_file()
 	core::media::audio::channels::file::FileChannel r_file(r_params);
 
 
-	if (r_file.Open("/home/vkurbatov/ivcscodec/test_sound/dialtone.wav"))
+	if (r_file.Open("/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav"))
 	{
 		const auto& params = r_file.GetAudioParams();
 		std::cout << "sample_rate = " << params.audio_format.sample_rate
@@ -345,7 +345,7 @@ void test_audio_file()
 	auto w_param = r_file.GetAudioParams();
 
 	w_param.audio_format.sample_rate = 48000;
-	w_param.period = 10;
+	w_param.duration = 20;
 	w_param.nonblock_mode = 1;
 
 	w_param.direction = core::media::audio::channels::channel_direction_t::playback;
@@ -354,7 +354,7 @@ void test_audio_file()
 
 	core::media::audio::channels::alsa::AlsaChannel w_alsa(w_param);
 
-	w_file.Open("/home/vkurbatov/ivcscodec/test_sound/dialtone2.wav");
+	w_file.Open("/home/vkurbatov/ivcscodec/test_sound/Front_Center2.wav");
 
 	w_alsa.Open("default");
 
@@ -366,14 +366,14 @@ void test_audio_file()
 
 	if (w_channel.IsOpen())
 	{
-		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.period);
+		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.duration);
 
 		char buffer[10000];
 
 		while (auto ret = r_file.Read(buffer, part_size))
 		{
 			w_point.Write(r_file.GetAudioParams().audio_format, buffer, ret);
-			t_1 += std::chrono::milliseconds(w_param.period);
+			t_1 += std::chrono::milliseconds(w_param.duration);
 			std::this_thread::sleep_for(t_1 - std::chrono::high_resolution_clock::now());
 		}
 	}

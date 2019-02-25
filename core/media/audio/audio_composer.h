@@ -19,6 +19,8 @@ namespace audio
 class AudioComposer : public IAudioComposer
 {
 
+	static const std::uint32_t max_queue_duration = 10;
+
 	using audio_slot_t = std::shared_ptr<IAudioSlot>;
 	using audio_slot_map_t = std::unordered_map<audio_slot_id_t, audio_slot_t>;
 
@@ -39,7 +41,7 @@ class AudioComposer : public IAudioComposer
 	//SlotCollectionWrapper		m_slot_collection;
 
 public:
-	AudioComposer(const audio_format_t& audio_format, std::uint32_t queue_duration_ms);
+	AudioComposer(const audio_format_t& audio_format, std::uint32_t queue_duration_ms = max_queue_duration);
 	~AudioComposer() override = default;
 
 	// IDataQueueControl interface

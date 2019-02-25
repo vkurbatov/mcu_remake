@@ -52,12 +52,12 @@ static const std::uint16_t wav_format_ibm_mulaw = 257;
 static const std::uint16_t wav_format_ibm_alaw = 258;
 static const std::uint16_t wav_format_adpcm = 259;
 
-bool validate_wav_header(const wav_header_t& wav_header)
+bool validate_wav_header(const wav_header_t& wav_header, bool strong = false)
 {
 	bool names_valid = std::strncmp(wav_header.chunk_id, wav_chunk_id, sizeof(wav_header.chunk_id)) == 0
 		&& std::strncmp(wav_header.format_id, wav_format_id, sizeof(wav_header.format_id)) == 0
-		&& std::strncmp(wav_header.sub_chunk_id, wav_sub_chunk_id, sizeof(wav_header.sub_chunk_id)) == 0;
-		// && std::strncmp(wav_header.chunk_2_id, wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0;
+		&& std::strncmp(wav_header.sub_chunk_id, wav_sub_chunk_id, sizeof(wav_header.sub_chunk_id)) == 0
+		&& (strong == false || std::strncmp(wav_header.chunk_2_id, wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0);
 
 	bool sizes_valid = wav_header.sub_chunk_size == 16;
 
@@ -67,6 +67,50 @@ bool validate_wav_header(const wav_header_t& wav_header)
 			&& (wav_header.block_align == wav_header.channels * wav_header.bit_per_sample / 8);
 
 	return names_valid && sizes_valid && params_valid;
+}
+
+std::size_t read_wav_header(std::fstream& file, wav_header_t& wav_header)
+{
+	std::size_t result = 0;
+
+	if (file.is_open())
+	{
+		auto tell = file.tellg();
+
+		file.seekg(0);
+
+		auto ret = file.readsome(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header)), sizeof(wav_header));
+
+		if (ret == sizeof(wav_header))
+		{
+			if (validate_wav_header(wav_header))
+			{
+				std::size_t total_header_size = sizeof(wav_header);
+
+				if (std::strncmp(wav_header.chunk_2_id, wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) != 0)
+				{
+					total_header_size += wav_header.chunk_2_size;
+
+					file.seekg(total_header_size);
+
+					ret = file.readsome(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header.chunk_2_id)), 8);
+
+					if (ret == 8 && std::strncmp(wav_header.chunk_2_id, file_utils::wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0)
+					{
+						result = total_header_size + 8;
+					}
+				}
+				else
+				{
+					result = total_header_size;
+				}
+			}
+		}
+
+		file.seekg(tell);
+	}
+
+	return result;
 }
 
 bool audio_format_from_wav_header(const wav_header_t& wav_header, audio_format_t& audio_format)
@@ -146,9 +190,9 @@ bool FileChannel::Open(const std::string &device_name)
 				? std::ios_base::out
 				: std::ios_base::in);
 
-	if ( m_audio_params.is_playback_only()
+	if ( (m_audio_params.is_playback_only()
 		 && m_audio_params.is_valid()
-		 && m_audio_params.audio_format.is_integer_format()
+		 && m_audio_params.audio_format.is_integer_format())
 		 || m_audio_params.is_recorder_only() )
 	{
 		m_file.open(device_name, mode);
@@ -190,8 +234,6 @@ bool FileChannel::Close()
 
 		m_file.close();
 	}
-
-	m_total_bytes;
 
 	return result;
 }
@@ -238,13 +280,12 @@ std::int32_t FileChannel::internal_write(const void *data, std::size_t size, uin
 
 std::int32_t FileChannel::internal_read(void *data, std::size_t size, uint32_t options)
 {
-	auto tell = m_file.tellg();
 
 	size = std::min(size, m_total_bytes);
 
 	m_file.read(static_cast<char*>(data), size);
 
-	std::int32_t result = m_file.tellg() - tell;
+	std::int32_t result = m_file.gcount();
 
 	m_total_bytes -= result;
 
@@ -291,44 +332,17 @@ bool FileChannel::load_header(audio_format_t& audio_format, std::size_t& data_si
 
 	file_utils::wav_header_t wav_header = { 0 };
 
-	std::size_t header_size = sizeof(file_utils::wav_header_t);
+	auto ret = file_utils::read_wav_header(m_file, wav_header);
 
-	m_file.read(static_cast<char*>(static_cast<void*>(&wav_header)), sizeof(file_utils::wav_header_t));
+	result = ret > 0 && file_utils::audio_format_from_wav_header(wav_header, audio_format);
 
-	if (m_file.gcount() == sizeof(file_utils::wav_header_t))
+	if (result == true)
 	{
+		data_size = wav_header.chunk_2_size;
 
-		if (file_utils::validate_wav_header(wav_header))
+		if (tell < ret)
 		{
-			result = std::strncmp(wav_header.chunk_2_id, file_utils::wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0;
-
-			if (!result)
-			{
-				header_size += wav_header.chunk_2_size;
-
-				m_file.seekg(header_size);
-
-				m_file.read(static_cast<char*>(static_cast<void*>(&wav_header.chunk_2_id)), 8);
-
-				if (m_file.gcount() == 8)
-				{
-					result = std::strncmp(wav_header.chunk_2_id, file_utils::wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0;
-				}
-
-				header_size += 8;
-			}
-		}
-
-		result = result && file_utils::audio_format_from_wav_header(wav_header, audio_format);
-
-		if (result == true)
-		{
-			data_size = wav_header.chunk_2_size;
-
-			if (tell < header_size)
-			{
-				tell = header_size;
-			}
+			tell = ret;
 		}
 	}
 
