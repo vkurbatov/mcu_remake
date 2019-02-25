@@ -324,6 +324,7 @@ void test_media_queue()
 }
 
 #include "media/audio/channels/file/file_channel.h"
+#include "media/common/timer.h"
 
 void test_audio_file()
 {
@@ -362,7 +363,7 @@ void test_audio_file()
 
 	core::media::audio::IAudioPoint& w_point = w_alsa;
 
-	auto t_1 = std::chrono::high_resolution_clock::now();
+	core::media::Timer	timer;
 
 	if (w_channel.IsOpen())
 	{
@@ -373,9 +374,51 @@ void test_audio_file()
 		while (auto ret = r_file.Read(buffer, part_size))
 		{
 			w_point.Write(r_file.GetAudioParams().audio_format, buffer, ret);
-			t_1 += std::chrono::milliseconds(w_param.duration);
-			std::this_thread::sleep_for(t_1 - std::chrono::high_resolution_clock::now());
+			timer(w_param.duration);
 		}
+	}
+}
+
+#include "media/audio/channels/audio_dispatcher.h"
+
+void test_audio_dispatcher()
+{
+	static const std::uint32_t duration_ms = 10;
+	static const std::uint32_t recorder_sample_rate = 32000;
+	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
+	static const std::uint32_t playback_sample_rate = 48000;
+	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
+	static const std::uint32_t buffers_count = 10;
+
+	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
+
+	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel player(player_params);
+
+	core::media::audio::channels::AudioDispatcher recorder_dispatcher(recorder, recorder, 64000);
+	core::media::audio::channels::AudioDispatcher player_dispatcher(player, player, 64000);
+
+	recorder_dispatcher.Open("default");
+
+	player_dispatcher.Open("default");
+
+	std::uint8_t buffer[10000];
+
+	auto part_size = recorder_params.buffer_size();
+
+	core::media::Timer	timer;
+
+	while(true)
+	{
+		auto result = recorder_dispatcher.Read(buffer, part_size);
+
+		result = player_dispatcher.Write(recorder_params.audio_format, buffer, result);
+
+
+		timer(duration_ms);
 	}
 }
 
@@ -387,7 +430,9 @@ int main()
 
 	// test_media_queue();
 
-	test_audio_file();
+	// test_audio_file();
+
+	test_audio_dispatcher();
 
 	return 0;
 }

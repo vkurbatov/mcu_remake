@@ -30,12 +30,12 @@ bool AudioChannel::SetAudioParams(const audio_channel_params_t& audio_params)
 
 	if (result)
 	{
-		if (IsRecorder() == true)
+		if (IsRecorder())
 		{
 			AudioPoint::SetInputFormat(audio_params.audio_format);
 		}
 
-		if (IsPlayback() == true)
+		if (IsPlayback())
 		{
 			AudioPoint::SetOutputFormat(audio_params.audio_format);
 		}
