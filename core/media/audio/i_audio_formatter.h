@@ -1,7 +1,7 @@
 #ifndef AUDIO_FORMATTER_H
 #define AUDIO_FORMATTER_H
 
-//#include "media/audio/audio_format.h"
+#include "media/audio/audio_format.h"
 
 namespace core
 {
@@ -15,19 +15,12 @@ namespace audio
 class IAudioFormatter
 {
 
-#ifndef AUDIO_FORMAT_H
-struct audio_format_t;
-#endif
-
 public:
 
 	virtual ~IAudioFormatter() = default;
 
-	virtual const audio_format_t& GetInputFormat() const = 0;
-	virtual const audio_format_t& GetOutputFormat() const = 0;
-
-	virtual void SetInputFormat(const audio_format_t& input_format) = 0;
-	virtual void SetOutputFormat(const audio_format_t& output_format) = 0;
+	virtual const audio_format_t& GetAudioFormat() const = 0;
+	virtual bool SetAudioFormat(const audio_format_t& input_format) = 0;
 
 };
 

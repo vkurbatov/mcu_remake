@@ -30,8 +30,8 @@ public:
 public:
 	IMediaSlot* operator [](media_slot_id_t media_slot_id) override;
 	const IMediaSlot* operator [](media_slot_id_t media_slot_id) const override;
-	IMediaSlot* AddSlot(media_slot_id_t media_slot_id) override;
-	bool RemoveSlot(media_slot_id_t media_slot_id) override;
+	IMediaSlot* QuerySlot(media_slot_id_t media_slot_id) override;
+	std::size_t ReleaseSlot(media_slot_id_t media_slot_id) override;
 
 	std::size_t Count() const override;
 

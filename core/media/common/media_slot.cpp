@@ -13,6 +13,7 @@ MediaSlot::MediaSlot(media_slot_id_t media_slot_id,
 	, m_multipoint_data_queue(multipoint_data_queue)
 	, m_read_cursor(multipoint_data_queue.GetWriteCursor())
 	, m_write_cursor(multipoint_data_queue.GetWriteCursor())
+	, m_ref_count(1)
 {
 
 }

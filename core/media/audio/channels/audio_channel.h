@@ -37,10 +37,8 @@ public:
 	// IAudioFormatter interface
 public:
 
-	const audio_format_t &GetInputFormat() const override;
-	const audio_format_t &GetOutputFormat() const override;
-	void SetInputFormat(const audio_format_t &input_format) override;
-	void SetOutputFormat(const audio_format_t &output_format) override;
+	const audio_format_t &GetAudioFormat() const override;
+	bool SetAudioFormat(const audio_format_t &audio_format) override;
 
 protected:
 

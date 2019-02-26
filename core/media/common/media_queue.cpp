@@ -27,7 +27,7 @@ const IMediaSlot* MediaQueue::operator [](media_slot_id_t media_slot_id) const
 	return it != m_media_slots.end() ? it->second.get() : nullptr;
 }
 
-IMediaSlot* MediaQueue::AddSlot(media_slot_id_t media_slot_id)
+IMediaSlot* MediaQueue::QuerySlot(media_slot_id_t media_slot_id)
 {
 	auto result = operator[](media_slot_id);
 
@@ -37,19 +37,31 @@ IMediaSlot* MediaQueue::AddSlot(media_slot_id_t media_slot_id)
 		result = media_slot.get();
 		m_media_slots.emplace(std::make_pair(media_slot_id, std::move(media_slot)));
 	}
+	else
+	{
+		static_cast<MediaSlot*>(result)->m_ref_count++;
+	}
 
 	return result;
 }
 
-bool MediaQueue::RemoveSlot(media_slot_id_t media_slot_id)
+std::size_t MediaQueue::ReleaseSlot(media_slot_id_t media_slot_id)
 {
 	auto it = m_media_slots.find(media_slot_id);
 
-	bool result = (it != m_media_slots.end());
+	std::size_t result = 0;
 
-	if (result == true)
+	if (it != m_media_slots.end())
 	{
-		m_media_slots.erase(it);
+		auto slot = static_cast<MediaSlot&>(*it->second);
+
+		slot.m_ref_count -= static_cast<std::size_t>(slot.m_ref_count > 0);
+
+		if ( (result = slot.m_read_cursor) == 0 )
+		{
+			m_media_slots.erase(it);
+		}
+
 	}
 
 	return result;

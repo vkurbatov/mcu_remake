@@ -294,8 +294,8 @@ void test_media_queue()
 	std::uint8_t r_buffer_1[sizeof(w_buffer_1)] = { 0 };
 	std::uint8_t r_buffer_2[sizeof(w_buffer_2)] = { 0 };
 
-	queue.AddSlot(slot_id_1);
-	queue.AddSlot(slot_id_2);
+	queue.QuerySlot(slot_id_1);
+	queue.QuerySlot(slot_id_2);
 
 	auto w_res_1 = queue[slot_id_1]->Push(w_buffer_1, 8 /*sizeof(w_buffer_1)*/);
 	auto w_res_2 = queue[slot_id_2]->Push(w_buffer_2, 4);
@@ -303,8 +303,8 @@ void test_media_queue()
 	auto r_res_1 = queue[slot_id_1]->Read(r_buffer_1, sizeof(r_buffer_1));
 	auto r_res_2 = queue[slot_id_2]->Read(r_buffer_2, sizeof(r_buffer_2), true);
 
-	auto rem_res_1 = queue.RemoveSlot(slot_id_1);
-	auto rem_res_2 = queue.RemoveSlot(slot_id_2);
+	auto rem_res_1 = queue.ReleaseSlot(slot_id_1);
+	auto rem_res_2 = queue.ReleaseSlot(slot_id_2);
 
 	std::cout << "/nTest 1. Media Queue. Add and Remove slots. Write and Read two slots." << std::endl;
 	std::cout << "Test status: w_res_1 = " << w_res_1

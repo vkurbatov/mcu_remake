@@ -14,9 +14,8 @@ namespace media
 namespace audio
 {
 
-AudioPoint::AudioPoint(const audio_format_t& input_format, const audio_format_t& output_format)
-	: m_input_resampler(input_format, input_format)
-	, m_output_resampler(output_format, output_format)
+AudioPoint::AudioPoint(const audio_format_t& audio_format)
+	: m_resampler(audio_format)
 {
 
 }
@@ -27,7 +26,7 @@ std::int32_t AudioPoint::Write(const audio_format_t& audio_format, const void* d
 
 	if (data != nullptr && size > 0)
 	{
-		if (audio_format == GetOutputFormat())
+		if (audio_format == GetAudioFormat())
 		{
 			result = Write(data, size, options);
 		}
@@ -35,7 +34,7 @@ std::int32_t AudioPoint::Write(const audio_format_t& audio_format, const void* d
 		{
 			result = 0;
 
-			auto& resample_buffer = m_output_resampler(data, size, audio_format);
+			auto& resample_buffer = m_resampler(audio_format, data, size);
 
 			if (resample_buffer.size() > 0)
 			{
@@ -57,13 +56,13 @@ std::int32_t AudioPoint::Read(const audio_format_t& audio_format, void* data, st
 
 	if (data != nullptr && size > 0)
 	{
-		if (audio_format == GetInputFormat())
+		if (audio_format == GetAudioFormat())
 		{
 			result = Read(data, size, options);
 		}
 		else
 		{
-			auto input_size = GetInputFormat().size_from_format(audio_format, size);
+			auto input_size = GetAudioFormat().size_from_format(audio_format, size);
 
 			if (input_size > m_input_resampler_buffer.size())
 			{
@@ -73,12 +72,8 @@ std::int32_t AudioPoint::Read(const audio_format_t& audio_format, void* data, st
 			result = Read(m_input_resampler_buffer.data(), input_size, options);
 
 			if (result > 0)
-			{
-				if (audio_format != m_input_resampler.GetOutputFormat())
-				{
-					m_input_resampler.SetOutputFormat(audio_format);
-				}
-				result = m_input_resampler(m_input_resampler_buffer.data(), result, data, size);
+			{	
+				result = m_resampler(audio_format, m_input_resampler_buffer.data(), result, data, size, true);
 			}
 		}
 	}
@@ -90,24 +85,15 @@ std::int32_t AudioPoint::Read(const audio_format_t& audio_format, void* data, st
 	return result;
 }
 
-const audio_format_t& AudioPoint::GetInputFormat() const
+const audio_format_t& AudioPoint::GetAudioFormat() const
 {
-	return m_input_resampler.GetInputFormat();
+	return m_resampler.GetAudioFormat();
 }
 
-const audio_format_t& AudioPoint::GetOutputFormat() const
+bool AudioPoint::SetAudioFormat(const audio_format_t& audio_format)
 {
-	return m_output_resampler.GetOutputFormat();
-}
-
-void AudioPoint::SetInputFormat(const audio_format_t& input_format)
-{
-	m_input_resampler.SetInputFormat(input_format);
-}
-
-void AudioPoint::SetOutputFormat(const audio_format_t& output_format)
-{
-	m_output_resampler.SetOutputFormat(output_format);
+	m_resampler.SetAudioFormat(audio_format);
+	return true;
 }
 
 uint32_t AudioPoint::GetVolume() const
@@ -142,7 +128,7 @@ int32_t AudioPoint::Write(const void* data, std::size_t size, uint32_t flags)
 			m_output_volume_buffer.resize(size);
 		}
 
-		m_volume_controller(GetOutputFormat().sample_format, data, size, m_output_volume_buffer.data());
+		m_volume_controller(GetAudioFormat().sample_format, data, size, m_output_volume_buffer.data());
 
 		data_ptr = m_output_volume_buffer.data();
 	}
@@ -155,7 +141,7 @@ int32_t AudioPoint::Read(void* data, std::size_t size, uint32_t flags)
 
 	auto result = MediaPoint::Read(data, size, flags);
 
-	m_volume_controller(GetInputFormat().sample_format, data, result);
+	m_volume_controller(GetAudioFormat().sample_format, data, result);
 
 	return result;
 

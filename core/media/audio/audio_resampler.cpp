@@ -232,80 +232,48 @@ int32_t AudioResampler::Resampling(const audio_format_t& input_format, const aud
 
 // ----------------------------------------------------------------------------------------------------------
 
-AudioResampler::AudioResampler(const audio_format_t& input_format, const audio_format_t& output_format)
-	: m_input_format(input_format)
-	, m_output_format(output_format)
+AudioResampler::AudioResampler(const audio_format_t& audio_format)
+	: m_audio_format(audio_format)
 {
 
 }
 
-int32_t AudioResampler::operator()(const void *input_data, std::size_t input_size, void *output_data, std::size_t output_size) const
+int32_t AudioResampler::operator()(const audio_format_t &audio_format, const void *input_data, std::size_t input_size, void *output_data, std::size_t output_size, bool reverse) const
 {
-	return Resampling(GetInputFormat(), GetOutputFormat(), input_data, input_size, output_data, output_size);
+	return Resampling(reverse == false ? audio_format : GetAudioFormat(), reverse == false ? GetAudioFormat() : audio_format, input_data, input_size, output_data, output_size);
 }
 
-int32_t AudioResampler::operator()(const void *input_data, std::size_t input_size, const audio_format_t &input_format, void *output_data, std::size_t output_size) const
+int32_t AudioResampler::operator()(const audio_format_t& audio_format, const audio_buffer_t& input_buff, void* output_data, std::size_t output_size, bool reverse) const
 {
-	return Resampling(input_format, GetOutputFormat(), input_data, input_size, output_data, output_size);
+	return Resampling(reverse == false ? audio_format : GetAudioFormat(), reverse == false ? GetAudioFormat() : audio_format, input_buff, output_data, output_size);
 }
 
-int32_t AudioResampler::operator()(const audio_buffer_t& input_buff, void* output_data, std::size_t output_size) const
+const audio_buffer_t& AudioResampler::operator()(const audio_format_t& audio_format, const void* input_data, std::size_t input_size, bool reverse)
 {
-	return Resampling(GetInputFormat(), GetOutputFormat(), input_buff, output_data, output_size);
-}
-
-int32_t AudioResampler::operator()(const audio_buffer_t& input_buff, const audio_format_t& input_format, void* output_data, std::size_t output_size) const
-{
-	return Resampling(input_format, GetOutputFormat(), input_buff, output_data, output_size);
-}
-
-const audio_buffer_t& AudioResampler::operator()(const void* input_data, std::size_t input_size, const audio_format_t& input_format)
-{
-	Resampling(input_format, GetOutputFormat(), input_data, input_size, m_internal_resampler_buffer);
+	Resampling(reverse == false ? audio_format : GetAudioFormat(), reverse == false ? GetAudioFormat() : audio_format, input_data, input_size, m_internal_resampler_buffer);
 
 	return m_internal_resampler_buffer;
 }
 
-const audio_buffer_t& AudioResampler::operator()(const audio_buffer_t& input_buff, const audio_format_t& input_format)
+const audio_buffer_t& AudioResampler::operator()(const audio_format_t& audio_format, const audio_buffer_t& input_buff, bool reverse)
 {
-	Resampling(input_format, GetOutputFormat(), input_buff.data(), input_buff.size(), m_internal_resampler_buffer);
+	Resampling(reverse == false ? audio_format : GetAudioFormat(), reverse == false ? GetAudioFormat() : audio_format, input_buff.data(), input_buff.size(), m_internal_resampler_buffer);
 
 	return m_internal_resampler_buffer;
 }
 
-const audio_buffer_t& AudioResampler::operator()(const void* input_data, std::size_t input_size)
+const audio_format_t& AudioResampler::GetAudioFormat() const
 {
-	operator()(input_data, input_size, GetInputFormat());
-
-	return m_internal_resampler_buffer;
+	return m_audio_format;
 }
 
-const audio_buffer_t& AudioResampler::operator()(const audio_buffer_t& input_buff)
-{
-	operator()(input_buff, GetInputFormat());
 
-	return m_internal_resampler_buffer;
+bool AudioResampler::SetAudioFormat(const audio_format_t& audio_format)
+{
+	m_audio_format = audio_format;
+	return true;
 }
 
-const audio_format_t& AudioResampler::GetInputFormat() const
-{
-	return m_input_format;
-}
-
-const audio_format_t& AudioResampler::GetOutputFormat() const
-{
-	return m_output_format;
-}
-
-void AudioResampler::SetInputFormat(const audio_format_t& input_format)
-{
-	m_input_format = input_format;
-}
-
-void AudioResampler::SetOutputFormat(const audio_format_t& output_format)
-{
-	m_output_format = output_format;
-}
 
 } // audio
 

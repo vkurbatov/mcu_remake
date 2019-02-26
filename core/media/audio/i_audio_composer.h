@@ -5,7 +5,6 @@
 #include "media/common/i_data_collection.h"
 #include "media/audio/i_audio_slot.h"
 
-
 namespace core
 {
 
@@ -19,7 +18,7 @@ namespace audio
 struct audio_format_t;
 #endif
 
-class IAudioComposer : public IDataQueueControl, public IDataCollection
+class IAudioComposer : public IAudioFormatter, public IDataQueueControl, public IDataCollection
 {
 
 public:
@@ -30,9 +29,6 @@ public:
 
 	virtual IAudioSlot* QueryAudioSlot(audio_slot_id_t audio_slot_id) = 0;
 	virtual std::size_t ReleaseAudioSlot(audio_slot_id_t audio_slot_id) = 0;
-
-	virtual const audio_format_t& GetAudioFormat() const = 0;
-	virtual bool SetAudioFormat(const audio_format_t& audio_format) = 0;
 };
 
 } // audio

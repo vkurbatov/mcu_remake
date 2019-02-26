@@ -43,6 +43,8 @@ public:
 public:
 	const session_id_t& GetSessionId() const override;
 
+	// IAudioFormatter interface
+public:
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;
 

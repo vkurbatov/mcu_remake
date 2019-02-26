@@ -3,6 +3,7 @@
 
 #include "media/common/i_media_stream.h"
 #include "media/audio/i_audio_point.h"
+#include "media/audio/i_audio_formatter.h"
 
 #include <string>
 
@@ -17,11 +18,7 @@ namespace audio
 
 using session_id_t = std::string;
 
-#ifndef AUDIO_FORMAT_H
-struct audio_format_t;
-#endif
-
-class IAudioStream : public IMediaStream, public IAudioPoint
+class IAudioStream : public IMediaStream, public IAudioPoint, public IAudioFormatter
 {
 
 protected:
@@ -30,9 +27,6 @@ protected:
 public:
 
 	virtual const session_id_t& GetSessionId() const = 0;
-
-	virtual const audio_format_t& GetAudioFormat() const = 0;
-	virtual bool SetAudioFormat(const audio_format_t& audio_format) = 0;
 
 };
 

@@ -12,7 +12,7 @@ namespace media
 class Timer
 {
 	std::chrono::time_point<std::chrono::system_clock>		m_target_point;
-	bool													m_start;
+	bool													m_startad;
 
 public:
 

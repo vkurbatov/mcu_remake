@@ -22,6 +22,8 @@ class MediaSlot : public IMediaSlot
 	cursor_t				m_write_cursor;
 	media_slot_id_t			m_media_slot_id;
 
+	std::size_t				m_ref_count;
+
 	IMultipointDataQueue&	m_multipoint_data_queue;
 
 private:

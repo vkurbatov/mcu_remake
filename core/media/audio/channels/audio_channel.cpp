@@ -13,8 +13,7 @@ namespace channels
 {
 
 AudioChannel::AudioChannel(const audio_channel_params_t& audio_params)
-	: AudioPoint(audio_params.is_recorder() ? audio_params.audio_format : null_audio_format,
-				 audio_params.is_playback() ? audio_params.audio_format : null_audio_format)
+	: AudioPoint(audio_params.audio_format)
 {
 
 }
@@ -30,15 +29,7 @@ bool AudioChannel::SetAudioParams(const audio_channel_params_t& audio_params)
 
 	if (result)
 	{
-		if (IsRecorder())
-		{
-			AudioPoint::SetInputFormat(audio_params.audio_format);
-		}
-
-		if (IsPlayback())
-		{
-			AudioPoint::SetOutputFormat(audio_params.audio_format);
-		}
+		AudioPoint::SetAudioFormat(audio_params.audio_format);
 	}
 
 	return result;
@@ -54,44 +45,18 @@ bool AudioChannel::IsPlayback() const
 	return GetAudioParams().is_playback();
 }
 
-const audio_format_t &AudioChannel::GetInputFormat() const
+const audio_format_t &AudioChannel::GetAudioFormat() const
 {
-	return IsRecorder() ? GetAudioParams().audio_format : null_audio_format;
+	return GetAudioParams().audio_format;
 }
 
-const audio_format_t &AudioChannel::GetOutputFormat() const
-{
-	return IsPlayback() ? GetAudioParams().audio_format : null_audio_format;
-}
+bool AudioChannel::SetAudioFormat(const audio_format_t &audio_format)
+{	
+	auto audio_params = GetAudioParams();
 
-void AudioChannel::SetInputFormat(const audio_format_t &input_format)
-{
-	if (IsRecorder() == true)
-	{
-		auto audio_params = GetAudioParams();
+	audio_params.audio_format = audio_format;
 
-		audio_params.audio_format = input_format;
-
-		if (SetAudioParams(audio_params))
-		{
-			AudioPoint::SetInputFormat(input_format);
-		}
-	}
-}
-
-void AudioChannel::SetOutputFormat(const audio_format_t &output_format)
-{
-	if (IsPlayback() == true)
-	{
-		auto audio_params = GetAudioParams();
-
-		audio_params.audio_format = output_format;
-
-		if (SetAudioParams(audio_params))
-		{
-			AudioPoint::SetInputFormat(output_format);
-		}
-	}
+	return SetAudioParams(audio_params) && AudioPoint::SetAudioFormat(audio_format);
 }
 
 } // channels

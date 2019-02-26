@@ -21,8 +21,7 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 
 	using audio_buffer_t = media_buffer_t;
 
-	AudioResampler		m_input_resampler;
-	AudioResampler		m_output_resampler;
+	AudioResampler		m_resampler;
 
 	audio_buffer_t		m_input_resampler_buffer;
 
@@ -33,7 +32,7 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 
 public:
 
-	AudioPoint(const audio_format_t& input_format, const audio_format_t& output_format);
+	AudioPoint(const audio_format_t& audio_format);
 	virtual ~AudioPoint() override = default;
 
 	// IAudioPoint interface
@@ -44,11 +43,8 @@ public:
 
 	// IAudioFormatter interface
 public:
-	virtual const audio_format_t& GetInputFormat() const override;
-	virtual const audio_format_t& GetOutputFormat() const override;
-
-	virtual void SetInputFormat(const audio_format_t& input_format) override;
-	virtual void SetOutputFormat(const audio_format_t& output_format) override;
+	virtual const audio_format_t& GetAudioFormat() const override;
+	virtual bool SetAudioFormat(const audio_format_t& audio_format) override;
 
 	// IVolumeController interface
 public:

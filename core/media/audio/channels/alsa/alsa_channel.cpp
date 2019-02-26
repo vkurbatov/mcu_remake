@@ -386,7 +386,7 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 	auto data_ptr = static_cast<std::int8_t*>(data);
 
-	const auto& audio_format = GetInputFormat();
+	const auto& audio_format = GetAudioFormat();
 
 	auto frame_bytes = audio_format.bytes_per_sample();
 
@@ -456,7 +456,7 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 {
 	std::int32_t result = 0, total = 0;
 
-	const auto& audio_format = GetOutputFormat();
+	const auto& audio_format = GetAudioFormat();
 
 	std::size_t frame_bytes = audio_format.bytes_per_sample();
 

@@ -2,10 +2,12 @@
 #define AUDIO_COMPOSER_H
 
 #include "media/common/data_queue.h"
-#include "media/common/media_queue.h"
+#include "media/common/i_media_queue.h"
 #include "media/audio/i_audio_composer.h"
 #include "media/audio/audio_format.h"
+
 #include <unordered_map>
+#include <memory>
 
 namespace core
 {
@@ -25,8 +27,9 @@ class AudioComposer : public IAudioComposer
 	using audio_slot_map_t = std::unordered_map<audio_slot_id_t, audio_slot_t>;
 
 	audio_format_t				m_audio_format;
-	MediaQueue					m_media_queue;
 	audio_slot_map_t			m_audio_slots;
+
+	IMediaQueue&				m_media_queue;
 
 	class SlotCollectionWrapper : public IDataCollection
 	{
@@ -38,10 +41,8 @@ class AudioComposer : public IAudioComposer
 		std::size_t Count() const override;
 	} m_slot_collection;
 
-	//SlotCollectionWrapper		m_slot_collection;
-
 public:
-	AudioComposer(const audio_format_t& audio_format, std::uint32_t queue_duration_ms = max_queue_duration);
+	AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue);
 	~AudioComposer() override = default;
 
 	// IDataQueueControl interface
@@ -58,6 +59,8 @@ public:
 	IAudioSlot* QueryAudioSlot(audio_slot_id_t audio_slot_id) override;
 	std::size_t ReleaseAudioSlot(audio_slot_id_t audio_slot_id) override;
 
+	//IAudioFormatter interface
+public:
 	const audio_format_t& GetAudioFormat() const override;
 	bool SetAudioFormat(const audio_format_t& audio_format) override;
 
