@@ -55,14 +55,22 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 
 	if (result == nullptr)
 	{
+		auto media_slot = m_media_queue.QuerySlot(audio_slot_id);
 
+		if (media_slot != nullptr)
+		{
+			audio_slot_t audio_slot(
+						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, *this)
+						, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
+			);
 
-		audio_slot_t audio_slot(
-					new AudioSlot(m_audio_format, *m_media_queue.QuerySlot(audio_slot_id), m_slot_collection)
-					, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
-		);
+			result = static_cast<AudioSlot*>(audio_slot.get());
 
-		m_audio_slots.insert(std::make_pair(audio_slot_id, std::move(audio_slot)));
+			if (result != nullptr)
+			{
+				m_audio_slots.insert(std::make_pair(audio_slot_id, std::move(audio_slot)));
+			}
+		}
 	}
 	else
 	{
@@ -120,6 +128,16 @@ bool AudioComposer::SetAudioFormat(const audio_format_t& audio_format)
 std::size_t AudioComposer::Count() const
 {
 	return m_audio_slots.size();
+}
+
+void AudioComposer::Lock() const
+{
+	m_mutex.lock();
+}
+
+void AudioComposer::Unlock() const
+{
+	m_mutex.unlock();
 }
 
 AudioComposer::SlotCollectionWrapper::SlotCollectionWrapper(AudioComposer::audio_slot_map_t& audio_slots)

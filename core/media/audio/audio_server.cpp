@@ -45,12 +45,19 @@ IAudioStream* AudioServer::AddStream(const audio_format_t& audio_format, const s
 		auto stream_id = get_stream_id();
 
 		audio_stream_t audio_stream(
-					new AudioStream(stream_id, session_id, audio_format, *audio_slot)
+					new AudioStream(stream_id, session_id, audio_format, *audio_slot, is_writer)
 					, [](IAudioStream* audio_stream) { return static_cast<AudioStream*>(audio_stream); } );
 
 		result = audio_stream.get();
 
-		m_streams.emplace( std::make_pair( stream_id, std::move(audio_stream) ) );
+		if (result != nullptr)
+		{
+			m_streams.emplace( std::make_pair( stream_id, std::move(audio_stream) ) );
+		}
+		else
+		{
+			release_slot(session_id);
+		}
 
 	}
 

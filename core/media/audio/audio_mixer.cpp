@@ -58,14 +58,15 @@ std::size_t mixed(std::size_t stream_count, mix_method_t mix_method,
 	auto mixed_samples = static_cast<const T*>(mixed_data);
 	auto output_samples = static_cast<T*>(output_data);
 
-	input_data_size = clamp_value(mixed_data_size, input_data_size);
-	output_data_size = clamp_value(mixed_data_size, output_data_size);
+	output_data_size = clamp_value(input_data_size, output_data_size);
+	input_data_size = std::min(input_data_size, output_data_size);
+	mixed_data_size = clamp_value(input_data_size, mixed_data_size);
 
-	auto sample_count = std::min(std::min(mixed_data_size, input_data_size), output_data_size) / sizeof(T);
+	auto sample_count = std::min(mixed_data_size, output_data_size) / sizeof(T);
 
 	if (stream_count < 2)
 	{
-		std::memcpy(output_data, input_data, sample_count * sizeof(T));
+		std::memcpy(output_data, input_data, output_data_size);
 	}
 	else
 	{
@@ -73,9 +74,14 @@ std::size_t mixed(std::size_t stream_count, mix_method_t mix_method,
 		{
 			mix_sample(input_samples[i], mixed_samples[i], output_samples[i], sample_count, mix_method);
 		}
+
+		if (mixed_data_size < output_data_size)
+		{
+			std::memcpy(&output_samples[sample_count], &input_samples[sample_count], output_data_size - mixed_data_size);
+		}
 	}
 
-	return sample_count * sizeof(T);
+	return output_data_size;
 }
 
 std::size_t mixed(const audio_format_t& audio_format, std::size_t stream_count, mix_method_t mix_method,
@@ -120,8 +126,8 @@ std::size_t AudioMixer::Mixed(const audio_format_t& audio_format,
 
 	return audio_mixer_utils::mixed(audio_format, stream_count,
 									audio_mixer_utils::mix_method_t::mix,
-									mixed_data, mixed_data_size,
 									input_data, input_data_size,
+									mixed_data, mixed_data_size,
 									output_data, output_data_size);
 }
 
@@ -142,8 +148,8 @@ std::size_t AudioMixer::Demixed(const audio_format_t& audio_format, std::size_t 
 {
 	return audio_mixer_utils::mixed(audio_format, stream_count,
 									audio_mixer_utils::mix_method_t::demix,
-									mixed_data, mixed_data_size,
 									input_data, input_data_size,
+									mixed_data, mixed_data_size,
 									output_data, output_data_size);
 }
 

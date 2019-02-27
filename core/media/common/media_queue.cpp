@@ -34,8 +34,13 @@ IMediaSlot* MediaQueue::QuerySlot(media_slot_id_t media_slot_id)
 	if (result == nullptr)
 	{
 		media_slot_t media_slot(new MediaSlot(media_slot_id, m_multipoint_data_queue), [](IMediaSlot* slot){ delete static_cast<MediaSlot*>(slot); });
+
 		result = media_slot.get();
-		m_media_slots.emplace(std::make_pair(media_slot_id, std::move(media_slot)));
+
+		if(result != nullptr)
+		{
+			m_media_slots.emplace(std::make_pair(media_slot_id, std::move(media_slot)));
+		}
 	}
 	else
 	{

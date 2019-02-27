@@ -15,7 +15,6 @@ class DataQueue : public IDataQueue
 	typedef std::vector<std::uint8_t> queue_buffer_t;
 
 	queue_buffer_t  m_buffer;
-	queue_buffer_t	m_reader_buffer;
 	std::uint32_t   m_position;
 	std::size_t     m_size;
 

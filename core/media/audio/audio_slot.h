@@ -4,6 +4,7 @@
 #include "media/common/data_queue.h"
 #include "media/common/i_data_collection.h"
 #include "media/common/i_media_slot.h"
+#include "media/common/i_sync_point.h"
 #include "media/audio/i_audio_slot.h"
 
 namespace core
@@ -34,11 +35,12 @@ class AudioSlot : public IAudioSlot
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;
 	const IDataCollection&		m_slots_collection;
+	ISyncPoint&					m_sync_point;
 
 	std::vector<std::uint32_t>	m_input_resampler_buffer;
 	std::vector<std::uint32_t>	m_output_resampler_buffer;
 
-	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection);
+	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, ISyncPoint& sync_point);
 	~AudioSlot() override = default;
 
 public:

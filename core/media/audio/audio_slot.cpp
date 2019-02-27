@@ -26,11 +26,12 @@ namespace audio_slot_utils
 	}
 }
 
-AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection)
+AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, ISyncPoint& sync_point)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
 	, m_palyback_queue(media_slot.Capacity())
 	, m_slots_collection(slot_collection)
+	, m_sync_point(sync_point)
 	, m_ref_count(1)
 {
 
@@ -59,6 +60,8 @@ bool AudioSlot::IsSkip() const
 std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options)
 {
 
+	m_sync_point.Lock();
+
 	// prepare resample buffer and resampling
 
 	auto output_size = m_audio_format.size_from_format(audio_format, size);
@@ -79,19 +82,24 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 
 	auto mix_size = m_media_slot.Read(m_mix_buffer.data(), output_size, true);
 
-	mix_size = AudioMixer::Mixed(m_audio_format, m_slots_collection.Count(), m_output_resampler_buffer.data(), output_size, m_mix_buffer.data(), mix_size);
-
+	if (mix_size > 0)
+	{
+		mix_size = AudioMixer::Mixed(m_audio_format, m_slots_collection.Count(), m_output_resampler_buffer.data(), output_size, m_mix_buffer.data(), mix_size);
+	}
 
 	// push mixed audio data into media queue and into playback queue
 
 	output_size = m_media_slot.Push(m_mix_buffer.data(), mix_size);
 
+	m_sync_point.Unlock();
 
 	return audio_format.size_from_format(m_audio_format, output_size);
 }
 
 std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options)
 {
+
+	m_sync_point.Lock();
 
 	// prepare resampling and demixind buffer
 
@@ -111,12 +119,16 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	auto demix_size = m_palyback_queue.Pop(m_demix_buffer.data(), input_size);
 
-	demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
-
+	if (demix_size > 0)
+	{
+		demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
+	}
 
 	// resampling demix audio buffer
 
 	input_size = AudioResampler::Resampling(audio_format, m_audio_format, m_input_resampler_buffer.data(), input_size, data, size);
+
+	m_sync_point.Unlock();
 
 	return audio_format.size_from_format(m_audio_format, input_size);
 }
