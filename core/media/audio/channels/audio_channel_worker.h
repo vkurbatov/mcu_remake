@@ -1,7 +1,6 @@
-#ifndef AUDIO_DISPATCHER_H
-#define AUDIO_DISPATCHER_H
+#ifndef AUDIO_CHANNEL_WORKER_H
+#define AUDIO_CHANNEL_WORKER_H
 
-#include "media/audio/channels/i_audio_dispatcher.h"
 #include "media/common/timer.h"
 #include "media/common/data_queue.h"
 #include "media/audio/channels/audio_channel.h"
@@ -22,7 +21,7 @@ namespace audio
 namespace channels
 {
 
-class AudioDispatcher : public AudioChannel
+class AudioChannelWorker : public AudioChannel
 {
 	using mutex_t = std::mutex;
 	using lock_t = std::lock_guard<mutex_t>;
@@ -37,8 +36,8 @@ class AudioDispatcher : public AudioChannel
 	DataQueue			m_audio_queue;
 
 public:
-	AudioDispatcher(IAudoChannel& audio_channel, IMediaPoint& media_point, std::size_t queue_size);
-	~AudioDispatcher() override;
+	AudioChannelWorker(IAudoChannel& audio_channel, IMediaPoint& media_point, std::size_t queue_size);
+	~AudioChannelWorker() override;
 
 	// IAudoChannel interface
 public:

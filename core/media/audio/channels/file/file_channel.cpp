@@ -165,11 +165,13 @@ bool wav_header_from_audio_format(const audio_format_t& audio_format, wav_header
 } // file_utils
 
 
-FileChannel::FileChannel(const audio_channel_params_t &audio_params)
+FileChannel::FileChannel(const audio_channel_params_t &audio_params, bool is_rotate)
 	: AudioChannel(audio_params)
 	, m_audio_params(audio_params)
 	, m_file_name("")
 	, m_total_bytes(0)
+	, m_is_rotate(is_rotate)
+	, m_data_pos(0)
 {
 
 }
@@ -289,6 +291,19 @@ std::int32_t FileChannel::internal_read(void *data, std::size_t size, uint32_t o
 
 	m_total_bytes -= result;
 
+	if (m_is_rotate && result < size)
+	{
+		size = size - result;
+
+		m_file.seekg(m_data_pos);
+
+		m_file.read(static_cast<char*>(data) + result, size);
+
+		m_total_bytes -= result;
+
+		result += m_file.gcount();
+	}
+
 	return result;
 }
 
@@ -339,6 +354,8 @@ bool FileChannel::load_header(audio_format_t& audio_format, std::size_t& data_si
 	if (result == true)
 	{
 		data_size = wav_header.chunk_2_size;
+
+		m_data_pos = ret;
 
 		if (tell < ret)
 		{

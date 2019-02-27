@@ -28,10 +28,12 @@ class FileChannel : public AudioChannel
 	std::fstream			m_file;
 
 	std::size_t				m_total_bytes;
+	bool					m_is_rotate;
+	std::size_t				m_data_pos;
 
 
 public:
-	FileChannel(const audio_channel_params_t& audio_params = null_audio_params);
+	FileChannel(const audio_channel_params_t& audio_params = null_audio_params, bool is_rotate = false);
 	~FileChannel() override;
 
 	// MediaPoint interface

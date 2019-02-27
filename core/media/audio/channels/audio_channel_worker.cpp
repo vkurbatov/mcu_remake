@@ -1,4 +1,4 @@
-#include "audio_dispatcher.h"
+#include "audio_channel_worker.h"
 #include "media/common/timer.h"
 
 namespace core
@@ -13,7 +13,7 @@ namespace audio
 namespace channels
 {
 
-AudioDispatcher::AudioDispatcher(IAudoChannel& audio_channel, IMediaPoint& media_point, std::size_t queue_size)
+AudioChannelWorker::AudioChannelWorker(IAudoChannel& audio_channel, IMediaPoint& media_point, std::size_t queue_size)
 	: AudioChannel(audio_channel.GetAudioParams())
 	, m_audio_channel(audio_channel)
 	, m_media_point(media_point)
@@ -23,12 +23,12 @@ AudioDispatcher::AudioDispatcher(IAudoChannel& audio_channel, IMediaPoint& media
 
 }
 
-AudioDispatcher::~AudioDispatcher()
+AudioChannelWorker::~AudioChannelWorker()
 {
 	Close();
 }
 
-bool AudioDispatcher::Open(const std::string& device_name)
+bool AudioChannelWorker::Open(const std::string& device_name)
 {
 	if (IsOpen())
 	{
@@ -38,13 +38,13 @@ bool AudioDispatcher::Open(const std::string& device_name)
 	if (!m_running)
 	{
 		m_running = true;
-		m_dispatch_thread = std::thread(&AudioDispatcher::audio_dispatcher_proc, this, device_name);
+		m_dispatch_thread = std::thread(&AudioChannelWorker::audio_dispatcher_proc, this, device_name);
 	}
 
 	return m_running;
 }
 
-bool AudioDispatcher::Close()
+bool AudioChannelWorker::Close()
 {
 	bool result = false;
 
@@ -65,46 +65,46 @@ bool AudioDispatcher::Close()
 	return result;
 }
 
-bool AudioDispatcher::IsOpen() const
+bool AudioChannelWorker::IsOpen() const
 {
 	return m_running;
 }
 
-bool AudioDispatcher::IsRecorder() const
+bool AudioChannelWorker::IsRecorder() const
 {
 	return m_audio_channel.IsRecorder();
 }
 
-bool AudioDispatcher::IsPlayback() const
+bool AudioChannelWorker::IsPlayback() const
 {
 	return m_audio_channel.IsPlayback();
 }
 
-const std::string& AudioDispatcher::GetName() const
+const std::string& AudioChannelWorker::GetName() const
 {
 	return m_audio_channel.GetName();
 }
 
-int32_t AudioDispatcher::internal_write(const void* data, std::size_t size, uint32_t options)
+int32_t AudioChannelWorker::internal_write(const void* data, std::size_t size, uint32_t options)
 {
 	lock_t lock(m_mutex);
 	return m_audio_queue.Push(data, size);
 }
 
-int32_t AudioDispatcher::internal_read(void* data, std::size_t size, uint32_t options)
+int32_t AudioChannelWorker::internal_read(void* data, std::size_t size, uint32_t options)
 {
 	lock_t lock(m_mutex);
 	return m_audio_queue.Pop(data, size);
 }
 
-const audio_channel_params_t& AudioDispatcher::internal_get_audio_params() const
+const audio_channel_params_t& AudioChannelWorker::internal_get_audio_params() const
 {
 
 	return m_audio_channel.GetAudioParams();
 
 }
 
-bool AudioDispatcher::internal_set_audio_params(const audio_channel_params_t& audio_params)
+bool AudioChannelWorker::internal_set_audio_params(const audio_channel_params_t& audio_params)
 {
 	bool result = !IsOpen();
 
@@ -122,7 +122,7 @@ bool AudioDispatcher::internal_set_audio_params(const audio_channel_params_t& au
 	return result;
 }
 
-void AudioDispatcher::audio_dispatcher_proc(const std::string device_name)
+void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 {
 
 	Timer timer;

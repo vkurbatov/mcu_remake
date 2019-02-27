@@ -379,16 +379,13 @@ void test_audio_file()
 	}
 }
 
-#include "media/audio/channels/audio_dispatcher.h"
+#include "media/audio/channels/audio_channel_worker.h"
 
-void test_audio_dispatcher()
+void test_audio_channel_worker()
 {
 	static const std::uint32_t duration_ms = 10;
 	static const std::uint32_t recorder_sample_rate = 32000;
-	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
 	static const std::uint32_t playback_sample_rate = 48000;
-	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
-	static const std::uint32_t buffers_count = 10;
 
 	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
@@ -398,12 +395,12 @@ void test_audio_dispatcher()
 
 	core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
-	core::media::audio::channels::AudioDispatcher recorder_dispatcher(recorder, recorder, 64000);
-	core::media::audio::channels::AudioDispatcher player_dispatcher(player, player, 64000);
+	core::media::audio::channels::AudioChannelWorker recorder_worker(recorder, recorder, 64000);
+	core::media::audio::channels::AudioChannelWorker player_worker(player, player, 64000);
 
-	recorder_dispatcher.Open("default");
+	recorder_worker.Open("default");
 
-	player_dispatcher.Open("default");
+	player_worker.Open("default");
 
 	std::uint8_t buffer[10000];
 
@@ -413,13 +410,91 @@ void test_audio_dispatcher()
 
 	while(true)
 	{
-		auto result = recorder_dispatcher.Read(buffer, part_size);
+		auto result = recorder_worker.Read(buffer, part_size);
 
-		result = player_dispatcher.Write(recorder_params.audio_format, buffer, result);
+		result = player_worker.Write(recorder_params.audio_format, buffer, result);
 
 
 		timer(duration_ms);
 	}
+}
+
+#include "media/audio/audio_dispatcher.h"
+
+void test_audio_dispatcher()
+{
+	static const std::uint32_t duration_ms = 10;
+	static const std::uint32_t recorder_sample_rate = 32000;
+	static const std::uint32_t playback_sample_rate = 48000;
+
+	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
+
+	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel player(player_params);
+
+	core::media::audio::AudioDispatcher dispatcher(recorder, player, player_params.audio_format);
+
+	core::media::Timer timer;
+
+	recorder.Open("default");
+	player.Open("default");
+
+	dispatcher.Start(duration_ms);
+
+	while(dispatcher.IsRunning()) timer(duration_ms);
+}
+
+#include "media/audio/audio_composer.h"
+#include "media/audio/audio_server.h"
+
+void test_composer()
+{
+	static const std::uint32_t duration_ms = 10;
+	static const std::uint32_t recorder_sample_rate = 32000;
+	static const std::uint32_t playback_sample_rate = 48000;
+
+	static const std::uint32_t composer_sample_rate = 48000;
+
+	const std::string session_id = "local_audio";
+
+	core::media::audio::audio_format_t composer_audio_format = { composer_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 };
+
+	static const std::size_t media_queue_size = 64000;
+
+	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
+
+	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel player(player_params);
+
+	core::media::MediaQueue media_queue(media_queue_size);
+
+	core::media::audio::AudioComposer audio_composer(composer_audio_format, media_queue);
+
+	core::media::audio::AudioServer audio_server(audio_composer);
+
+	recorder.Open("default");
+	player.Open("default");
+
+	auto* read_audio_stream = audio_server.AddStream(player_params.audio_format, session_id, false);
+	auto* write_audio_stream = audio_server.AddStream(recorder_params.audio_format, session_id, true);
+
+	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player_params.audio_format);
+	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder_params.audio_format);
+
+	recorder_dispatcher.Start(duration_ms);
+	player_dispatcher.Start(duration_ms);
+
+	core::media::Timer timer;
+
+	while(true) timer(duration_ms);
+
+
 }
 
 int main()
@@ -432,7 +507,11 @@ int main()
 
 	// test_audio_file();
 
-	test_audio_dispatcher();
+	// test_audio_channel_worker();
+
+	// test_audio_dispatcher();
+
+	test_composer();
 
 	return 0;
 }
