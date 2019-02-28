@@ -537,7 +537,7 @@ int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
 	{
 		case -EPIPE:
 			error = snd_pcm_prepare(m_handle);
-			LOG(error) << "EPIPE!!!" LOG_END;
+			LOG(error) << "EPIPE!!! w_id = " << m_write_transaction_id LOG_END;
 			break;
 
 		case -ESTRPIPE:

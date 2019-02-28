@@ -79,7 +79,9 @@ std::size_t read_wav_header(std::fstream& file, wav_header_t& wav_header)
 
 		file.seekg(0);
 
-		auto ret = file.readsome(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header)), sizeof(wav_header));
+		file.read(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header)), sizeof(wav_header));
+
+		auto ret = file.gcount();
 
 		if (ret == sizeof(wav_header))
 		{
@@ -93,7 +95,9 @@ std::size_t read_wav_header(std::fstream& file, wav_header_t& wav_header)
 
 					file.seekg(total_header_size);
 
-					ret = file.readsome(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header.chunk_2_id)), 8);
+					file.readsome(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header.chunk_2_id)), 8);
+
+					ret = file.gcount();
 
 					if (ret == 8 && std::strncmp(wav_header.chunk_2_id, file_utils::wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0)
 					{
@@ -172,6 +176,7 @@ FileChannel::FileChannel(const audio_channel_params_t &audio_params, bool is_rot
 	, m_total_bytes(0)
 	, m_is_rotate(is_rotate)
 	, m_data_pos(0)
+	, m_read_size(0)
 {
 
 }
@@ -233,6 +238,7 @@ bool FileChannel::Close()
 		}
 
 		m_total_bytes = 0;
+		m_read_size = 0;
 
 		m_file.close();
 	}
@@ -282,26 +288,26 @@ std::int32_t FileChannel::internal_write(const void *data, std::size_t size, uin
 
 std::int32_t FileChannel::internal_read(void *data, std::size_t size, uint32_t options)
 {
+	auto real_size = size;
 
-	size = std::min(size, m_total_bytes);
+	size = std::min(size, m_total_bytes - m_read_size);
 
 	m_file.read(static_cast<char*>(data), size);
 
 	std::int32_t result = m_file.gcount();
 
-	m_total_bytes -= result;
+	m_read_size += result;
 
-	if (m_is_rotate && result < size)
+	if (m_is_rotate && m_read_size == m_total_bytes)
 	{
-		size = size - result;
-
+		m_read_size = 0;
 		m_file.seekg(m_data_pos);
 
-		m_file.read(static_cast<char*>(data) + result, size);
+		real_size -= size;
 
-		m_total_bytes -= result;
+		std::memset(static_cast<std::uint8_t*>(data) + result, 0, real_size);
 
-		result += m_file.gcount();
+		result += real_size;
 	}
 
 	return result;

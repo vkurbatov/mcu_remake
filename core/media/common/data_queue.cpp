@@ -7,10 +7,11 @@ namespace core
 namespace media
 {
 
-DataQueue::DataQueue(std::size_t capacity)
+DataQueue::DataQueue(std::size_t capacity, bool is_strong)
 	: m_buffer(capacity + 1)
 	, m_position(0)
 	, m_size(0)
+	, m_is_strong(is_strong)
 {
 
 }
@@ -66,30 +67,34 @@ std::size_t DataQueue::internal_read(void *data, std::size_t size, bool from_tai
 {
 	std::size_t result = 0;
 
-	auto data_ptr = static_cast<std::uint8_t*>(data);
-	auto buffer_size = m_buffer.size();
-
-	size = std::min(size, m_size);
-
-	auto position = (buffer_size + m_position - (from_tail ? size : m_size)) % buffer_size;
-	auto tail = position + size;
-
-	result = size;
-
-	if (tail >= buffer_size)
+	if (size <= m_size || m_is_strong)
 	{
-		auto part_size = buffer_size - position;
 
-		std::memcpy(data_ptr, m_buffer.data() + position, part_size);
+		auto data_ptr = static_cast<std::uint8_t*>(data);
+		auto buffer_size = m_buffer.size();
 
-		data_ptr += part_size;
-		size -= part_size;
-		position = 0;
+		size = std::min(size, m_size);
+
+		auto position = (buffer_size + m_position - (from_tail ? size : m_size)) % buffer_size;
+		auto tail = position + size;
+
+		result = size;
+
+		if (tail >= buffer_size)
+		{
+			auto part_size = buffer_size - position;
+
+			std::memcpy(data_ptr, m_buffer.data() + position, part_size);
+
+			data_ptr += part_size;
+			size -= part_size;
+			position = 0;
+
+		}
+
+		std::memcpy(data_ptr, m_buffer.data() + position, size);
 
 	}
-
-	std::memcpy(data_ptr, m_buffer.data() + position, size);
-
 	return result;
 }
 

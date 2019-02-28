@@ -28,6 +28,7 @@ class FileChannel : public AudioChannel
 	std::fstream			m_file;
 
 	std::size_t				m_total_bytes;
+	std::size_t				m_read_size;
 	bool					m_is_rotate;
 	std::size_t				m_data_pos;
 

@@ -1,6 +1,10 @@
 #include "audio_dispatcher.h"
 #include "media/common/timer.h"
 
+#include "core-tools/logging.h"
+
+#include <cstring>
+
 namespace core
 {
 
@@ -10,12 +14,13 @@ namespace media
 namespace audio
 {
 
-AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader, IAudioWriter& audio_writer, const audio_format_t& audio_format)
+AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader, IAudioWriter& audio_writer, const audio_format_t& audio_format, bool is_strong_sizes)
 	: m_audio_reader(audio_reader)
 	, m_audio_writer(audio_writer)
 	, m_audio_format(audio_format)
 	, m_is_running(false)
 	, m_cycle_counter(0)
+	, m_is_strong_sizes(is_strong_sizes)
 {
 
 }
@@ -83,6 +88,14 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 		}
 
 		auto result = m_audio_reader.Read(m_audio_format, buffer.data(), size);
+
+		if (result < size && m_is_strong_sizes)
+		{
+
+			LOG(error) << "result(" << result << ") < size(" << size << ")" LOG_END;
+			std::memset(buffer.data() + result, 0, size - result);
+			result = size;
+		}
 
 		if (result > 0)
 		{

@@ -37,8 +37,8 @@ class AudioSlot : public IAudioSlot
 	const IDataCollection&		m_slots_collection;
 	ISyncPoint&					m_sync_point;
 
-	std::vector<std::uint32_t>	m_input_resampler_buffer;
-	std::vector<std::uint32_t>	m_output_resampler_buffer;
+	std::vector<std::uint8_t>	m_input_resampler_buffer;
+	std::vector<std::uint8_t>	m_output_resampler_buffer;
 
 	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, ISyncPoint& sync_point);
 	~AudioSlot() override = default;

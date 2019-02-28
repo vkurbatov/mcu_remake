@@ -2,6 +2,8 @@
 #include "media/audio/audio_mixer.h"
 #include "audio_slot.h"
 
+#include "core-tools/logging.h"
+
 namespace core
 {
 
@@ -29,7 +31,7 @@ namespace audio_slot_utils
 AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, ISyncPoint& sync_point)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
-	, m_palyback_queue(media_slot.Capacity())
+	, m_palyback_queue(media_slot.Capacity(), true)
 	, m_slots_collection(slot_collection)
 	, m_sync_point(sync_point)
 	, m_ref_count(1)
@@ -70,11 +72,9 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 
 	output_size = AudioResampler::Resampling(audio_format, m_audio_format, data, size, m_output_resampler_buffer.data(), output_size);
 
-
 	// push playback data for future demixing
 
 	output_size = m_palyback_queue.Push(m_output_resampler_buffer.data(), output_size);
-
 
 	// prepare mixing buffer and mixing
 
@@ -82,10 +82,7 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 
 	auto mix_size = m_media_slot.Read(m_mix_buffer.data(), output_size, true);
 
-	if (mix_size > 0)
-	{
-		mix_size = AudioMixer::Mixed(m_audio_format, m_slots_collection.Count(), m_output_resampler_buffer.data(), output_size, m_mix_buffer.data(), mix_size);
-	}
+	mix_size = AudioMixer::Mixed(m_audio_format, m_slots_collection.Count(), m_output_resampler_buffer.data(), output_size, m_mix_buffer.data(), mix_size);
 
 	// push mixed audio data into media queue and into playback queue
 
@@ -105,6 +102,8 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	auto input_size = m_audio_format.size_from_format(audio_format, size);
 
+	auto real_size = size;
+
 	audio_slot_utils::prepare_buffer(m_input_resampler_buffer, input_size);
 
 	audio_slot_utils::prepare_buffer(m_demix_buffer, input_size);
@@ -114,6 +113,10 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	input_size = m_media_slot.Pop(m_input_resampler_buffer.data(), input_size);
 
+	if (input_size < real_size)
+	{
+		LOG(error) "audio_slot read input_size(" << input_size << ")<real_size(" << real_size << ")" LOG_END;
+	}
 
 	// fetch playback data and demix
 
@@ -121,8 +124,10 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	if (demix_size > 0)
 	{
-		demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
+		// demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
 	}
+
+	// demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_input_resampler_buffer.data(), input_size, m_demix_buffer.data(), input_size);
 
 	// resampling demix audio buffer
 

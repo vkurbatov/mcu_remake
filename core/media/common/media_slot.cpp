@@ -65,7 +65,7 @@ std::size_t MediaSlot::internal_pop(void* data, std::size_t size)
 
 	auto result = internal_read(data, size, false);
 
-	internal_drop(size);
+	internal_drop(result);
 
 	return result;
 }

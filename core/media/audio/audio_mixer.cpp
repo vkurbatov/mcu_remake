@@ -28,7 +28,7 @@ inline const T& clamp_value(const T& v1, const T& v2)
 template<typename T>
 inline const T scale_sample(const T& sample, std::size_t sample_count, mix_method_t mix_method)
 {
-	return static_cast<T>(mix_method == mix_method_t::mix
+	return sample_count < 2 ? sample : static_cast<T>(mix_method == mix_method_t::mix
 			? static_cast<double>(sample) / static_cast<double>(sample_count)
 			: static_cast<double>(sample) * static_cast<double>(sample_count) / static_cast<double>(sample_count - 1));
 }
@@ -36,7 +36,9 @@ inline const T scale_sample(const T& sample, std::size_t sample_count, mix_metho
 template<typename T>
 inline void mix_sample(const T& input_sample, const T& mixed_sample, T& output_sample, std::size_t sample_count, mix_method_t mix_method)
 {
-	auto sample = scale_sample(input_sample, sample_count, mix_method_t::mix);
+	// auto sample = scale_sample(input_sample, sample_count, mix_method_t::mix);
+
+	auto sample = input_sample;
 
 	if (mix_method == mix_method_t::mix)
 	{
@@ -44,7 +46,8 @@ inline void mix_sample(const T& input_sample, const T& mixed_sample, T& output_s
 	}
 	else
 	{
-		output_sample = scale_sample(mixed_sample - sample, sample_count, mix_method_t::demix);
+		// output_sample = scale_sample(mixed_sample - sample, sample_count, mix_method_t::demix);
+		output_sample = mixed_sample - sample;
 	}
 }
 
@@ -60,25 +63,30 @@ std::size_t mixed(std::size_t stream_count, mix_method_t mix_method,
 
 	output_data_size = clamp_value(input_data_size, output_data_size);
 	input_data_size = std::min(input_data_size, output_data_size);
-	mixed_data_size = clamp_value(input_data_size, mixed_data_size);
+	mixed_data_size = std::min(mixed_data_size, output_data_size);
 
-	auto sample_count = std::min(mixed_data_size, output_data_size) / sizeof(T);
+	auto sample_mixed_count = std::min(mixed_data_size, output_data_size) / sizeof(T);
+	auto sample_output_count = output_data_size / sizeof(T);
 
-	if (stream_count < 2)
-	{
+	if (stream_count < 1)
+	{		
 		std::memcpy(output_data, input_data, output_data_size);
 	}
 	else
 	{
-		for (std::size_t i = 0; i < sample_count; i++)
+		std::size_t i = 0;
+
+		for (i = 0; i < sample_mixed_count; i++)
 		{
-			mix_sample(input_samples[i], mixed_samples[i], output_samples[i], sample_count, mix_method);
+			mix_sample(input_samples[i], mixed_samples[i], output_samples[i], stream_count, mix_method);
 		}
 
-		if (mixed_data_size < output_data_size)
+		std::memcpy(&output_samples[sample_mixed_count], &input_samples[sample_mixed_count], output_data_size - mixed_data_size);
+
+		/*for (; i < sample_output_count; i++)
 		{
-			std::memcpy(&output_samples[sample_count], &input_samples[sample_count], output_data_size - mixed_data_size);
-		}
+			mix_sample(input_samples[i], static_cast<T>(0), output_samples[i], stream_count, mix_method);
+		}*/
 	}
 
 	return output_data_size;

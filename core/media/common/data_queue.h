@@ -17,10 +17,11 @@ class DataQueue : public IDataQueue
 	queue_buffer_t  m_buffer;
 	std::uint32_t   m_position;
 	std::size_t     m_size;
+	bool			m_is_strong;
 
 public:
 
-	DataQueue(std::size_t capacity);
+	DataQueue(std::size_t capacity, bool is_strong = false);
 	virtual ~DataQueue() override = default;
 
 	// IDataQueue interface

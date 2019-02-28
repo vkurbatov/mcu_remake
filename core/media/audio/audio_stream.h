@@ -4,6 +4,7 @@
 #include "media/audio/i_audio_stream.h"
 #include "media/audio/i_audio_point.h"
 #include "media/audio/audio_format.h"
+
 #include <unordered_map>
 
 namespace core

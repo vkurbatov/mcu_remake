@@ -458,7 +458,8 @@ void test_composer()
 
 	static const std::uint32_t composer_sample_rate = 48000;
 
-	const std::string session_id = "local_audio";
+	const std::string alsa_session_id = "local_audio";
+	const std::string file_session_id = "file_audio";
 
 	core::media::audio::audio_format_t composer_audio_format = { composer_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 };
 
@@ -472,6 +473,10 @@ void test_composer()
 
 	core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
+	core::media::audio::channels::audio_channel_params_t file_params(core::media::audio::channels::channel_direction_t::recorder, core::media::audio::null_audio_format, duration_ms, false);
+
+	core::media::audio::channels::file::FileChannel r_file(file_params, true);
+
 	core::media::MediaQueue media_queue(media_queue_size);
 
 	core::media::audio::AudioComposer audio_composer(composer_audio_format, media_queue);
@@ -480,21 +485,28 @@ void test_composer()
 
 	recorder.Open("default");
 	player.Open("default");
+	r_file.Open("/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav");
 
-	auto* read_audio_stream = audio_server.AddStream(player_params.audio_format, session_id, false);
-	auto* write_audio_stream = audio_server.AddStream(recorder_params.audio_format, session_id, true);
+	// core::media::audio::AudioDispatcher file_dispatcher(r_file, player, r_file.GetAudioFormat(), true);
 
-	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player_params.audio_format);
-	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder_params.audio_format);
+	// file_dispatcher.Start(duration_ms * 2);
 
+
+	auto* read_audio_stream = audio_server.AddStream(player.GetAudioFormat(), alsa_session_id, false);
+	auto* write_audio_stream = audio_server.AddStream(recorder.GetAudioFormat(), alsa_session_id, true);
+	auto* file_audio_stream = audio_server.AddStream(r_file.GetAudioFormat(), file_session_id, true);
+
+	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher file_dispatcher(r_file, *file_audio_stream, r_file.GetAudioFormat(), true);
+
+	file_dispatcher.Start(duration_ms);
 	recorder_dispatcher.Start(duration_ms);
 	player_dispatcher.Start(duration_ms);
 
 	core::media::Timer timer;
 
-	while(true) timer(duration_ms);
-
-
+	while(true) timer(duration_ms * 10);
 }
 
 int main()
