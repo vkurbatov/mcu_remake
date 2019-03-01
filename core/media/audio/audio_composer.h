@@ -24,6 +24,7 @@ class AudioComposer : public IAudioComposer, private ISyncPoint
 {
 
 	static const std::uint32_t max_queue_duration = 10;
+	static const std::uint32_t default_jitter_ms = 40;
 
 	using mutex_t = std::mutex;
 	using audio_slot_t = std::shared_ptr<IAudioSlot>;
@@ -31,6 +32,7 @@ class AudioComposer : public IAudioComposer, private ISyncPoint
 
 	audio_format_t				m_audio_format;
 	audio_slot_map_t			m_audio_slots;
+	std::uint32_t				m_min_jitter_ms;
 
 	IMediaQueue&				m_media_queue;
 	mutable mutex_t				m_mutex;
@@ -46,7 +48,7 @@ class AudioComposer : public IAudioComposer, private ISyncPoint
 	} m_slot_collection;
 
 public:
-	AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue);
+	AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue, std::uint32_t min_jitter_ms = default_jitter_ms);
 	~AudioComposer() override = default;
 
 	// IDataQueueControl interface

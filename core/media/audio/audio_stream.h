@@ -63,8 +63,8 @@ public:
 	std::int32_t Read(const audio_format_t &audio_format, void *data, std::size_t size, std::uint32_t options = 0) override;
 
 private:
-	std::size_t internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options = 0);
-	std::size_t internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options = 0);
+	std::int32_t internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options = 0);
+	std::int32_t internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options = 0);
 };
 
 } // audio

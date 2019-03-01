@@ -32,15 +32,18 @@ class AudioSlot : public IAudioSlot
 	std::vector<std::uint8_t>	m_mix_buffer;
 	std::vector<std::uint8_t>	m_demix_buffer;
 
-	const audio_format_t&		m_audio_format;
-	IMediaSlot&					m_media_slot;
-	const IDataCollection&		m_slots_collection;
-	ISyncPoint&					m_sync_point;
-
 	std::vector<std::uint8_t>	m_input_resampler_buffer;
 	std::vector<std::uint8_t>	m_output_resampler_buffer;
 
-	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, ISyncPoint& sync_point);
+	bool						m_can_slot_read;
+
+	const std::uint32_t&		m_min_jitter_ms;
+	const audio_format_t&		m_audio_format;
+	IMediaSlot&					m_media_slot;
+	const IDataCollection&		m_slots_collection;
+	const ISyncPoint&			m_sync_point;
+
+	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, const ISyncPoint& sync_point, const std::uint32_t& min_jitter_ms);
 	~AudioSlot() override = default;
 
 public:
@@ -54,10 +57,18 @@ public:
 public:
 	audio_slot_id_t GetSlotId() const override;
 	bool IsSkip() const override;
+	void Reset() override;
 
 private:
+
+	std::int32_t slot_push(const void* data, std::size_t size);
+	std::int32_t slot_pop(void* data, std::size_t size);
+	bool check_jitter();
+
 	std::int32_t internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options);
 	std::int32_t internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options);
+
+
 
 };
 

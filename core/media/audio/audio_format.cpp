@@ -105,12 +105,12 @@ bool audio_format_t::operator != (const audio_format_t& af) const
 	return !(af == *this);
 }
 
-uint32_t audio_format_t::bytes_per_sample() const
+size_t audio_format_t::bytes_per_sample() const
 {
 	return (bit_per_sample() * channels) / 8;
 }
 
-uint32_t audio_format_t::bytes_per_second() const
+size_t audio_format_t::bytes_per_second() const
 {
 	return (sample_rate * bit_per_sample() * channels) / 8;
 }
@@ -130,9 +130,14 @@ std::size_t audio_format_t::size_from_format(const audio_format_t& af, std::size
 	return is_valid() ? size * bytes_per_second() / af.bytes_per_second() : 0;
 }
 
-uint32_t audio_format_t::samples_from_size(std::size_t size) const
+size_t audio_format_t::samples_from_size(std::size_t size) const
 {
 	return is_valid() ? size / bytes_per_sample() : 0;
+}
+
+size_t audio_format_t::samples_from_duration(uint32_t duration_ms) const
+{
+	return samples_from_size(size_from_duration(duration_ms));
 }
 
 

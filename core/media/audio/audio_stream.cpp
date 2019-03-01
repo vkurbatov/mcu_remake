@@ -74,14 +74,14 @@ std::int32_t AudioStream::Read(const audio_format_t &audio_format, void *data, s
 	return internal_read(audio_format, data, size, options);
 }
 
-std::size_t AudioStream::internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options)
+std::int32_t AudioStream::internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options)
 {
 	return CanWrite() ? m_audio_point.Write(audio_format, data, size, options) : -EACCES;
 }
 
-std::size_t AudioStream::internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options)
+std::int32_t AudioStream::internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options)
 {
-	return CanRead() ? m_audio_point.Read(audio_format, data, size, options) : -EACCES;
+	return CanRead() ? m_audio_point.Read(audio_format, data, size, options) :  -EACCES;
 }
 
 

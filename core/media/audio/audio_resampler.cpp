@@ -48,6 +48,11 @@ template<typename Tin,
 std::size_t rescaling_sample(const Tin* input_sample, Tout* output_sample, std::size_t input_channels = 1, std::size_t output_channels = 1)
 {
 
+	if (input_channels != output_channels)
+	{
+		input_channels = input_channels;
+	}
+
 	for (std::size_t out_idx = 0; out_idx < output_channels; out_idx++)
 	{
 		std::size_t in_idx = (out_idx * input_channels) / output_channels;
@@ -98,7 +103,7 @@ std::size_t rescaling_sample(const void* input_sample
 {
 	std::size_t result = 0;
 
-	if (input_sample_format == output_sample_format)
+	if (input_sample_format == output_sample_format && input_channels == output_channels)
 	{
 		result = audio_format_t::bit_per_sample(input_sample_format) / 8;
 		std::memcpy(output_sample, input_sample, result);
@@ -141,7 +146,7 @@ std::int32_t AudioResampler::Resampling(
 		, const void *input_data, std::size_t input_size
 		, void *output_data, std::size_t output_size)
 {
-	std::int32_t result = -1;
+	std::int32_t result = 0;
 
 	if (input_format.is_valid() && output_format.is_valid()
 		&& input_data != nullptr && output_data != nullptr

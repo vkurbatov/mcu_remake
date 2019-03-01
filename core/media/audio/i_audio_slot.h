@@ -26,6 +26,7 @@ public:
 
 	virtual audio_slot_id_t GetSlotId() const = 0;
 	virtual bool IsSkip() const = 0;
+	virtual void Reset() = 0;
 };
 
 } // audio

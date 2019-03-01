@@ -34,7 +34,7 @@ void test_alsa()
 
 
 	static const std::uint32_t duration_ms = 10;
-	static const std::uint32_t recorder_sample_rate = 32000;
+	static const std::uint32_t recorder_sample_rate = 48000;
 	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
 	static const std::uint32_t playback_sample_rate = 48000;
 	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
@@ -85,7 +85,7 @@ void test_alsa()
 
 	std::thread player_thread([&device_playback_list, &queue_mutex, &queue]()
 	{
-		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, core::media::audio::audio_format_t::sample_format_t::pcm_16, 2 }, duration_ms, true);
 
 		core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
@@ -94,7 +94,7 @@ void test_alsa()
 		player.SetVolume(100);
 
 
-		std::uint8_t buffer[recorder_frame_size];
+		std::uint8_t buffer[100000];
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -120,7 +120,7 @@ void test_alsa()
 			if (q_size > 0)
 			{
 
-				player.Write(input_format, buffer, q_size);
+				player.Write(input_format, buffer, q_size );
 
 				/*auto rs_size = core::media::audio::AudioResampler::Resampling(input_format, player_params.audio_format, buffer, q_size, resample_buffer);
 
@@ -453,13 +453,16 @@ void test_audio_dispatcher()
 void test_composer()
 {
 	static const std::uint32_t duration_ms = 10;
-	static const std::uint32_t recorder_sample_rate = 32000;
-	static const std::uint32_t playback_sample_rate = 48000;
+	static const std::uint32_t recorder_sample_rate = 8000;
+	static const std::uint32_t playback_sample_rate = 32000;
 
 	static const std::uint32_t composer_sample_rate = 48000;
 
+	static const std::uint32_t file_sample_rate = 16000;
+
 	const std::string alsa_session_id = "local_audio";
-	const std::string file_session_id = "file_audio";
+	const std::string file_session_id1 = "file_audio1";
+	const std::string file_session_id2 = "file_audio2";
 
 	core::media::audio::audio_format_t composer_audio_format = { composer_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 };
 
@@ -473,19 +476,24 @@ void test_composer()
 
 	core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
-	core::media::audio::channels::audio_channel_params_t file_params(core::media::audio::channels::channel_direction_t::recorder, core::media::audio::null_audio_format, duration_ms, false);
+	core::media::audio::channels::audio_channel_params_t r_file_params(core::media::audio::channels::channel_direction_t::recorder, core::media::audio::null_audio_format, duration_ms, false);
+	core::media::audio::channels::audio_channel_params_t w_file_params1(core::media::audio::channels::channel_direction_t::playback, { file_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
-	core::media::audio::channels::file::FileChannel r_file(file_params, true);
+	core::media::audio::channels::file::FileChannel r_file1(r_file_params, true);
+	core::media::audio::channels::file::FileChannel r_file2(r_file_params, true);
+	core::media::audio::channels::file::FileChannel w_file1(w_file_params1);
 
 	core::media::MediaQueue media_queue(media_queue_size);
 
-	core::media::audio::AudioComposer audio_composer(composer_audio_format, media_queue);
+	core::media::audio::AudioComposer audio_composer(composer_audio_format, media_queue, 60);
 
 	core::media::audio::AudioServer audio_server(audio_composer);
 
 	recorder.Open("default");
 	player.Open("default");
-	r_file.Open("/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav");
+	r_file1.Open("/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav");
+	r_file2.Open("/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav");
+	w_file1.Open("/home/vkurbatov/ivcscodec/test_sound/Compose.wav");
 
 	// core::media::audio::AudioDispatcher file_dispatcher(r_file, player, r_file.GetAudioFormat(), true);
 
@@ -494,26 +502,34 @@ void test_composer()
 
 	auto* read_audio_stream = audio_server.AddStream(player.GetAudioFormat(), alsa_session_id, false);
 	auto* write_audio_stream = audio_server.AddStream(recorder.GetAudioFormat(), alsa_session_id, true);
-	auto* file_audio_stream = audio_server.AddStream(r_file.GetAudioFormat(), file_session_id, true);
+	auto* r_file_audio_stream1 = audio_server.AddStream(r_file1.GetAudioFormat(), file_session_id1, true);
+	auto* r_file_audio_stream2 = audio_server.AddStream(r_file2.GetAudioFormat(), file_session_id2, true);
+	auto* w_file_audio_stream1 = audio_server.AddStream(w_file1.GetAudioFormat(), file_session_id1, false);
 
 	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder.GetAudioFormat(), true);
-	core::media::audio::AudioDispatcher file_dispatcher(r_file, *file_audio_stream, r_file.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher r_file_dispatcher1(r_file1, *r_file_audio_stream1, r_file1.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher r_file_dispatcher2(r_file2, *r_file_audio_stream2, r_file2.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher w_file_dispatcher1(*w_file_audio_stream1, w_file1, w_file1.GetAudioFormat(), true);
 
-	file_dispatcher.Start(duration_ms);
+	r_file_dispatcher1.Start(duration_ms * 3);
+	r_file_dispatcher2.Start(duration_ms * 2);
+	w_file_dispatcher1.Start(duration_ms);
 	recorder_dispatcher.Start(duration_ms);
 	player_dispatcher.Start(duration_ms);
 
 	core::media::Timer timer;
 
-	while(true) timer(duration_ms * 10);
+	auto count = 5;
+
+	while(count-- > 0) timer(1000);
 }
 
 int main()
 {
 	// test_queue();
 
-	// test_alsa();
+	test_alsa();
 
 	// test_media_queue();
 
@@ -523,7 +539,7 @@ int main()
 
 	// test_audio_dispatcher();
 
-	test_composer();
+	// test_composer();
 
 	return 0;
 }

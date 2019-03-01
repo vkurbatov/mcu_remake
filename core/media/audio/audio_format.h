@@ -67,12 +67,13 @@ struct audio_format_t
 	bool operator == (const audio_format_t& af) const;
 
 	bool operator != (const audio_format_t& af) const;
-	std::uint32_t bytes_per_sample() const;
-	std::uint32_t bytes_per_second() const;
+	std::size_t bytes_per_sample() const;
+	std::size_t bytes_per_second() const;
 	std::uint32_t duration_ms(std::size_t size) const;
 	std::size_t size_from_duration(std::uint32_t duration_ms) const;
 	std::size_t size_from_format(const audio_format_t& af, std::size_t size) const;
-	std::uint32_t samples_from_size(std::size_t size) const;
+	std::size_t samples_from_size(std::size_t size) const;
+	std::size_t samples_from_duration(std::uint32_t duration_ms) const;
 
 };
 

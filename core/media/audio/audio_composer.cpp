@@ -12,10 +12,11 @@ namespace media
 namespace audio
 {
 
-AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue)
+AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue, std::uint32_t min_jitter_ms)
 	: m_audio_format(audio_format)
 	, m_media_queue(media_queue)
 	, m_slot_collection(m_audio_slots)
+	, m_min_jitter_ms(min_jitter_ms)
 {
 
 }
@@ -23,6 +24,10 @@ AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& me
 void AudioComposer::Reset()
 {
 	m_media_queue.Reset();
+	for (auto& s : m_audio_slots)
+	{
+		s.second->Reset();
+	}
 }
 
 std::size_t AudioComposer::Size() const
@@ -60,7 +65,7 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 		if (media_slot != nullptr)
 		{
 			audio_slot_t audio_slot(
-						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, *this)
+						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, *this, m_min_jitter_ms)
 						, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
 			);
 

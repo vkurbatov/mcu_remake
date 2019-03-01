@@ -34,8 +34,8 @@ struct wav_header_t
 	std::uint32_t       byte_rate;				// bytes per second
 	std::uint16_t       block_align;			// 2=16-bit mono, 4=16-bit stereo
 	std::uint16_t       bit_per_sample;			// Number of bits per sample
-	char				chunk_2_id[4];			// "data"  string
-	std::uint32_t       chunk_2_size;			// Sampled data length
+	char				chunk_2_id[4];			// "data"  string or addition section
+	std::uint32_t       chunk_2_size;			// Sampled data or size this chunk
 };
 
 #pragma pack(pop)
@@ -275,15 +275,11 @@ bool FileChannel::internal_set_audio_params(const audio_channel_params_t &audio_
 
 std::int32_t FileChannel::internal_write(const void *data, std::size_t size, uint32_t options)
 {
-	auto tell = m_file.tellp();
-
 	m_file.write(static_cast<const char*>(data), size);
 
-	std::int32_t result = m_file.tellp() - tell;
+	m_total_bytes += size;
 
-	m_total_bytes += result;
-
-	return result;
+	return size;
 }
 
 std::int32_t FileChannel::internal_read(void *data, std::size_t size, uint32_t options)

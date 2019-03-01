@@ -1,6 +1,8 @@
 #include "audio_mixer.h"
 #include <cstring>
 
+#define SCALED_MIXING	0
+
 namespace core
 {
 
@@ -28,17 +30,21 @@ inline const T& clamp_value(const T& v1, const T& v2)
 template<typename T>
 inline const T scale_sample(const T& sample, std::size_t sample_count, mix_method_t mix_method)
 {
-	return sample_count < 2 ? sample : static_cast<T>(mix_method == mix_method_t::mix
-			? static_cast<double>(sample) / static_cast<double>(sample_count)
-			: static_cast<double>(sample) * static_cast<double>(sample_count) / static_cast<double>(sample_count - 1));
+#if	SCALED_MIXING
+	return sample_count < 2
+			? sample
+			: static_cast<T>(mix_method == mix_method_t::mix
+				? static_cast<double>(sample) / static_cast<double>(sample_count)
+				: static_cast<double>(sample) * static_cast<double>(sample_count) / static_cast<double>(sample_count - 1));
+#else
+	return sample;
+#endif
 }
 
 template<typename T>
 inline void mix_sample(const T& input_sample, const T& mixed_sample, T& output_sample, std::size_t sample_count, mix_method_t mix_method)
 {
-	// auto sample = scale_sample(input_sample, sample_count, mix_method_t::mix);
-
-	auto sample = input_sample;
+	auto sample = scale_sample(input_sample, sample_count, mix_method_t::mix);
 
 	if (mix_method == mix_method_t::mix)
 	{
@@ -46,8 +52,7 @@ inline void mix_sample(const T& input_sample, const T& mixed_sample, T& output_s
 	}
 	else
 	{
-		// output_sample = scale_sample(mixed_sample - sample, sample_count, mix_method_t::demix);
-		output_sample = mixed_sample - sample;
+		output_sample = scale_sample(mixed_sample - sample, sample_count, mix_method_t::demix);
 	}
 }
 
@@ -81,12 +86,10 @@ std::size_t mixed(std::size_t stream_count, mix_method_t mix_method,
 			mix_sample(input_samples[i], mixed_samples[i], output_samples[i], stream_count, mix_method);
 		}
 
-		std::memcpy(&output_samples[sample_mixed_count], &input_samples[sample_mixed_count], output_data_size - mixed_data_size);
-
-		/*for (; i < sample_output_count; i++)
+		for (; i < sample_output_count; i++)
 		{
 			mix_sample(input_samples[i], static_cast<T>(0), output_samples[i], stream_count, mix_method);
-		}*/
+		}
 	}
 
 	return output_data_size;

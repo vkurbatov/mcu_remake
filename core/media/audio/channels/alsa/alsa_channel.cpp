@@ -33,8 +33,8 @@ const char default_device_name[] = "default";
 const std::int32_t default_max_io_retry_count = 5;
 const std::int32_t default_max_set_hw_retry_count = 10;
 
-const std::size_t max_read_size_part = 16ul;
-const std::size_t max_write_size_part = 16ul;
+const std::size_t max_read_size_part = 250ul;
+const std::size_t max_write_size_part = 250ul;
 
 
 namespace alsa_utils
@@ -256,6 +256,7 @@ AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params)
 	, m_device_name("default")
 	, m_write_transaction_id(0)
 	, m_read_transaction_id(0)
+	, m_frame_size(0)
 {
 
 }
@@ -388,22 +389,18 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 	const auto& audio_format = GetAudioFormat();
 
-	auto frame_bytes = audio_format.bytes_per_sample();
+	size_t sample_size = audio_format.bytes_per_sample();
 
 	std::int32_t retry_read_count = 0;
 	bool io_complete = false;
 
 	do
 	{
-		// в начале каждого цикла априори снимаем признак завершения и
-		// инкрементируем счетчик попыток ввода-вывода. Он все равно
-		// сбросится при успешной операции ввода-вывода
 
 		io_complete = false;
 		retry_read_count++;
 
-		auto part_size = size / (frame_bytes);
-		part_size = std::min(part_size, max_read_size_part);
+		auto part_size = std::min(size, m_frame_size) / (sample_size);
 
 		auto err = snd_pcm_readi(m_handle, data_ptr, part_size);
 
@@ -413,9 +410,9 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 			if (io_complete == false)
 			{
-				size -= err * frame_bytes;
-				data_ptr += err * frame_bytes;
-				total += err * frame_bytes;
+				size -= err * sample_size;
+				data_ptr += err * sample_size;
+				total += err * sample_size;
 
 				retry_read_count = 0;
 			}
@@ -458,8 +455,7 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	const auto& audio_format = GetAudioFormat();
 
-	std::size_t frame_bytes = audio_format.bytes_per_sample();
-
+	std::size_t sample_size = audio_format.bytes_per_sample();
 
 	std::int32_t retry_write_count = 0;
 	bool io_complete = false;
@@ -468,15 +464,12 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	do
 	{
-		// в начале каждого цикла априори снимаем признак завершения и
-		// инкрементируем счетчик попыток ввода-вывода. Он все равно
-		// сбросится при успешной операции ввода-вывода
 
 		io_complete = false;
 		retry_write_count++;
 
-		auto part_size = size / (frame_bytes);
-		part_size = std::min(part_size, max_write_size_part);
+		auto part_size = std::min(size, m_frame_size) / (sample_size);
+		// part_size = std::min(part_size, max_write_size_part);
 
 		auto err = snd_pcm_writei(m_handle, data_ptr, part_size);
 
@@ -486,9 +479,9 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 			if (io_complete == false)
 			{
-				size -= err * frame_bytes;
-				data_ptr += err * frame_bytes;
-				total += err * frame_bytes;
+				size -= err * sample_size;
+				data_ptr += err * sample_size;
+				total += err * sample_size;
 
 				retry_write_count = 0;
 			}
@@ -513,7 +506,7 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	if (result >= 0)
 	{
-		// LOG(debug) << "Write " << total << " bytes from device success" LOG_END;
+		// LOG ???
 	}
 	else
 	{
@@ -536,8 +529,14 @@ int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
 	switch(error)
 	{
 		case -EPIPE:
-			error = snd_pcm_prepare(m_handle);
-			LOG(error) << "EPIPE!!! w_id = " << m_write_transaction_id LOG_END;
+
+			LOG(debug) << "IO Error: broken pipe. Need prepare device." LOG_END;
+
+			if ( (error = snd_pcm_prepare(m_handle)) >= 0 )
+			{
+				m_frame_size = std::max(m_frame_size / 2, m_audio_params.audio_format.bytes_per_sample() * 2);
+			}
+
 			break;
 
 		case -ESTRPIPE:
@@ -545,7 +544,7 @@ int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
 
 			while ((error = snd_pcm_resume(m_handle)) == -EAGAIN && timeout_ms != 0)
 			{
-				usleep(1000);
+				usleep(1000); // 1 msec
 				timeout_ms -= 1;
 			}
 
@@ -602,32 +601,39 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 				}
 
 				auto sample_rate = audio_params.audio_format.sample_rate;
-				result = snd_pcm_hw_params_set_rate_near(m_handle, hw_params, &sample_rate, nullptr);
+				result = snd_pcm_hw_params_set_rate(m_handle, hw_params, sample_rate, 0);
 				if (result < 0)
 				{
 					LOG(error) << "Can't set sample rate " << sample_rate << " hardware params, errno = " << result LOG_END;
 					break;
 				}
 
-				//default buffer_size
+				std::uint32_t periods = 2;
+
+				// default buffer_size ?
 				if(audio_params.duration != 0)
 				{
-					snd_pcm_uframes_t period_size = audio_params.buffer_size(); // (audio_params.buffer_size * audio_params.audio_format.bytes_per_sample());
-					result = snd_pcm_hw_params_set_buffer_size_near(m_handle, hw_params, &period_size);
 
+					snd_pcm_uframes_t period_size = audio_params.buffer_size() * periods;
+
+					result = snd_pcm_hw_params_set_periods_near(m_handle, hw_params, &periods, nullptr);
 					if (result < 0)
 					{
-						LOG(error) << "Can't set buffer size " << period_size << " hardware params, errno = " << result LOG_END;
+						LOG(error) << "Can't set periods " << periods << " hardware params, errno = " << result LOG_END;
 						break;
 					}
 
-					period_size /= audio_params.audio_format.bytes_per_sample();
 					result = snd_pcm_hw_params_set_period_size_near(m_handle, hw_params, &period_size, nullptr);
 					if (result < 0)
 					{
 						LOG(error) << "Can't set period size " << period_size << " hardware params, errno = " << result LOG_END;
 						break;
 					}
+
+
+					m_frame_size = audio_params.buffer_size() / 2;
+
+					// m_frame_size /=
 				}
 
 				std::int32_t max_try = default_max_set_hw_retry_count;
