@@ -10,10 +10,6 @@ namespace core
 namespace media
 {
 
-#ifndef MEDIA_QUEUE_H
-class MediaQueue;
-#endif
-
 class MediaSlot : public IMediaSlot
 {
 	friend class MediaQueue;
@@ -24,6 +20,8 @@ class MediaSlot : public IMediaSlot
 
 	std::size_t				m_ref_count;
 
+	// Dependencies
+private:
 	IMultipointDataQueue&	m_multipoint_data_queue;
 
 private:

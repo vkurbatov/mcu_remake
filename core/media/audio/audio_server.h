@@ -26,12 +26,15 @@ class AudioServer : public IAudioServer
 	using session_descriptor_t = std::pair<audio_slot_id_t, std::size_t>;
 	using session_descriptor_map_t = std::unordered_map<session_id_t, session_descriptor_t>;
 
-	IAudioComposer&				m_audio_composer;
 	audio_stream_map_t			m_streams;
 	session_descriptor_map_t	m_sessions;
 
 	media_stream_id_t			m_stream_id;
 	audio_slot_id_t				m_slot_id;
+
+	// Dependencies
+private:
+	IAudioComposer&				m_audio_composer;
 
 public:
 	AudioServer(IAudioComposer& audio_composer);

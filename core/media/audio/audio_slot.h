@@ -37,6 +37,8 @@ class AudioSlot : public IAudioSlot
 
 	bool						m_can_slot_read;
 
+	// Dependencies
+private:
 	const std::uint32_t&		m_min_jitter_ms;
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;

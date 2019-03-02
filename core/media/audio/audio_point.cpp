@@ -34,11 +34,18 @@ std::int32_t AudioPoint::Write(const audio_format_t& audio_format, const void* d
 		{
 			result = 0;
 
-			auto& resample_buffer = m_resampler(audio_format, data, size);
+			auto output_size = GetAudioFormat().size_from_format(audio_format, size);
 
-			if (resample_buffer.size() > 0)
+			if (m_output_resampler_buffer.size() < output_size)
 			{
-				result = Write(resample_buffer.data(), resample_buffer.size(), options);
+				m_output_resampler_buffer.resize(output_size);
+			}
+
+			output_size = m_resampler(audio_format, data, size, m_output_resampler_buffer.data(), output_size);
+
+			if (output_size > 0)
+			{
+				result = Write(m_output_resampler_buffer.data(), output_size, options);
 			}
 		}
 	}

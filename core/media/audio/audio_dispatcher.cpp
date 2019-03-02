@@ -1,5 +1,5 @@
 #include "audio_dispatcher.h"
-#include "media/common/timer.h"
+#include "media/common/delay_timer.h"
 
 #include "core-tools/logging.h"
 
@@ -14,7 +14,10 @@ namespace media
 namespace audio
 {
 
-AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader, IAudioWriter& audio_writer, const audio_format_t& audio_format, bool is_strong_sizes)
+AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader,
+								 IAudioWriter& audio_writer,
+								 const audio_format_t& audio_format,
+								 bool is_strong_sizes)
 	: m_audio_reader(audio_reader)
 	, m_audio_writer(audio_writer)
 	, m_audio_format(audio_format)
@@ -75,7 +78,7 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 {
 	m_cycle_counter = 0;
 
-	Timer			delay;
+	DelayTimer			delay;
 	media_buffer_t	buffer;
 
 	while(m_is_running)
@@ -91,8 +94,6 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 
 		if (result < size && m_is_strong_sizes)
 		{
-
-			LOG(error) << "result(" << result << ") < size(" << size << ")" LOG_END;
 			std::memset(buffer.data() + result, 0, size - result);
 			result = size;
 		}

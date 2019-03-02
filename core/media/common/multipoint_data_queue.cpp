@@ -7,10 +7,11 @@ namespace core
 namespace media
 {
 
-MultipointDataQueue::MultipointDataQueue(std::size_t capacity)
+MultipointDataQueue::MultipointDataQueue(std::size_t capacity, bool is_strong)
 	: m_buffer(capacity + 1)
 	, m_cursor(0)
 	, m_size(0)
+	, m_is_strong(is_strong)
 {
 
 }
@@ -68,34 +69,35 @@ std::size_t MultipointDataQueue::internal_read(cursor_t cursor, void* data, std:
 	if (is_valid_cursor(cursor))
 	{
 
-		auto data_ptr = static_cast<std::uint8_t*>(data);
-		auto buffer_size = m_buffer.size();
-
 		auto real_size = get_data_size(cursor);
-		// auto real_position = get_position(cursor);
 
-		size = std::min(size, real_size);
-
-		//auto position = (buffer_size + real_position - real_size) % buffer_size;
-		auto position = get_position(cursor);
-
-		auto tail = position + size;
-
-		result = size;
-
-		if (tail >= buffer_size)
+		if ((size <= real_size) || (m_is_strong == false))
 		{
-			auto part_size = buffer_size - position;
+			auto data_ptr = static_cast<std::uint8_t*>(data);
+			auto buffer_size = m_buffer.size();
 
-			std::memcpy(data_ptr, m_buffer.data() + position, part_size);
+			size = std::min(size, real_size);
 
-			data_ptr += part_size;
-			size -= part_size;
-			position = 0;
+			auto position = get_position(cursor);
+			auto tail = position + size;
+
+			result = size;
+
+			if (tail >= buffer_size)
+			{
+				auto part_size = buffer_size - position;
+
+				std::memcpy(data_ptr, m_buffer.data() + position, part_size);
+
+				data_ptr += part_size;
+				size -= part_size;
+				position = 0;
+
+			}
+
+			std::memcpy(data_ptr, m_buffer.data() + position, size);
 
 		}
-
-		std::memcpy(data_ptr, m_buffer.data() + position, size);
 
 	}
 

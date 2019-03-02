@@ -24,6 +24,7 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 	AudioResampler		m_resampler;
 
 	audio_buffer_t		m_input_resampler_buffer;
+	audio_buffer_t		m_output_resampler_buffer;
 
 	audio_buffer_t		m_output_volume_buffer;
 

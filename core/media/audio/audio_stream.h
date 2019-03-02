@@ -25,6 +25,9 @@ class AudioStream : public IAudioStream
 	session_id_t			m_session_id;
 	audio_format_t			m_audio_format;
 	bool					m_is_writer;
+
+	// Dependencies
+private:
 	IAudioPoint&			m_audio_point;
 
 private:

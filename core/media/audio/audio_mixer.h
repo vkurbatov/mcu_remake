@@ -20,6 +20,7 @@ class AudioMixer : public IAudioMixer
 
 	bool				m_is_mixed_mode;
 
+	// Static methods
 public:
 	static std::size_t Mixed(const audio_format_t& audio_format,
 													 std::size_t stream_count,
@@ -40,6 +41,7 @@ public:
 													 const void* input_data, std::size_t input_data_size,
 													 void* mixed_data, std::size_t mixed_data_size);
 
+public:
 	AudioMixer(const audio_format_t& audio_format, bool is_mixed_mode = true);
 	~AudioMixer() override = default;
 

@@ -9,7 +9,7 @@ namespace core
 namespace media
 {
 
-class Timer
+class DelayTimer
 {
 	std::chrono::time_point<std::chrono::system_clock>		m_target_point;
 	bool													m_startad;
@@ -18,7 +18,7 @@ public:
 
 	static void Sleep(std::int32_t period_ms);
 
-	Timer();
+	DelayTimer();
 
 	void Start(std::int32_t period_ms);
 	void Stop();

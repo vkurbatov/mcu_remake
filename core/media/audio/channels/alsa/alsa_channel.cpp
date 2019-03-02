@@ -12,6 +12,8 @@ extern "C"
 
 #include <core-tools/logging.h>
 
+#define PTraceModule() "alsa_channel"
+
 namespace core
 {
 
@@ -270,7 +272,6 @@ bool AlsaChannel::Open(const std::string &device_name)
 {
 	bool result = false;
 
-	// reopen &&
 	if ( IsOpen() )
 	{
 		Close();
@@ -419,7 +420,7 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 		}
 		else
 		{
-			err = io_error_process(err, audio_format.duration_ms(size));
+			err = io_error_process(err, false, audio_format.duration_ms(size));
 		}
 
 		if (err < 0)
@@ -437,7 +438,7 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 	if (result >= 0)
 	{
-		// LOG(debug) << "Read " << total << " bytes from device success" LOG_END;
+		// LOG ???
 	}
 	else
 	{
@@ -469,7 +470,6 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		retry_write_count++;
 
 		auto part_size = std::min(size, m_frame_size) / (sample_size);
-		// part_size = std::min(part_size, max_write_size_part);
 
 		auto err = snd_pcm_writei(m_handle, data_ptr, part_size);
 
@@ -488,7 +488,7 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		}
 		else
 		{
-			err = io_error_process(err, audio_format.duration_ms(size));
+			err = io_error_process(err, true, audio_format.duration_ms(size));
 		}
 
 		if (err < 0)
@@ -518,7 +518,7 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 	return result;
 }
 
-int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
+int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_t timeout_ms)
 {
 
 	if (timeout_ms == 0)
@@ -526,11 +526,13 @@ int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
 		timeout_ms = 0xffffffff;
 	}
 
+	#define string_type(is_write) (is_write ? "write" : "read")
+
 	switch(error)
 	{
 		case -EPIPE:
 
-			LOG(debug) << "IO Error: broken pipe. Need prepare device." LOG_END;
+			LOG(debug) << "IO Error[" << string_type(is_write) <<  "]: broken pipe. Need prepare device." LOG_END;
 
 			if ( (error = snd_pcm_prepare(m_handle)) >= 0 )
 			{
@@ -550,6 +552,7 @@ int32_t AlsaChannel::io_error_process(int32_t error, std::uint32_t timeout_ms)
 
 			if (error < 0)
 			{
+				LOG(error) "IO Error[" << string_type(is_write) <<  "]: Unblock IO failed(" << error << "). Need prepare device." LOG_END;
 				error = snd_pcm_prepare(m_handle);
 			}
 		break;

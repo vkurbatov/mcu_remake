@@ -29,6 +29,8 @@ public:
 	static const std::uint32_t max_volume = 100u;
 	static const std::uint32_t min_volume = 0u;
 
+	// Static methods
+public:
 	static std::int32_t Resampling(const audio_format_t& input_format
 								   , const audio_format_t& output_format
 								   , const void* input_data, std::size_t input_size

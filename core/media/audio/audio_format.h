@@ -2,6 +2,7 @@
 #define AUDIO_FORMAT_H
 
 #include "media/common/media_types.h"
+#include <ostream>
 
 namespace core
 {
@@ -47,14 +48,10 @@ struct audio_format_t
 	static bool is_valid_channels(std::int32_t c);
 	static bool is_float_format(sample_format_t sf);
 	static bool is_integer_format(sample_format_t sf);
-
 	static std::uint32_t bit_per_sample(sample_format_t sf);
-
 	static sample_format_t format_from_bits(std::uint32_t bit_per_sample, bool integer_proirity = false);
 
 	audio_format_t(std::uint32_t sr = 0, sample_format_t sf = sample_format_t::unknown, std::uint32_t c = 0);
-
-	// static sample_format_t sample_format(std::int32_t bps) { return switch (bps) { case }; }
 
 	bool is_valid() const;
 	bool is_null() const;
@@ -74,7 +71,6 @@ struct audio_format_t
 	std::size_t size_from_format(const audio_format_t& af, std::size_t size) const;
 	std::size_t samples_from_size(std::size_t size) const;
 	std::size_t samples_from_duration(std::uint32_t duration_ms) const;
-
 };
 
 static const audio_format_t default_audio_format = { audio_format_t::default_sample_rate, audio_format_t::sample_format_t::pcm_16, audio_format_t::default_channels };

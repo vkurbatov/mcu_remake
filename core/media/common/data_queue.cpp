@@ -67,7 +67,7 @@ std::size_t DataQueue::internal_read(void *data, std::size_t size, bool from_tai
 {
 	std::size_t result = 0;
 
-	if (size <= m_size || m_is_strong)
+	if ((size <= m_size) || (m_is_strong == false))
 	{
 
 		auto data_ptr = static_cast<std::uint8_t*>(data);

@@ -1,7 +1,7 @@
 #ifndef AUDIO_CHANNEL_WORKER_H
 #define AUDIO_CHANNEL_WORKER_H
 
-#include "media/common/timer.h"
+#include "media/common/delay_timer.h"
 #include "media/common/data_queue.h"
 #include "media/audio/channels/audio_channel.h"
 

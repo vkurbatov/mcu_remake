@@ -49,9 +49,10 @@ IAudioSlot* AudioComposer::operator [](audio_slot_id_t media_slot_id)
 
 const IAudioSlot* AudioComposer::operator [](audio_slot_id_t media_slot_id) const
 {
-	auto it = m_audio_slots.find(media_slot_id);
+	return operator[](media_slot_id);
+	/*auto it = m_audio_slots.find(media_slot_id);
 
-	return it != m_audio_slots.end() ? it->second.get() : nullptr;
+	return it != m_audio_slots.end() ? it->second.get() : nullptr;*/
 }
 
 IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)

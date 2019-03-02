@@ -1,5 +1,5 @@
 #include "audio_channel_worker.h"
-#include "media/common/timer.h"
+#include "media/common/delay_timer.h"
 
 namespace core
 {
@@ -125,7 +125,7 @@ bool AudioChannelWorker::internal_set_audio_params(const audio_channel_params_t&
 void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 {
 
-	Timer timer;
+	DelayTimer timer;
 
 	media_buffer_t buffer( m_audio_channel.GetAudioParams().buffer_size());
 
@@ -146,18 +146,18 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 
 				if (result > 0)
 				{
-					result = m_media_point.Write(buffer.data(), result);
+					m_media_point.Write(buffer.data(), result);
 				}
 			}
 
 			if (IsRecorder())
 			{
-				std::size_t result = m_media_point.Read(buffer.data(), buffer.size());
+				auto result = m_media_point.Read(buffer.data(), buffer.size());
 
 				if (result > 0)
 				{
 					lock_t lock(m_mutex);
-					result = m_audio_queue.Push(buffer.data(), result);
+					m_audio_queue.Push(buffer.data(), result);
 				}
 			}
 

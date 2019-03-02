@@ -1,6 +1,10 @@
 #include "file_channel.h"
 #include <cstring>
 
+#include <core-tools/logging.h>
+
+#define PTraceModule() "file_channel"
+
 namespace core
 {
 
@@ -78,7 +82,6 @@ std::size_t read_wav_header(std::fstream& file, wav_header_t& wav_header)
 		auto tell = file.tellg();
 
 		file.seekg(0);
-
 		file.read(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header)), sizeof(wav_header));
 
 		auto ret = file.gcount();
@@ -94,8 +97,7 @@ std::size_t read_wav_header(std::fstream& file, wav_header_t& wav_header)
 					total_header_size += wav_header.chunk_2_size;
 
 					file.seekg(total_header_size);
-
-					file.readsome(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header.chunk_2_id)), 8);
+					file.read(static_cast<std::ifstream::char_type*>(static_cast<void*>(&wav_header.chunk_2_id)), 8);
 
 					ret = file.gcount();
 
@@ -169,12 +171,14 @@ bool wav_header_from_audio_format(const audio_format_t& audio_format, wav_header
 } // file_utils
 
 
-FileChannel::FileChannel(const audio_channel_params_t &audio_params, bool is_rotate)
+FileChannel::FileChannel(const audio_channel_params_t &audio_params
+						 , std::uint32_t repetitions)
 	: AudioChannel(audio_params)
 	, m_audio_params(audio_params)
 	, m_file_name("")
 	, m_total_bytes(0)
-	, m_is_rotate(is_rotate)
+	, m_repetitions(repetitions)
+	, m_current_repetition(0)
 	, m_data_pos(0)
 	, m_read_size(0)
 {
@@ -239,6 +243,7 @@ bool FileChannel::Close()
 
 		m_total_bytes = 0;
 		m_read_size = 0;
+		m_current_repetition = 0;
 
 		m_file.close();
 	}
@@ -294,8 +299,12 @@ std::int32_t FileChannel::internal_read(void *data, std::size_t size, uint32_t o
 
 	m_read_size += result;
 
-	if (m_is_rotate && m_read_size == m_total_bytes)
+	if (m_current_repetition < m_repetitions && m_read_size == m_total_bytes)
 	{
+
+		LOG(info) << "End of file. Repetition " << m_current_repetition << " of " << m_repetitions LOG_END;
+
+		m_current_repetition++;
 		m_read_size = 0;
 		m_file.seekg(m_data_pos);
 
@@ -330,6 +339,10 @@ bool FileChannel::save_header(const audio_format_t& audio_format, std::size_t da
 	{
 		m_file.write(static_cast<const char*>(static_cast<const void*>(&wav_header)), sizeof(file_utils::wav_header_t));
 		result = true;
+	}
+	else
+	{
+		LOG(error) << "Error contruct wav header form format " LOG_END;
 	}
 
 	m_file.seekp(tell);

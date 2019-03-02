@@ -89,7 +89,7 @@ private:
 	std::int32_t internal_read(void* data, std::size_t size, std::uint32_t options = 0) override final;
 	std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t options = 0) override final;
 
-	std::int32_t io_error_process(std::int32_t error, std::uint32_t timeout_ms = 0);
+	std::int32_t io_error_process(std::int32_t error, bool is_write, std::uint32_t timeout_ms = 0);
 	std::int32_t set_hardware_params(const audio_channel_params_t& audio_params);
 
 };

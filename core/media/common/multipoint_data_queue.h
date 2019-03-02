@@ -16,10 +16,11 @@ class MultipointDataQueue : public IMultipointDataQueue
 	media_buffer_t	m_buffer;
 	cursor_t		m_cursor;
 	std::size_t		m_size;
+	bool			m_is_strong;
 
 public:
 
-	MultipointDataQueue(std::size_t capacity);
+	MultipointDataQueue(std::size_t capacity, bool is_strong = false);
 	virtual ~MultipointDataQueue() override = default;
 
 	// IMultipointDataQueue interface

@@ -34,8 +34,11 @@ class AudioComposer : public IAudioComposer, private ISyncPoint
 	audio_slot_map_t			m_audio_slots;
 	std::uint32_t				m_min_jitter_ms;
 
-	IMediaQueue&				m_media_queue;
 	mutable mutex_t				m_mutex;
+
+	// Dependencies
+private:
+	IMediaQueue&				m_media_queue;
 
 	class SlotCollectionWrapper : public IDataCollection
 	{

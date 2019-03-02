@@ -25,7 +25,7 @@ set(SOURCES
     "core/media/common/media_slot.cpp"
     "core/media/common/media_point.cpp"
     "core/media/common/media_queue.cpp"
-    "core/media/common/timer.cpp"
+    "core/media/common/delay_timer.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_format.cpp"
     "core/media/audio/audio_point.cpp"
@@ -41,6 +41,7 @@ set(SOURCES
     "core/media/audio/channels/audio_channel_worker.cpp"
     "core/media/audio/channels/alsa/alsa_channel.cpp"
     "core/media/audio/channels/file/file_channel.cpp"
+    "core/media/audio/audio_string_format_utils.cpp"
     )
 
 set(HEADERS   
@@ -61,7 +62,6 @@ set(HEADERS
     "core/media/audio/i_audio_composer.h"
     "core/media/audio/i_audio_slot.h"
     "core/media/audio/i_audio_mixer.h"
-    #"core/media/audio/i_audio_dispatcher.h"
     "core/media/audio/channels/i_audio_channel.h"
     "core/media/common/media_types.h"
     "core/media/common/data_queue.h"
@@ -69,7 +69,7 @@ set(HEADERS
     "core/media/common/media_queue.h"
     "core/media/common/media_slot.h"
     "core/media/common/media_point.h"
-    "core/media/common/timer.h"
+    "core/media/common/delay_timer.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_format.h"
     "core/media/audio/audio_point.h"
@@ -85,6 +85,7 @@ set(HEADERS
     "core/media/audio/channels/audio_channel_worker.h"
     "core/media/audio/channels/alsa/alsa_channel.h"
     "core/media/audio/channels/file/file_channel.h"
+    "core/media/audio/audio_string_format_utils.h"
     )
 
 include_directories(

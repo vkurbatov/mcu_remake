@@ -28,13 +28,18 @@ class FileChannel : public AudioChannel
 	std::fstream			m_file;
 
 	std::size_t				m_total_bytes;
+
+	// only recorder mode
 	std::size_t				m_read_size;
-	bool					m_is_rotate;
+
+	std::uint32_t			m_repetitions;
+	std::uint32_t			m_current_repetition;
+
 	std::size_t				m_data_pos;
 
-
 public:
-	FileChannel(const audio_channel_params_t& audio_params = null_audio_params, bool is_rotate = false);
+	FileChannel(const audio_channel_params_t& audio_params = null_audio_params,
+				std::uint32_t repetitions = 0);
 	~FileChannel() override;
 
 	// MediaPoint interface

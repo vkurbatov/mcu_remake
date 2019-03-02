@@ -155,8 +155,7 @@ std::int32_t AudioResampler::Resampling(
 
 		if (input_format != output_format)
 		{
-
-			// cut the sizes on both sides
+			// correction: cut the sizes on both sides
 
 			auto real_output_size = output_format.size_from_format(input_format, input_size);
 
@@ -169,15 +168,15 @@ std::int32_t AudioResampler::Resampling(
 				input_size = (output_size * input_format.bytes_per_second()) / output_format.bytes_per_second();
 			}
 
-			auto input_sample_count = input_size / input_format.bytes_per_sample();
-			auto output_sample_count = output_size / output_format.bytes_per_sample();
+			/*auto input_sample_count = input_size / input_format.bytes_per_sample();
+			auto output_sample_count = output_size / output_format.bytes_per_sample();*/
 
-			result = 0;
+			auto out_inc = output_format.bytes_per_sample();
 
-			for (auto out_idx = 0; out_idx < output_size; out_idx += output_format.bytes_per_sample())
+			for (auto out_idx = 0, in_idx = 0; out_idx < output_size; out_idx += out_inc)
 			{
 
-				auto in_idx = (out_idx * input_sample_count) / output_sample_count;
+				in_idx = (out_idx * input_size) / output_size;
 
 				in_idx -= in_idx % input_format.bytes_per_sample();
 
