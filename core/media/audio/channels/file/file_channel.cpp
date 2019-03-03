@@ -174,8 +174,7 @@ bool wav_header_from_audio_format(const audio_format_t& audio_format, wav_header
 
 FileChannel::FileChannel(const audio_channel_params_t &audio_params
 						 , std::uint32_t repetitions)
-	: AudioChannel(audio_params)
-	, m_audio_params(audio_params)
+	: m_audio_params(audio_params)
 	, m_file_name("")
 	, m_total_bytes(0)
 	, m_repetitions(repetitions)
@@ -259,7 +258,7 @@ bool FileChannel::Close()
 
 		m_file.close();
 
-		LOG(warning) << "Close file \'" << m_file_name << "\' success. Params = " << m_audio_params LOG_END;
+		LOG(info) << "Close file \'" << m_file_name << "\' success. Params = " << m_audio_params LOG_END;
 	}
 
 	return result;

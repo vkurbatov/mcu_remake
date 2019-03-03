@@ -19,8 +19,7 @@ namespace channels
 {
 
 AudioChannelWorker::AudioChannelWorker(IAudoChannel& audio_channel, IMediaPoint& media_point, std::size_t queue_size)
-	: AudioChannel(audio_channel.GetAudioParams())
-	, m_audio_channel(audio_channel)
+	: m_audio_channel(audio_channel)
 	, m_media_point(media_point)
 	, m_audio_queue(queue_size)
 	, m_running(false)

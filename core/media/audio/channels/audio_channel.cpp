@@ -12,8 +12,7 @@ namespace audio
 namespace channels
 {
 
-AudioChannel::AudioChannel(const audio_channel_params_t& audio_params)
-	: AudioPoint(audio_params.audio_format)
+AudioChannel::AudioChannel()
 {
 
 }
@@ -25,14 +24,7 @@ const audio_channel_params_t& AudioChannel::GetAudioParams() const
 
 bool AudioChannel::SetAudioParams(const audio_channel_params_t& audio_params)
 {
-	auto result = internal_set_audio_params(audio_params);
-
-	if (result)
-	{
-		AudioPoint::SetAudioFormat(audio_params.audio_format);
-	}
-
-	return result;
+	return internal_set_audio_params(audio_params);
 }
 
 bool AudioChannel::IsRecorder() const
@@ -56,7 +48,7 @@ bool AudioChannel::SetAudioFormat(const audio_format_t &audio_format)
 
 	audio_params.audio_format = audio_format;
 
-	return SetAudioParams(audio_params) && AudioPoint::SetAudioFormat(audio_format);
+	return SetAudioParams(audio_params);
 }
 
 } // channels

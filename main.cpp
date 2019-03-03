@@ -451,7 +451,6 @@ void test_audio_dispatcher()
 #include "media/audio/audio_composer.h"
 #include "media/audio/audio_server.h"
 #include "media/audio/audio_string_format_utils.h"
-#include "media/audio/tools/audio_event.h"
 
 void test_composer()
 {
@@ -486,7 +485,7 @@ void test_composer()
 	core::media::audio::channels::file::FileChannel r_file2(r_file_params, 60);
 	core::media::audio::channels::file::FileChannel w_file1(w_file_params1);
 
-	core::media::audio::tools::AudioEvent event("/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav", 3, 3000);
+	// core::media::audio::tools::AudioEvent event("/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav", 3, 3000);
 
 	core::media::MediaQueue media_queue(media_queue_size);
 
@@ -513,7 +512,7 @@ void test_composer()
 	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher r_file_dispatcher1(r_file1, *r_file_audio_stream1, r_file1.GetAudioFormat(), true);
-	core::media::audio::AudioDispatcher r_file_dispatcher2(event, *r_file_audio_stream2, r_file2.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher r_file_dispatcher2(r_file2, *r_file_audio_stream2, r_file2.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher w_file_dispatcher1(*w_file_audio_stream1, w_file1, w_file1.GetAudioFormat(), true);
 
 	std::cout << w_file_params1 << std::endl;
@@ -526,9 +525,45 @@ void test_composer()
 
 	core::media::DelayTimer timer;
 
-	auto count = 100;
+	auto count = 10;
 
 	while(count-- > 0) timer(1000);
+}
+
+#include "media/audio/tools/audio_event.h"
+
+void test_events()
+{
+	static const std::uint32_t duration_ms = 10;
+	static const std::uint32_t playback_sample_rate = 32000;
+
+	static const std::string event_1 = "event_1";
+	static const std::string event_2 = "event_2";
+
+	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+	core::media::audio::channels::alsa::AlsaChannel player(player_params);
+
+	core::media::audio::tools::AudioEventServer	event_server(player, player.GetAudioFormat(), duration_ms);
+
+	player.Open("default");
+
+	event_server.AddEvent(event_1, "/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav", 3, 2000);
+	event_server.AddEvent(event_2, "/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav", 4, 1000);
+
+	event_server.PlayEvent(event_1);
+	event_server.PlayEvent(event_2);
+
+	core::media::DelayTimer::Sleep(2000);
+
+	event_server.PlayEvent(event_1);
+
+	core::media::DelayTimer::Sleep(1000);
+
+	event_server.PlayEvent(event_1);
+
+	core::media::DelayTimer::Sleep(20000);
+
+	event_server.RemoveEvent(event_1);
 }
 
 int main()
@@ -545,7 +580,9 @@ int main()
 
 	// test_audio_dispatcher();
 
-	test_composer();
+	// test_composer();
+
+	test_events();
 
 	return 0;
 }

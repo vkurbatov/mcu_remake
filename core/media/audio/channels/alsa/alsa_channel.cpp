@@ -251,8 +251,7 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 }
 
 AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params)
-	: AudioChannel(audio_params)
-	, m_audio_params(audio_params)
+	: m_audio_params(audio_params)
 	, m_handle(nullptr)
 	, m_device_name("default")
 	, m_write_transaction_id(0)

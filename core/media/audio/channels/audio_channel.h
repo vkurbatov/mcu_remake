@@ -22,7 +22,7 @@ class AudioChannel : public IAudoChannel, public AudioPoint
 
 public:
 
-	AudioChannel(const audio_channel_params_t& audio_params = null_audio_params);
+	AudioChannel();
 	virtual ~AudioChannel() override = default;
 
 	// IAudoChannel interface
