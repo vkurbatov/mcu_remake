@@ -35,6 +35,7 @@ set(SOURCES
     "core/media/audio/audio_composer.cpp"
     "core/media/audio/audio_mixer.cpp"
     "core/media/audio/audio_dispatcher.cpp"
+    "core/media/audio/audio_mux.cpp"
     "core/media/audio/volume_controller.cpp"
     "core/media/audio/channels/audio_channel.cpp"
     "core/media/audio/channels/audio_channel_params.cpp"
@@ -42,6 +43,7 @@ set(SOURCES
     "core/media/audio/channels/alsa/alsa_channel.cpp"
     "core/media/audio/channels/file/file_channel.cpp"
     "core/media/audio/audio_string_format_utils.cpp"
+    "core/media/audio/tools/audio_event.cpp"
     )
 
 set(HEADERS   
@@ -80,12 +82,14 @@ set(HEADERS
     "core/media/audio/audio_composer.h"
     "core/media/audio/audio_mixer.h"
     "core/media/audio/audio_dispatcher.h"
+    "core/media/audio/audio_mux.h"
     "core/media/audio/channels/audio_channel.h"
     "core/media/audio/channels/audio_channel_params.h"
     "core/media/audio/channels/audio_channel_worker.h"
     "core/media/audio/channels/alsa/alsa_channel.h"
     "core/media/audio/channels/file/file_channel.h"
     "core/media/audio/audio_string_format_utils.h"
+    "core/media/audio/tools/audio_event.h"
     )
 
 include_directories(

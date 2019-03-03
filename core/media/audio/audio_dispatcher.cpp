@@ -1,7 +1,10 @@
 #include "audio_dispatcher.h"
 #include "media/common/delay_timer.h"
 
-#include "core-tools/logging.h"
+#include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_dispatcher"
 
 #include <cstring>
 
@@ -25,16 +28,20 @@ AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader,
 	, m_cycle_counter(0)
 	, m_is_strong_sizes(is_strong_sizes)
 {
-
+	LOG(debug) << "Create audio dispatcher with format [" << audio_format << "] with "
+			   << (is_strong_sizes ? "strong" : "weak") << " size control" LOG_END;
 }
 
 AudioDispatcher::~AudioDispatcher()
 {
 	Stop();
+	LOG(debug) << "Destroy audio dispatcher with format [" << m_audio_format << "]" LOG_END;
 }
 
 bool AudioDispatcher::Start(std::uint32_t duration_ms)
 {
+
+	LOG(info) << (m_is_running ? "Recreated" : "Created") << " dispatcher thread with duration " << duration_ms LOG_END;
 
 	if (m_is_running)
 	{
@@ -55,10 +62,16 @@ bool AudioDispatcher::Stop()
 	{
 		m_is_running = false;
 
+		LOG(info) << "Stop dispatcher thread" LOG_END;
+
 		if (m_dispatch_thread.joinable())
 		{
 			m_dispatch_thread.join();
 		}
+	}
+	else
+	{
+		LOG(warning) << "Dispatcher thread already stopped" LOG_END;
 	}
 
 	return result;
@@ -80,6 +93,8 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 
 	DelayTimer			delay;
 	media_buffer_t	buffer;
+
+	LOG(info) << "Started audio dispatcher [format = " << m_audio_format << ", duration " << duration_ms << "ms]" LOG_END;
 
 	while(m_is_running)
 	{
@@ -106,6 +121,8 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 		delay(duration_ms);
 		m_cycle_counter++;
 	}
+
+	LOG(info) << "Stopped audio dispatcher [format = " << m_audio_format << ", duration " << duration_ms << "ms]"  LOG_END;
 }
 
 } // audio

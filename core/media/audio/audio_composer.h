@@ -33,6 +33,7 @@ class AudioComposer : public IAudioComposer, private ISyncPoint
 	audio_format_t				m_audio_format;
 	audio_slot_map_t			m_audio_slots;
 	std::uint32_t				m_min_jitter_ms;
+	bool						m_thread_safe;
 
 	mutable mutex_t				m_mutex;
 
@@ -51,7 +52,10 @@ private:
 	} m_slot_collection;
 
 public:
-	AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue, std::uint32_t min_jitter_ms = default_jitter_ms);
+	AudioComposer(const audio_format_t& audio_format
+				  , IMediaQueue& media_queue
+				  , std::uint32_t min_jitter_ms = default_jitter_ms
+				  , bool thread_safe = true);
 	~AudioComposer() override = default;
 
 	// IDataQueueControl interface

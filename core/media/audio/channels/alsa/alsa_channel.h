@@ -66,7 +66,6 @@ public:
 public:
 	bool Open(const std::string& device_name) override;
 	bool Close() override;
-
 	bool IsOpen() const override;
 
 	bool IsRecorder() const override;

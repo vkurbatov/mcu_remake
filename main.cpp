@@ -398,6 +398,7 @@ void test_audio_channel_worker()
 	core::media::audio::channels::AudioChannelWorker recorder_worker(recorder, recorder, 64000);
 	core::media::audio::channels::AudioChannelWorker player_worker(player, player, 64000);
 
+
 	recorder_worker.Open("default");
 
 	player_worker.Open("default");
@@ -450,6 +451,7 @@ void test_audio_dispatcher()
 #include "media/audio/audio_composer.h"
 #include "media/audio/audio_server.h"
 #include "media/audio/audio_string_format_utils.h"
+#include "media/audio/tools/audio_event.h"
 
 void test_composer()
 {
@@ -484,6 +486,8 @@ void test_composer()
 	core::media::audio::channels::file::FileChannel r_file2(r_file_params, 60);
 	core::media::audio::channels::file::FileChannel w_file1(w_file_params1);
 
+	core::media::audio::tools::AudioEvent event("/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav", 3, 3000);
+
 	core::media::MediaQueue media_queue(media_queue_size);
 
 	core::media::audio::AudioComposer audio_composer(composer_audio_format, media_queue, 60);
@@ -509,7 +513,7 @@ void test_composer()
 	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher r_file_dispatcher1(r_file1, *r_file_audio_stream1, r_file1.GetAudioFormat(), true);
-	core::media::audio::AudioDispatcher r_file_dispatcher2(r_file2, *r_file_audio_stream2, r_file2.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher r_file_dispatcher2(event, *r_file_audio_stream2, r_file2.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher w_file_dispatcher1(*w_file_audio_stream1, w_file1, w_file1.GetAudioFormat(), true);
 
 	std::cout << w_file_params1 << std::endl;
@@ -522,7 +526,7 @@ void test_composer()
 
 	core::media::DelayTimer timer;
 
-	auto count = 10;
+	auto count = 100;
 
 	while(count-- > 0) timer(1000);
 }

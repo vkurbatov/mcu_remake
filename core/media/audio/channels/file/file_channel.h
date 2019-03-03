@@ -62,6 +62,11 @@ protected:
 private:
 	bool save_header(const audio_format_t& audio_format, std::size_t data_size = 0);
 	bool load_header(audio_format_t& audio_format, std::size_t& data_size);
+
+	// IMediaReader interface
+public:
+	bool CanRead() const override;
+	bool CanWrite() const override;
 };
 
 } // file

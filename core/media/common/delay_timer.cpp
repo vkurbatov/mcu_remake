@@ -16,42 +16,47 @@ void DelayTimer::Sleep(std::int32_t period_ms)
 }
 
 DelayTimer::DelayTimer()
-	: m_startad(false)
+	: m_started(false)
 {
 
 }
 
 void DelayTimer::Start(std::int32_t period_ms)
 {
-	m_startad = true;
+	m_started = true;
 	m_target_point = clock::now() + std::chrono::milliseconds(period_ms);
 }
 
 void DelayTimer::Stop()
 {
-	m_startad = false;
+	m_started = false;
 }
 
 bool DelayTimer::IsStart() const
 {
-	return m_startad;
+	return m_started;
 }
 
-bool DelayTimer::IsEnable() const
+bool DelayTimer::IsEnabled() const
 {
-	return m_startad && clock::now() < m_target_point;
+	return m_started && clock::now() >= m_target_point;
+}
+
+bool DelayTimer::IsWait() const
+{
+	return IsStart() && !IsEnabled();
 }
 
 std::int32_t DelayTimer::Elapsed() const
 {
-	return m_startad
+	return m_started
 			? std::chrono::duration_cast<std::chrono::milliseconds>(m_target_point - clock::now()).count()
 			: 0;
 }
 
 void DelayTimer::Delay(std::int32_t delay_ms, bool is_wait)
 {
-	if (!m_startad)
+	if (!m_started)
 	{
 		Start(delay_ms);
 	}

@@ -12,7 +12,7 @@ namespace media
 class DelayTimer
 {
 	std::chrono::time_point<std::chrono::system_clock>		m_target_point;
-	bool													m_startad;
+	bool													m_started;
 
 public:
 
@@ -24,7 +24,8 @@ public:
 	void Stop();
 
 	bool IsStart() const;
-	bool IsEnable() const;
+	bool IsEnabled() const;
+	bool IsWait() const;
 	std::int32_t Elapsed() const;
 
 	void Delay(std::int32_t delay_ms, bool is_wait = true);

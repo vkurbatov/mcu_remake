@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "file_channel"
 
@@ -182,15 +183,16 @@ FileChannel::FileChannel(const audio_channel_params_t &audio_params
 	, m_data_pos(0)
 	, m_read_size(0)
 {
-
+	LOG(debug) << "Create file channel with params " << audio_params << ", rep = " << repetitions LOG_END;
 }
 
 FileChannel::~FileChannel()
 {
 	Close();
+	LOG(debug) << "Destory file channel \'" << m_file_name << "\' with params " << m_audio_params LOG_END;
 }
 
-bool FileChannel::Open(const std::string &device_name)
+bool FileChannel::Open(const std::string& device_name)
 {
 	bool result = false;
 
@@ -219,9 +221,16 @@ bool FileChannel::Open(const std::string &device_name)
 				result = load_header(m_audio_params.audio_format, m_total_bytes);
 			}
 
+			m_file_name = device_name;
+
 			if (result == false)
 			{
+				LOG(warning) << "Open file \'" << device_name << "\' failed. Params = " << m_audio_params LOG_END;
 				Close();
+			}
+			else
+			{
+				LOG(info) << "Open file \'" << device_name << "\' success. Params = " << m_audio_params LOG_END;
 			}
 		}
 
@@ -238,7 +247,10 @@ bool FileChannel::Close()
 	{
 		if (IsPlayback())
 		{
-			save_header(m_audio_params.audio_format, m_total_bytes);
+			if (save_header(m_audio_params.audio_format, m_total_bytes) == false)
+			{
+				LOG(warning) << "Error save wav header for file \'" << m_file_name << "\'. Params = " << m_audio_params LOG_END;
+			}
 		}
 
 		m_total_bytes = 0;
@@ -246,6 +258,8 @@ bool FileChannel::Close()
 		m_current_repetition = 0;
 
 		m_file.close();
+
+		LOG(warning) << "Close file \'" << m_file_name << "\' success. Params = " << m_audio_params LOG_END;
 	}
 
 	return result;
@@ -273,6 +287,10 @@ bool FileChannel::internal_set_audio_params(const audio_channel_params_t &audio_
 	if (result == true)
 	{
 		m_audio_params = audio_params;
+	}
+	else
+	{
+		LOG(info) << "File \'" << m_file_name << "\'opened. Can't apply audio params (" << audio_params << ")" LOG_END;
 	}
 
 	return result;
@@ -342,7 +360,7 @@ bool FileChannel::save_header(const audio_format_t& audio_format, std::size_t da
 	}
 	else
 	{
-		LOG(error) << "Error contruct wav header form format " LOG_END;
+		LOG(error) << "Error contruct wav header from format. File \'" << m_file_name << "\'" LOG_END;
 	}
 
 	m_file.seekp(tell);
@@ -377,10 +395,24 @@ bool FileChannel::load_header(audio_format_t& audio_format, std::size_t& data_si
 			tell = ret;
 		}
 	}
+	else
+	{
+		LOG(error) << "Can't load wav header from file \'" << m_file_name << "\'" LOG_END;
+	}
 
 	m_file.seekg(tell);
 
 	return result;
+}
+
+bool FileChannel::CanRead() const
+{
+	return IsOpen() && IsRecorder() && (m_read_size < m_total_bytes);
+}
+
+bool FileChannel::CanWrite() const
+{
+	return IsOpen() && IsPlayback();
 }
 
 

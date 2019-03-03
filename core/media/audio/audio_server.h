@@ -53,6 +53,11 @@ public:
 public:
 	std::size_t Count() const override;
 
+	// IAudioFormatter interface
+public:
+	const audio_format_t& GetAudioFormat() const override;
+	bool SetAudioFormat(const audio_format_t& audio_format) override;
+
 private:
 	media_stream_id_t get_stream_id();
 

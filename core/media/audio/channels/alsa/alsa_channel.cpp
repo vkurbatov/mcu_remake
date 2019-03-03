@@ -11,6 +11,7 @@ extern "C"
 #include <algorithm>
 
 #include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "alsa_channel"
 
@@ -35,8 +36,6 @@ const char default_device_name[] = "default";
 const std::int32_t default_max_io_retry_count = 5;
 const std::int32_t default_max_set_hw_retry_count = 10;
 
-const std::size_t max_read_size_part = 250ul;
-const std::size_t max_write_size_part = 250ul;
 
 
 namespace alsa_utils
@@ -260,12 +259,13 @@ AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params)
 	, m_read_transaction_id(0)
 	, m_frame_size(0)
 {
-
+	LOG(debug) << "Create alsa channel with params " << audio_params LOG_END;
 }
 
 AlsaChannel::~AlsaChannel()
 {
 	Close();
+	LOG(debug) << "Destroy alsa channel " << m_audio_params LOG_END;
 }
 
 bool AlsaChannel::Open(const std::string &device_name)
@@ -532,11 +532,17 @@ int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_
 	{
 		case -EPIPE:
 
-			LOG(debug) << "IO Error[" << string_type(is_write) <<  "]: broken pipe. Need prepare device." LOG_END;
+			LOG(error) << "IO Error[" << string_type(is_write) <<  "]: broken pipe. Need prepare device." LOG_END;
 
 			if ( (error = snd_pcm_prepare(m_handle)) >= 0 )
-			{
-				m_frame_size = std::max(m_frame_size / 2, m_audio_params.audio_format.bytes_per_sample() * 2);
+			{			
+				auto frame_size = std::max(m_frame_size / 2, m_audio_params.audio_format.bytes_per_sample() * 2);
+
+				if (frame_size < m_frame_size)
+				{
+					LOG(info) << "Clamp frame_size from " << m_frame_size << " to " << frame_size LOG_END;
+					m_frame_size = frame_size;
+				}
 			}
 
 			break;

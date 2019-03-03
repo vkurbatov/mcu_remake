@@ -1,6 +1,11 @@
 #include "audio_server.h"
 #include "audio_stream.h"
 
+#include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_server"
+
 namespace core
 {
 
@@ -15,7 +20,7 @@ AudioServer::AudioServer(IAudioComposer& audio_composer)
 	, m_stream_id(0)
 	, m_slot_id(0)
 {
-
+	LOG(debug) << "Create audio server with audio format [" << audio_composer.GetAudioFormat() << "]" LOG_END;
 }
 
 IAudioStream* AudioServer::operator [](media_stream_id_t stream_id)
@@ -53,12 +58,18 @@ IAudioStream* AudioServer::AddStream(const audio_format_t& audio_format, const s
 		if (result != nullptr)
 		{
 			m_streams.emplace( std::make_pair( stream_id, std::move(audio_stream) ) );
+			LOG(info) << "Audio stream create success for session \'" << session_id << "\' [id = " << stream_id << ":" << is_writer << "]" LOG_END;
 		}
 		else
 		{
 			release_slot(session_id);
+			LOG(error) << "Can't create audio stream for session \'" << session_id << "\' [id = " << stream_id << ":" << is_writer << "]" LOG_END;
 		}
 
+	}
+	else
+	{
+		LOG(error) << "Can't create audio slot for session \'" << session_id << "\'" << ":" << is_writer << "]" LOG_END;
 	}
 
 	return result;
@@ -75,9 +86,15 @@ bool AudioServer::RemoveStream(media_stream_id_t stream_id)
 	{
 		auto audio_stream = stream_it->second.get();
 
-		release_slot(audio_stream->GetSessionId());
+		auto slot_refs = release_slot(audio_stream->GetSessionId());
 
 		m_streams.erase(stream_it);
+
+		LOG(info) << "Audio stream [id = " << stream_id << "] remove success (slot refs = " << slot_refs << ")" LOG_END;
+	}
+	else
+	{
+		LOG(warning) << "Can't remove audio stream. Stream id = " << stream_id << " not found" LOG_END;
 	}
 
 	return result;
@@ -86,6 +103,16 @@ bool AudioServer::RemoveStream(media_stream_id_t stream_id)
 std::size_t AudioServer::Count() const
 {
 	return m_streams.size();
+}
+
+const audio_format_t&AudioServer::GetAudioFormat() const
+{
+	return m_audio_composer.GetAudioFormat();
+}
+
+bool AudioServer::SetAudioFormat(const audio_format_t& audio_format)
+{
+	return m_audio_composer.SetAudioFormat(audio_format);
 }
 
 media_stream_id_t AudioServer::get_stream_id()
@@ -106,8 +133,16 @@ IAudioSlot *AudioServer::request_slot(const session_id_t &session_id)
 
 		result = m_audio_composer[slot_id];
 
-		ref_count += static_cast<std::size_t>( result != nullptr );
-
+		if (result != nullptr)
+		{
+			ref_count ++;
+			LOG(info) << "Get exists audio slot by session \'" << session_id << "\' [slot_id = "
+					  << result->GetSlotId() << ", refs = " << ref_count << "]" LOG_END;
+		}
+		else
+		{
+			LOG(error) << "Audio slot for session \'" << session_id << "\' [slot_id = " << slot_id << ", refs = " << ref_count << "] not found in composer"  LOG_END;
+		}
 	}
 	else
 	{
@@ -117,6 +152,10 @@ IAudioSlot *AudioServer::request_slot(const session_id_t &session_id)
 		{
 			m_sessions.emplace( std::make_pair( session_id, std::make_pair(m_slot_id, 1) ) );
 			m_slot_id++;
+		}
+		else
+		{
+			LOG(error) << "Can't get new audio slot for session \'" << session_id << "\' [slot_id = " << m_slot_id << "]" LOG_END;
 		}
 	}
 
@@ -141,6 +180,12 @@ std::size_t AudioServer::release_slot(const session_id_t &session_id)
 			m_audio_composer.ReleaseAudioSlot(slot_id);
 			m_sessions.erase(it);
 		}
+
+		LOG(info) << "Release audio slot for session \'" << session_id << "\' [slot_id = " << slot_id << ", refs = " << ref_count << "]" LOG_END;
+	}
+	else
+	{
+		LOG(error) << "Can't release new audio slot for session \'" << session_id << "\'. Session not found" LOG_END;
 	}
 
 	return result;

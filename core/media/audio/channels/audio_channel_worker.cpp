@@ -1,6 +1,11 @@
 #include "audio_channel_worker.h"
 #include "media/common/delay_timer.h"
 
+#include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_channel_worker"
+
 namespace core
 {
 
@@ -37,8 +42,16 @@ bool AudioChannelWorker::Open(const std::string& device_name)
 
 	if (!m_running)
 	{
+
+		LOG(info) << "Opened worker thread for device \'" << device_name << "\' success" LOG_END;
+
 		m_running = true;
 		m_dispatch_thread = std::thread(&AudioChannelWorker::audio_dispatcher_proc, this, device_name);
+
+	}
+	else
+	{
+		LOG(warning) << "The worker is alredy running. Can't create worker for device \'" << device_name << "\'" LOG_END;
 	}
 
 	return m_running;
@@ -46,18 +59,22 @@ bool AudioChannelWorker::Open(const std::string& device_name)
 
 bool AudioChannelWorker::Close()
 {
-	bool result = false;
+	bool result = m_running;
 
-	if (m_running)
+	if (result)
 	{
 		m_running = false;
 
-		result = m_dispatch_thread.joinable();
+		LOG(info) << "Stopped worker thread" LOG_END;
 
-		if (result)
+		if (m_dispatch_thread.joinable())
 		{
 			m_dispatch_thread.join();
 		}
+	}
+	else
+	{
+		LOG(warning) << "Worker thread is already stopped" LOG_END;
 	}
 
 	m_audio_queue.Reset();
@@ -127,18 +144,19 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 
 	DelayTimer timer;
 
-	media_buffer_t buffer( m_audio_channel.GetAudioParams().buffer_size());
+	media_buffer_t buffer( m_audio_channel.GetAudioParams().buffer_size() );
 
 	auto delay_ms = m_audio_channel.GetAudioParams().duration;
 
+	LOG(info) << "Started audio worker for device \'" << device_name << "\', duration = " << delay_ms << "ms" LOG_END;
+
 	if (m_audio_channel.Open(device_name))
 	{
-		while (m_running)
+		while (m_running && m_audio_channel.IsOpen())
 		{
-
 			if (IsPlayback())
 			{
-				std::size_t result = 0;
+				std::int32_t result = 0;
 				{
 					lock_t lock(m_mutex);
 					result = m_audio_queue.Pop(buffer.data(), buffer.size());
@@ -161,10 +179,19 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 				}
 			}
 
-			timer(delay_ms);
+			if (m_running)
+			{
+				timer(delay_ms);
+			}
 		}
 
 		m_audio_channel.Close();
+
+		LOG(info) << "Worker for device \'" << device_name << "\' stopped. " LOG_END;
+	}
+	else
+	{
+		LOG(error) << "Can't open device \'" << device_name << "\'. Worker stopped." LOG_END;
 	}
 }
 

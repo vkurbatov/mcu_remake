@@ -3,6 +3,11 @@
 
 #include <algorithm>
 
+#include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_composer"
+
 namespace core
 {
 
@@ -12,13 +17,14 @@ namespace media
 namespace audio
 {
 
-AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue, std::uint32_t min_jitter_ms)
+AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue, std::uint32_t min_jitter_ms, bool thread_safe)
 	: m_audio_format(audio_format)
 	, m_media_queue(media_queue)
 	, m_slot_collection(m_audio_slots)
 	, m_min_jitter_ms(min_jitter_ms)
+	, m_thread_safe(thread_safe)
 {
-
+	LOG(debug) << "Create audio composer with format [" << audio_format << "], jitter = " << min_jitter_ms << "ms" LOG_END;
 }
 
 void AudioComposer::Reset()
@@ -49,10 +55,10 @@ IAudioSlot* AudioComposer::operator [](audio_slot_id_t media_slot_id)
 
 const IAudioSlot* AudioComposer::operator [](audio_slot_id_t media_slot_id) const
 {
-	return operator[](media_slot_id);
-	/*auto it = m_audio_slots.find(media_slot_id);
+	// return operator[](media_slot_id);
+	auto it = m_audio_slots.find(media_slot_id);
 
-	return it != m_audio_slots.end() ? it->second.get() : nullptr;*/
+	return it != m_audio_slots.end() ? it->second.get() : nullptr;
 }
 
 IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
@@ -75,12 +81,22 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 			if (result != nullptr)
 			{
 				m_audio_slots.insert(std::make_pair(audio_slot_id, std::move(audio_slot)));
+				LOG(info) << "Audio slot create succes (id = " << audio_slot_id << ")" LOG_END;
 			}
+			else
+			{
+				LOG(error) << "Can't create audio slot (id = " << audio_slot_id << ")" LOG_END;
+			}
+		}
+		else
+		{
+			LOG(error) << "Can't create media slot (id = " << audio_slot_id << ")" LOG_END;
 		}
 	}
 	else
 	{
 		result->m_ref_count++;
+		LOG(info) << "Query existing audio slot succes (id = " << audio_slot_id << ", ref = " << result->m_ref_count << ")" LOG_END;
 	}
 
 	return result;
@@ -94,7 +110,6 @@ std::size_t AudioComposer::ReleaseAudioSlot(audio_slot_id_t audio_slot_id)
 
 	if (it != m_audio_slots.end())
 	{
-
 		auto& slot = static_cast<AudioSlot&>(*it->second);
 
 		slot.m_ref_count -= static_cast<std::size_t>(slot.m_ref_count > 0);
@@ -103,7 +118,16 @@ std::size_t AudioComposer::ReleaseAudioSlot(audio_slot_id_t audio_slot_id)
 		{
 			m_audio_slots.erase(it);
 			m_media_queue.ReleaseSlot(audio_slot_id);
+			LOG(info) << "Release audio slot success (id = " << audio_slot_id << ")" LOG_END;
 		}
+		else
+		{
+			LOG(info) << "Release ref for audio slot success (id = " << audio_slot_id << ", ref = " << slot.m_ref_count << ")" LOG_END;
+		}
+	}
+	else
+	{
+		LOG(warning) << "Can't find audio slot for release (id = " << audio_slot_id << ")" LOG_END;
 	}
 
 	return result;
@@ -138,12 +162,18 @@ std::size_t AudioComposer::Count() const
 
 void AudioComposer::Lock() const
 {
-	m_mutex.lock();
+	if (m_thread_safe)
+	{
+		m_mutex.lock();
+	}
 }
 
 void AudioComposer::Unlock() const
 {
-	m_mutex.unlock();
+	if (m_thread_safe)
+	{
+		m_mutex.unlock();
+	}
 }
 
 AudioComposer::SlotCollectionWrapper::SlotCollectionWrapper(AudioComposer::audio_slot_map_t& audio_slots)

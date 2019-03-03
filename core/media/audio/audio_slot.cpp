@@ -2,7 +2,10 @@
 #include "media/audio/audio_mixer.h"
 #include "audio_slot.h"
 
-#include "core-tools/logging.h"
+#include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_slot"
 
 namespace core
 {
@@ -38,7 +41,9 @@ AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot,
 	, m_ref_count(1)
 	, m_can_slot_read(false)
 {
-
+	LOG(debug) << "Create audio slot [id = " << m_media_slot.GetSlotId()
+			   << "\', format = " << audio_format
+			   << "]" LOG_END;
 }
 
 std::int32_t AudioSlot::Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options)

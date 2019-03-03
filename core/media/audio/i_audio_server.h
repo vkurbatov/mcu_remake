@@ -17,7 +17,7 @@ namespace audio
 struct audio_format_t;
 #endif
 
-class IAudioServer: public IDataCollection
+class IAudioServer: public IDataCollection, public IAudioFormatter
 {
 
 public:
