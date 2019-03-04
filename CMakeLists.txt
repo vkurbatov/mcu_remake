@@ -26,6 +26,7 @@ set(SOURCES
     "core/media/common/media_point.cpp"
     "core/media/common/media_queue.cpp"
     "core/media/common/delay_timer.cpp"
+    "core/media/common/guard_lock.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_format.cpp"
     "core/media/audio/audio_point.cpp"
@@ -36,14 +37,17 @@ set(SOURCES
     "core/media/audio/audio_mixer.cpp"
     "core/media/audio/audio_dispatcher.cpp"
     "core/media/audio/audio_mux.cpp"
+    "core/media/audio/audio_queue.cpp"
     "core/media/audio/volume_controller.cpp"
+    "core/media/audio/audio_divider.cpp"
     "core/media/audio/channels/audio_channel.cpp"
     "core/media/audio/channels/audio_channel_params.cpp"
     "core/media/audio/channels/audio_channel_worker.cpp"
     "core/media/audio/channels/alsa/alsa_channel.cpp"
     "core/media/audio/channels/file/file_channel.cpp"
     "core/media/audio/audio_string_format_utils.cpp"
-    "core/media/audio/tools/audio_event.cpp"
+    "core/media/audio/tools/audio_event_server.cpp"
+    "core/media/audio/tools/audio_processor.cpp"
     )
 
 set(HEADERS   
@@ -72,6 +76,7 @@ set(HEADERS
     "core/media/common/media_slot.h"
     "core/media/common/media_point.h"
     "core/media/common/delay_timer.h"
+    "core/media/common/guard_lock.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_format.h"
     "core/media/audio/audio_point.h"
@@ -83,13 +88,16 @@ set(HEADERS
     "core/media/audio/audio_mixer.h"
     "core/media/audio/audio_dispatcher.h"
     "core/media/audio/audio_mux.h"
+    "core/media/audio/audio_queue.h"
+    "core/media/audio/audio_divider.h"
     "core/media/audio/channels/audio_channel.h"
     "core/media/audio/channels/audio_channel_params.h"
     "core/media/audio/channels/audio_channel_worker.h"
     "core/media/audio/channels/alsa/alsa_channel.h"
     "core/media/audio/channels/file/file_channel.h"
     "core/media/audio/audio_string_format_utils.h"
-    "core/media/audio/tools/audio_event.h"
+    "core/media/audio/tools/audio_event_server.h"
+    "core/media/audio/tools/audio_processor.h"
     )
 
 include_directories(

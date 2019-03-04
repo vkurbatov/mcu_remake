@@ -46,6 +46,7 @@ private:
 		audio_slot_map_t& m_audio_slots;
 	public:
 		explicit SlotCollectionWrapper(audio_slot_map_t& audio_slots);
+
 		// IDataCollection interface
 	public:
 		std::size_t Count() const override;

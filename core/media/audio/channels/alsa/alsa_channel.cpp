@@ -105,6 +105,40 @@ snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t s
 	return transform_format_array[static_cast<std::int32_t>(sample_format)];
 }
 
+bool is_default_name(const std::string& device_name)
+{
+	return device_name == "default" || device_name == "Default";
+}
+
+bool is_device_notation(const std::string& device_name, const std::string& profile)
+{
+	return  device_name.find(profile + ":") != std::string::npos;
+}
+
+const std::string fetch_device_name(const std::string& device_name, channel_direction_t direction, const std::string& profile)
+{
+	std::string result = device_name;
+
+	if (!is_device_notation(device_name, profile))
+	{
+		result = "default";
+
+		if (!is_default_name(device_name))
+		{
+			auto devices = AlsaChannel::GetDeviceList(direction, profile);
+
+			auto it = std::find_if(devices.begin(), devices.end(), [&device_name](const alsa_channel_info& alsa_info) { return alsa_info.user_format() == device_name;} );
+
+			if (it != devices.end())
+			{
+				result = it->name;
+			}
+		}
+	}
+
+	return result;
+}
+
 } // alsa_utils
 
 /* oldstyle
@@ -214,6 +248,7 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 
 								alsa_utils::split_description(field_value, device_info.card_name, device_info.device_name, device_info.hint);
 
+
 								break;
 
 							case fields_enum_t::ioid:
@@ -250,13 +285,14 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 	return std::move(device_list);
 }
 
-AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params)
+AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params, const std::string& hw_profile)
 	: m_audio_params(audio_params)
 	, m_handle(nullptr)
 	, m_device_name("default")
 	, m_write_transaction_id(0)
 	, m_read_transaction_id(0)
 	, m_frame_size(0)
+	, m_hw_profile(hw_profile)
 {
 	LOG(debug) << "Create alsa channel with params " << audio_params LOG_END;
 }
@@ -280,7 +316,7 @@ bool AlsaChannel::Open(const std::string &device_name)
 	{
 
 		auto err = snd_pcm_open(&m_handle
-								, device_name.c_str()
+								, alsa_utils::fetch_device_name(device_name, GetAudioParams().direction, m_hw_profile).c_str()
 								, IsRecorder() ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK
 												 , SND_PCM_NONBLOCK);
 		if (err >= 0)
@@ -375,7 +411,7 @@ bool AlsaChannel::internal_set_audio_params(const audio_channel_params_t &audio_
 	}
 	else
 	{
-		LOG(info) << "Cant't set params for [" << m_device_name << "]" LOG_END;
+		LOG(info) << "Cant't set params [" << audio_params << "] for [" << m_device_name << "]" LOG_END;
 	}
 
 	return result;

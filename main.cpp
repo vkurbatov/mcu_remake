@@ -530,22 +530,50 @@ void test_composer()
 	while(count-- > 0) timer(1000);
 }
 
-#include "media/audio/tools/audio_event.h"
+#include "media/audio/tools/audio_event_server.h"
+#include "media/audio/audio_mux.h"
+#include "media/audio/audio_queue.h"
+#include "media/audio/audio_divider.h"
 
 void test_events()
 {
 	static const std::uint32_t duration_ms = 10;
-	static const std::uint32_t playback_sample_rate = 32000;
+	static const std::uint32_t recorder_sample_rate = 8000;
+	static const std::uint32_t playback_sample_rate1 = 32000;
+	static const std::uint32_t playback_sample_rate2 = 16000;
 
 	static const std::string event_1 = "event_1";
 	static const std::string event_2 = "event_2";
 
-	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
-	core::media::audio::channels::alsa::AlsaChannel player(player_params);
+	auto playback_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::playback);
+	auto recorder_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder);
 
-	core::media::audio::tools::AudioEventServer	event_server(player, player.GetAudioFormat(), duration_ms);
 
-	player.Open("default");
+	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms , true);
+	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
+
+	core::media::audio::channels::audio_channel_params_t player_params1(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate1, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+	core::media::audio::channels::alsa::AlsaChannel player1(player_params1);
+
+	core::media::audio::channels::audio_channel_params_t player_params2(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate2, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms * 8, true);
+	core::media::audio::channels::alsa::AlsaChannel player2(player_params2);
+
+	core::media::audio::AudioQueue audio_queue(player1.GetAudioFormat(), 1000, 60, true);
+	core::media::audio::tools::AudioEventServer	event_server(audio_queue, audio_queue.GetAudioFormat(), true);
+
+	core::media::audio::AudioDivider divider(player1, player2);
+
+	core::media::audio::AudioMux mux(divider, audio_queue);
+
+	// mux.GetAuxVolumeController().SetVolume(100);
+	// mux.GetMainVolumeController().SetVolume(100);
+	// mux.GetMainVolumeController().SetMute(true);
+
+	core::media::audio::AudioDispatcher dispatcher(recorder, mux, player1.GetAudioFormat(), duration_ms);
+
+	player1.Open("default");
+	player2.Open(playback_device_list[1].user_format());
+	recorder.Open(recorder_device_list[1].user_format());
 
 	event_server.AddEvent(event_1, "/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav", 3, 2000);
 	event_server.AddEvent(event_2, "/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav", 4, 1000);
@@ -553,13 +581,7 @@ void test_events()
 	event_server.PlayEvent(event_1);
 	event_server.PlayEvent(event_2);
 
-	core::media::DelayTimer::Sleep(2000);
-
-	event_server.PlayEvent(event_1);
-
-	core::media::DelayTimer::Sleep(1000);
-
-	event_server.PlayEvent(event_1);
+	dispatcher.Start(duration_ms);
 
 	core::media::DelayTimer::Sleep(20000);
 

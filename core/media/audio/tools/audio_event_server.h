@@ -25,7 +25,7 @@ namespace audio
 namespace tools
 {
 
-class AudioEventServer: public IDataCollection
+class AudioEventServer: public IDataCollection, public IVolumeController
 {
 	class AudioEvent : public IAudioReader, public IMediaReadStatus
 	{
@@ -42,6 +42,7 @@ class AudioEventServer: public IDataCollection
 		AudioEvent(const std::string& file_name
 								 , std::uint32_t times
 								 , std::uint32_t interval);
+		AudioEvent(const AudioEvent&) = default;
 
 		void Reset(const std::string& file_name, std::uint32_t times, std::uint32_t interval);
 		void Reset();
@@ -66,11 +67,15 @@ class AudioEventServer: public IDataCollection
 	std::uint32_t				m_duration_ms;
 	std::atomic_bool			m_running;
 
+	VolumeController			m_volume_controller;
+
 	event_map_t					m_events;
 
 	std::vector<std::uint8_t>	m_audio_buffer;
 	std::vector<std::uint8_t>	m_mix_buffer;
 
+	// Dependencies
+private:
 	IAudioWriter&				m_audio_writer;
 
 public:
@@ -91,6 +96,13 @@ public:
 private:
 
 	void event_proc();
+
+	// IVolumeController interface
+public:
+	uint32_t GetVolume() const override;
+	void SetVolume(uint32_t volume) override;
+	bool IsMute() const override;
+	void SetMute(bool mute) override;
 };
 
 } // tools

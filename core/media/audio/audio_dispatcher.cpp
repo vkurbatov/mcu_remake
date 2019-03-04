@@ -97,7 +97,7 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 	LOG(info) << "Started audio dispatcher [format = " << m_audio_format << ", duration " << duration_ms << "ms]" LOG_END;
 
 	while(m_is_running)
-	{
+	{	
 		auto size = m_audio_format.size_from_duration(duration_ms);
 
 		if (buffer.size() < size)

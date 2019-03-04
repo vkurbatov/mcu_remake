@@ -20,7 +20,7 @@ public:
 	virtual ~IAudioFormatter() = default;
 
 	virtual const audio_format_t& GetAudioFormat() const = 0;
-	virtual bool SetAudioFormat(const audio_format_t& input_format) = 0;
+	virtual bool SetAudioFormat(const audio_format_t& audio_format) = 0;
 
 };
 

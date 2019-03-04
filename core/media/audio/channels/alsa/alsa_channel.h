@@ -33,6 +33,11 @@ struct alsa_channel_info
 	std::string		hint;
 	bool			input;
 	bool			output;
+
+	const std::string user_format() const
+	{
+		return card_name == "default" ? card_name : (card_name + "[" + device_name + "]");
+	}
 };
 
 class AlsaChannel : public AudioChannel
@@ -45,6 +50,7 @@ public:
 private:
 
 	std::string                     m_device_name;
+	std::string						m_hw_profile;
 
 	snd_pcm_t*                      m_handle;
 
@@ -55,12 +61,13 @@ private:
 
 	std::size_t						m_frame_size;
 
+
 public:
 
-	AlsaChannel(const audio_channel_params_t& audio_params);
-	~AlsaChannel() override;
+	static const device_names_list_t GetDeviceList(channel_direction_t direction, const std::string& hw_profile = "plughw");
 
-	static const device_names_list_t GetDeviceList(channel_direction_t direction, const std::string& hw_profile = "");
+	AlsaChannel(const audio_channel_params_t& audio_params, const std::string& hw_profile = "plughw");
+	~AlsaChannel() override;
 
 	// IAudoChannel interface
 public:
@@ -88,9 +95,9 @@ private:
 	std::int32_t internal_read(void* data, std::size_t size, std::uint32_t options = 0) override final;
 	std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t options = 0) override final;
 
+private:
 	std::int32_t io_error_process(std::int32_t error, bool is_write, std::uint32_t timeout_ms = 0);
 	std::int32_t set_hardware_params(const audio_channel_params_t& audio_params);
-
 };
 
 } // alsa

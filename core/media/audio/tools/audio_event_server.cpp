@@ -1,8 +1,13 @@
-#include "audio_event.h"
+#include "audio_event_server.h"
 #include "media/audio/audio_mixer.h"
 
 #include <algorithm>
 #include <cstring>
+
+#include <core-tools/logging.h>
+#include "media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_event_server"
 
 namespace core
 {
@@ -28,7 +33,7 @@ AudioEventServer::AudioEvent::AudioEvent(const std::string &file_name
 	, m_step(0)
 	, m_ref_count(0)
 {
-
+	LOG(debug) "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
 }
 
 void AudioEventServer::AudioEvent::Reset(const std::string& file_name, uint32_t times, uint32_t interval)
@@ -108,7 +113,7 @@ AudioEventServer::AudioEventServer(IAudioWriter& audio_writer, const audio_forma
 	, m_duration_ms(duration_ms)
 	, m_running(false)
 {
-
+	LOG(debug) "Create audio event server [" << audio_format << "/" << m_duration_ms << "]" LOG_END;
 }
 
 AudioEventServer::~AudioEventServer()
@@ -135,12 +140,17 @@ bool AudioEventServer::AddEvent(const std::string &event_name, const std::string
 	if (it != m_events.end())
 	{
 		it->second.Reset(file_name, times, interval);
+		LOG(info) << "Change exists audio event \'" << event_name << "\' [" << file_name << "/" << times << "/" << interval << "]" LOG_END;
 	}
 	else
 	{
+		// C++11 method for emplace complex object (see C++11 documentation)
+
 		m_events.emplace(std::piecewise_construct
 						 , std::forward_as_tuple(event_name)
 						 , std::forward_as_tuple(file_name, times, interval));
+
+		LOG(info) << "Register new audio event \'" << event_name << "\' [" << file_name << "/" << times << "/" << interval << "]" LOG_END;
 	}
 
 	return true;
@@ -157,6 +167,11 @@ bool AudioEventServer::RemoveEvent(const std::string &event_name)
 	if (result)
 	{
 		m_events.erase(it);
+		LOG(info) << "Audio event \'" << event_name << "\' removed success" LOG_END;
+	}
+	else
+	{
+		LOG(error) << "Audio event \'" << event_name << "\' not found" LOG_END;
 	}
 
 	return result;
@@ -173,6 +188,8 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 	if (result)
 	{
 
+		LOG(info) << "Playing audio event \'" << event_name << "\'" LOG_END;
+
 		it->second.Start();
 
 		bool flag = false;
@@ -181,6 +198,10 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 		{
 			m_event_thread = std::thread(&AudioEventServer::event_proc, this);
 		}
+	}
+	else
+	{
+		LOG(error) << "Audio event \'" << event_name << "\' not found" LOG_END;
 	}
 
 	return result;
@@ -196,7 +217,13 @@ bool AudioEventServer::StopEvent(const std::string &event_name)
 
 	if (result)
 	{
+		LOG(info) << "Stopped audio event \'" << event_name << "\'" LOG_END;
+
 		it->second.Stop();
+	}
+	else
+	{
+		LOG(error) << "Audio event \'" << event_name << "\' not found" LOG_END;
 	}
 
 	return result;
@@ -212,14 +239,14 @@ void AudioEventServer::event_proc()
 
 	DelayTimer	delay_timer;
 
+	LOG(info) << "Started audio event thread" LOG_END;
+
 	while (m_running)
 	{
 
 		std::size_t event_count = 0;
 		{
 			lock_t lock(m_mutex);
-
-			// event_count = std::count_if(m_events.begin(), m_events.end(), [](const std::pair<std::string, AudioEvent>& it) { return it.second.IsPlay(); });
 
 			for (const auto& e: m_events)
 			{
@@ -250,6 +277,7 @@ void AudioEventServer::event_proc()
 				}
 				if (max_size > 0)
 				{
+					m_volume_controller(m_audio_format.sample_format, m_mix_buffer.data(), max_size);
 					m_audio_writer.Write(m_audio_format, m_mix_buffer.data(), max_size);
 				}
 			}
@@ -263,8 +291,29 @@ void AudioEventServer::event_proc()
 		{
 			delay_timer(m_duration_ms);
 		}
-
 	}
+
+	LOG(info) << "Stopped audio event thread" LOG_END;
+}
+
+uint32_t AudioEventServer::GetVolume() const
+{
+	return m_volume_controller.GetVolume();
+}
+
+void AudioEventServer::SetVolume(uint32_t volume)
+{
+	m_volume_controller.SetVolume(volume);
+}
+
+bool AudioEventServer::IsMute() const
+{
+	return m_volume_controller.IsMute();
+}
+
+void AudioEventServer::SetMute(bool mute)
+{
+	m_volume_controller.SetMute(mute);
 }
 
 
