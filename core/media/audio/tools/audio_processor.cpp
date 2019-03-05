@@ -2,6 +2,8 @@
 
 #include "media/common/guard_lock.h"
 
+#include <iostream>
+
 namespace core
 {
 
@@ -30,7 +32,8 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config)
 	, m_audio_mux(m_audio_divider, m_event_queue)
 	, m_audio_composer(config.composer_config.audio_format
 						, m_composer_queue
-						, config.composer_config.jitter_ms)
+						, config.composer_config.jitter_ms
+						, false)
 	, m_audio_event_server(m_event_queue
 							, config.playback_config.channel_params.audio_format
 							, config.playback_config.channel_params.buffer_duration_ms)
@@ -105,7 +108,14 @@ std::size_t AudioProcessor::Write(media_stream_id_t audio_stream_id, const void*
 
 	auto stream = m_audio_server[audio_stream_id];
 
-	return stream != nullptr ? stream->Write(data, size, options) : 0;
+	auto result = stream != nullptr ? stream->Write(data, size, options) : 0;
+
+	if (result <= 0)
+	{
+		std::cout << "Write result = " << result << std::endl;
+	}
+
+	return result;
 }
 
 std::size_t AudioProcessor::Read(media_stream_id_t audio_stream_id, void* data, std::size_t size, std::uint32_t options)
@@ -135,7 +145,7 @@ std::size_t AudioProcessor::Read(media_stream_id_t audio_stream_id, const audio_
 	return stream != nullptr ? stream->Read(audio_format, data, size) : 0;
 }
 
-const IAudioStream*AudioProcessor::operator[](media_stream_id_t audio_stream_id)
+const IAudioStream* AudioProcessor::operator[](media_stream_id_t audio_stream_id)
 {
 	return m_audio_server[audio_stream_id];
 }
@@ -145,17 +155,17 @@ const audio_processor_config_t& AudioProcessor::GetConfig() const
 	return m_config;
 }
 
-IVolumeController&AudioProcessor::GetRecorderVolumeController()
+IVolumeController& AudioProcessor::GetRecorderVolumeController()
 {
 	return m_recorder_channel;
 }
 
-IVolumeController&AudioProcessor::GetPlaybackVolumeController()
+IVolumeController& AudioProcessor::GetPlaybackVolumeController()
 {
 	return m_audio_mux.GetMainVolumeController();
 }
 
-IVolumeController&AudioProcessor::GetEventsVolumeController()
+IVolumeController& AudioProcessor::GetEventsVolumeController()
 {
 	return m_audio_mux.GetAuxVolumeController();
 }
@@ -181,7 +191,6 @@ bool AudioProcessor::control_audio_system(bool is_start)
 
 	if (is_start)
 	{
-
 		if (!m_config.recorder_config.device_name.empty())
 		{
 			m_recorder_channel.Open(m_config.recorder_config.device_name);

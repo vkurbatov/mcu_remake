@@ -109,7 +109,7 @@ int32_t AudioSlot::slot_pop(void* data, std::size_t size)
 
 bool AudioSlot::check_jitter()
 {
-	return m_can_slot_read = m_can_slot_read || m_audio_format.duration_ms(m_media_slot.Size()) >= m_min_jitter_ms;
+	return m_can_slot_read |= m_audio_format.duration_ms(m_media_slot.Size()) >= m_min_jitter_ms;
 }
 
 std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options)
@@ -170,7 +170,7 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	auto demix_size = m_palyback_queue.Pop(m_demix_buffer.data(), input_size);
 
-	demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
+	//demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
 
 
 	// resampling demix audio buffer

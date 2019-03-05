@@ -92,7 +92,7 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 	m_cycle_counter = 0;
 
 	DelayTimer			delay;
-	media_buffer_t	buffer;
+	media_buffer_t		buffer;
 
 	LOG(info) << "Started audio dispatcher [format = " << m_audio_format << ", duration " << duration_ms << "ms]" LOG_END;
 

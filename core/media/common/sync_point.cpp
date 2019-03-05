@@ -14,7 +14,7 @@ SyncPoint::SyncPoint(bool is_fake)
 
 void SyncPoint::Lock() const
 {
-	if (m_is_fake)
+	if (!m_is_fake)
 	{
 		m_mutex.lock();
 	}
@@ -22,7 +22,7 @@ void SyncPoint::Lock() const
 
 void SyncPoint::Unlock() const
 {
-	if (m_is_fake)
+	if (!m_is_fake)
 	{
 		m_mutex.unlock();
 	}

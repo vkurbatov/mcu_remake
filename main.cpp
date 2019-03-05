@@ -415,7 +415,6 @@ void test_audio_channel_worker()
 
 		result = player_worker.Write(recorder_params.audio_format, buffer, result);
 
-
 		timer(duration_ms);
 	}
 }
@@ -625,14 +624,28 @@ public:
 public:
 	std::int32_t Write(const core::media::audio::audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options) override
 	{
-		return m_processor.Write(m_stream_id, data, size, options);
+		auto ret = m_processor.Write(m_stream_id, data, size, options);
+
+		if (ret <= 0)
+		{
+			std::cout << "write ret = " << ret << std::endl;
+		}
+
+		return ret;
 	}
 
 	// IAudioReader interface
 public:
 	std::int32_t Read(const core::media::audio::audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options) override
 	{
-		return m_processor.Read(m_stream_id, data, size, options);
+		auto ret = m_processor.Read(m_stream_id, data, size, options);
+
+		if (ret <= 0)
+		{
+			std::cout << "read ret = " << ret << std::endl;
+		}
+
+		return ret;
 	}
 };
 
@@ -640,7 +653,7 @@ void test_audio_processor()
 {
 
 	const std::uint32_t duration_ms = 10;
-	const std::uint32_t jitter_ms = 10;
+	const std::uint32_t jitter_ms = 60;
 
 	const core::media::audio::session_id_t session_id_1 = "session_1";
 
@@ -664,7 +677,6 @@ void test_audio_processor()
 	audio_processor_config.composer_config.jitter_ms = jitter_ms;
 	audio_processor_config.composer_config.queue_size = 64000;
 
-
 	audio_processor_config.event_server_config.jittr_ms = jitter_ms;
 	audio_processor_config.event_server_config.duration_ms = duration_ms;
 
@@ -673,7 +685,7 @@ void test_audio_processor()
 	audio_processor_config.recorder_config.channel_params.buffer_duration_ms = duration_ms * 8;
 	audio_processor_config.recorder_config.channel_params.nonblock_mode = true;
 
-	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 8000;
+	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 48000;
 	audio_processor_config.recorder_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
 	audio_processor_config.recorder_config.channel_params.audio_format.channels = 1;
 
@@ -682,7 +694,7 @@ void test_audio_processor()
 
 
 	audio_processor_config.playback_config.channel_params.direction = core::media::audio::channels::channel_direction_t::playback;
-	audio_processor_config.playback_config.channel_params.buffer_duration_ms = duration_ms * 2;
+	audio_processor_config.playback_config.channel_params.buffer_duration_ms = duration_ms * 8;
 	audio_processor_config.playback_config.channel_params.nonblock_mode = true;
 
 	audio_processor_config.playback_config.channel_params.audio_format.sample_rate = 48000;
@@ -709,16 +721,16 @@ void test_audio_processor()
 	core::media::audio::channels::audio_channel_params_t recorder_params;
 
 	recorder_params.direction = core::media::audio::channels::channel_direction_t::recorder;
-	recorder_params.buffer_duration_ms = duration_ms * 2;
+	recorder_params.buffer_duration_ms = duration_ms * 8;
 	recorder_params.nonblock_mode = true;
 
-	recorder_params.audio_format.sample_rate = 48000;
+	recorder_params.audio_format.sample_rate = 16000;
 	recorder_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
 	recorder_params.audio_format.channels = 1;
 
 
 	player_params.direction = core::media::audio::channels::channel_direction_t::playback;
-	player_params.buffer_duration_ms = duration_ms * 2;
+	player_params.buffer_duration_ms = duration_ms * 8;
 	player_params.nonblock_mode = true;
 
 	player_params.audio_format.sample_rate = 8000;
@@ -731,12 +743,10 @@ void test_audio_processor()
 	alsa_recorder.Open(recorder2);
 	alsa_player.Open(playback2);
 
-
 	core::media::audio::tools::AudioProcessor audio_processor(audio_processor_config);
 
 	auto playback_stream_id = audio_processor.RegisterStream(session_id_1, alsa_player.GetAudioFormat(), false);
 	auto recorder_stream_id = audio_processor.RegisterStream(session_id_1, alsa_recorder.GetAudioFormat(), true);
-
 
 	AudioProcessorWrapper	playback_wrapper(audio_processor, playback_stream_id);
 	AudioProcessorWrapper	recorder_wrapper(audio_processor, recorder_stream_id);
@@ -744,10 +754,12 @@ void test_audio_processor()
 	core::media::audio::AudioDispatcher recorder_dispatcher(alsa_recorder, recorder_wrapper, alsa_recorder.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher playback_dispatcher(playback_wrapper, alsa_player, alsa_player.GetAudioFormat(), true);
 
-	recorder_dispatcher.Start(duration_ms);
-	playback_dispatcher.Start(duration_ms);
+	// recorder_dispatcher.Start(duration_ms);
+	// playback_dispatcher.Start(duration_ms);
 
-	while(true);
+	core::media::DelayTimer delay;
+
+	while(true) delay(duration_ms);
 }
 
 int main()
