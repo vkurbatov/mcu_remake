@@ -48,6 +48,11 @@ private:
 	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, const ISyncPoint& sync_point, const std::uint32_t& min_jitter_ms);
 	~AudioSlot() override = default;
 
+	AudioSlot(const AudioSlot&) = delete;
+	AudioSlot(AudioSlot&&) = delete;
+	AudioSlot& operator=(const AudioSlot&) = delete;
+	AudioSlot& operator=(AudioSlot&&) = delete;
+
 public:
 
 	// IAudioPoint interface

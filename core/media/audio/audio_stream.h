@@ -37,6 +37,11 @@ private:
 				, IAudioPoint& audio_point
 				, bool is_writer = false);
 
+	AudioStream(const AudioStream&) = delete;
+	AudioStream(AudioStream&&) = delete;
+	AudioStream& operator=(const AudioStream&) = delete;
+	AudioStream& operator=(AudioStream&&) = delete;
+
 	virtual ~AudioStream() override = default;
 
 	// IMediaStream interface

@@ -3,13 +3,12 @@
 
 #include "media/common/data_queue.h"
 #include "media/common/i_media_queue.h"
-#include "media/common/i_sync_point.h"
+#include "media/common/sync_point.h"
 #include "media/audio/i_audio_composer.h"
 #include "media/audio/audio_format.h"
 
 #include <unordered_map>
 #include <memory>
-#include <mutex>
 
 namespace core
 {
@@ -20,22 +19,20 @@ namespace media
 namespace audio
 {
 
-class AudioComposer : public IAudioComposer, private ISyncPoint
+class AudioComposer : public IAudioComposer
 {
 
 	static const std::uint32_t max_queue_duration = 10;
 	static const std::uint32_t default_jitter_ms = 40;
 
-	using mutex_t = std::mutex;
 	using audio_slot_t = std::shared_ptr<IAudioSlot>;
 	using audio_slot_map_t = std::unordered_map<audio_slot_id_t, audio_slot_t>;
 
 	audio_format_t				m_audio_format;
 	audio_slot_map_t			m_audio_slots;
 	std::uint32_t				m_min_jitter_ms;
-	bool						m_thread_safe;
 
-	mutable mutex_t				m_mutex;
+	SyncPoint					m_sync_point;
 
 	// Dependencies
 private:
@@ -82,10 +79,6 @@ public:
 public:
 	std::size_t Count() const override;
 
-	// ISyncPoint interface
-private:
-	void Lock() const override;
-	void Unlock() const override;
 };
 
 

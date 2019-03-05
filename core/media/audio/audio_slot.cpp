@@ -1,5 +1,7 @@
+#include "media/common/guard_lock.h"
 #include "media/audio/audio_resampler.h"
 #include "media/audio/audio_mixer.h"
+
 #include "audio_slot.h"
 
 #include <core-tools/logging.h>
@@ -103,8 +105,7 @@ bool AudioSlot::check_jitter()
 std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options)
 {
 
-	m_sync_point.Lock();
-
+	GuardLock lock(m_sync_point);
 
 	// prepare resample buffer and resampling
 
@@ -133,16 +134,13 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 
 	output_size = slot_push(m_mix_buffer.data(), mix_size);
 
-	m_sync_point.Unlock();
-
 	return audio_format.size_from_format(m_audio_format, output_size);
 }
 
 std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options)
 {
 
-	m_sync_point.Lock();
-
+	GuardLock lock(m_sync_point);
 
 	// prepare resampling and demixind buffer
 
@@ -170,8 +168,6 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 	// input_size = AudioResampler::Resampling(audio_format, m_audio_format, m_input_resampler_buffer.data(), input_size, data, size);
 
 	input_size = AudioResampler::Resampling(m_audio_format, audio_format, m_input_resampler_buffer.data(), input_size, data, size);
-
-	m_sync_point.Unlock();
 
 	return input_size;
 }

@@ -58,7 +58,7 @@ std::size_t MediaQueue::ReleaseSlot(media_slot_id_t media_slot_id)
 
 	if (it != m_media_slots.end())
 	{
-		auto slot = static_cast<MediaSlot&>(*it->second);
+		auto& slot = static_cast<MediaSlot&>(*it->second);
 
 		slot.m_ref_count -= static_cast<std::size_t>(slot.m_ref_count > 0);
 

@@ -1,5 +1,7 @@
 #include "audio_event_server.h"
+
 #include "media/audio/audio_mixer.h"
+#include "media/common/guard_lock.h"
 
 #include <algorithm>
 #include <cstring>
@@ -133,7 +135,7 @@ std::size_t AudioEventServer::Count() const
 
 bool AudioEventServer::AddEvent(const std::string &event_name, const std::string& file_name, uint32_t times, uint32_t interval)
 {
-	lock_t	lock(m_mutex);
+	GuardLock lock(m_sync_point);
 
 	auto it = m_events.find(event_name);
 
@@ -158,7 +160,7 @@ bool AudioEventServer::AddEvent(const std::string &event_name, const std::string
 
 bool AudioEventServer::RemoveEvent(const std::string &event_name)
 {
-	lock_t	lock(m_mutex);
+	GuardLock lock(m_sync_point);
 
 	auto it = m_events.find(event_name);
 
@@ -179,7 +181,7 @@ bool AudioEventServer::RemoveEvent(const std::string &event_name)
 
 bool AudioEventServer::PlayEvent(const std::string &event_name)
 {
-	lock_t	lock(m_mutex);
+	GuardLock lock(m_sync_point);
 
 	auto it = m_events.find(event_name);
 
@@ -209,7 +211,7 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 
 bool AudioEventServer::StopEvent(const std::string &event_name)
 {
-	lock_t	lock(m_mutex);
+	GuardLock lock(m_sync_point);
 
 	auto it = m_events.find(event_name);
 
@@ -245,8 +247,9 @@ void AudioEventServer::event_proc()
 	{
 
 		std::size_t event_count = 0;
+
 		{
-			lock_t lock(m_mutex);
+			GuardLock lock(m_sync_point);
 
 			for (const auto& e: m_events)
 			{

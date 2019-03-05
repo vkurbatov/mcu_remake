@@ -2,6 +2,7 @@
 #define AUDIO_PROCESSOR_H
 
 #include "media/common/media_queue.h"
+#include "media/common/sync_point.h"
 
 #include "media/audio/audio_composer.h"
 #include "media/audio/audio_server.h"
@@ -39,6 +40,7 @@ struct audio_processor_config_t
 	struct audio_device_config_t
 	{
 		channels::audio_channel_params_t channel_params;
+		std::uint32_t					 duration_ms;
 	}recorder_config, playback_config, aux_playback_config;
 
 	struct event_server_config_t
@@ -48,9 +50,30 @@ struct audio_processor_config_t
 	}event_server_config;
 };
 
-class AudioProcessor
+class AudioProcessor : public SyncPoint
 {
+	using mutex_t = std::mutex;
+
+	class SyncAudioPointProxy : public IAudioPoint
+	{
+		IAudioPoint&			m_audio_point;
+		const ISyncPoint&		m_sync_point;
+
+	public:
+		SyncAudioPointProxy(IAudioPoint& audio_point, const ISyncPoint& sync_point);
+
+		// IAudioWriter interface
+	public:
+		std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0) override;
+
+		// IAudioReader interface
+	public:
+		std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) override;
+	};
+
 	audio_processor_config_t		m_config;
+
+	mutex_t							m_mutex;
 
 	MediaQueue						m_composer_queue;
 	AudioQueue						m_event_queue;
@@ -65,14 +88,19 @@ class AudioProcessor
 	AudioComposer					m_audio_composer;
 	AudioServer						m_audio_server;
 
+	IAudioStream&					m_recorder_stream;
+	IAudioStream&					m_playback_stream;
+
+	SyncAudioPointProxy				m_recorder_stream_proxy;
+	SyncAudioPointProxy				m_playback_stream_proxy;
+
 	AudioEventServer				m_audio_event_server;
 
-	AudioDispatcher					m_read_audio_dispatcher;
-	AudioDispatcher					m_write_audio_dispatcher;
+	AudioDispatcher					m_recorder_audio_dispatcher;
+	AudioDispatcher					m_playback_audio_dispatcher;
 
 public:
 	AudioProcessor(const audio_processor_config_t& config);
-
 
 };
 

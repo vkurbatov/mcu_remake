@@ -4,6 +4,7 @@
 #include "media/common/i_media_point.h"
 #include "media/common/i_data_collection.h"
 #include "media/common/delay_timer.h"
+#include "media/common/sync_point.h"
 #include "media/audio/i_audio_point.h"
 #include "media/audio/channels/file/file_channel.h"
 
@@ -57,11 +58,9 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 
 	};
 
-	using mutex_t = std::mutex;
-	using lock_t = std::lock_guard<mutex_t>;
 	using event_map_t = std::map<std::string, AudioEvent>;
 
-	mutex_t						m_mutex;
+	SyncPoint					m_sync_point;
 	audio_format_t				m_audio_format;
 	std::thread					m_event_thread;
 	std::uint32_t				m_duration_ms;

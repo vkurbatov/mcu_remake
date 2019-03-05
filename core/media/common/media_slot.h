@@ -28,6 +28,11 @@ private:
 	MediaSlot(media_slot_id_t media_slot_id, IMultipointDataQueue& multipoint_data_queue);
 	virtual ~MediaSlot() override = default;
 
+	MediaSlot(const MediaSlot&) = delete;
+	MediaSlot(MediaSlot&&) = delete;
+	MediaSlot& operator=(const MediaSlot&) = delete;
+	MediaSlot& operator=(MediaSlot&&) = delete;
+
 	// IDataQueue interface
 public:
 	std::size_t Pop(void* data, std::size_t size) override;

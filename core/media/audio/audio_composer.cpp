@@ -22,7 +22,7 @@ AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& me
 	, m_media_queue(media_queue)
 	, m_slot_collection(m_audio_slots)
 	, m_min_jitter_ms(min_jitter_ms)
-	, m_thread_safe(thread_safe)
+	, m_sync_point(!thread_safe)
 {
 	LOG(debug) << "Create audio composer with format [" << audio_format << "], jitter = " << min_jitter_ms << "ms" LOG_END;
 }
@@ -72,7 +72,7 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 		if (media_slot != nullptr)
 		{
 			audio_slot_t audio_slot(
-						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, *this, m_min_jitter_ms)
+						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, m_sync_point, m_min_jitter_ms)
 						, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
 			);
 
@@ -158,22 +158,6 @@ bool AudioComposer::SetAudioFormat(const audio_format_t& audio_format)
 std::size_t AudioComposer::Count() const
 {
 	return m_audio_slots.size();
-}
-
-void AudioComposer::Lock() const
-{
-	if (m_thread_safe)
-	{
-		m_mutex.lock();
-	}
-}
-
-void AudioComposer::Unlock() const
-{
-	if (m_thread_safe)
-	{
-		m_mutex.unlock();
-	}
 }
 
 AudioComposer::SlotCollectionWrapper::SlotCollectionWrapper(AudioComposer::audio_slot_map_t& audio_slots)
