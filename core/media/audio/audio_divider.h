@@ -29,6 +29,9 @@ public:
 public:
 	std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, uint32_t options) override;
 
+	// IMediaWriteStatus interface
+public:
+	bool CanWrite() const override;
 
 };
 

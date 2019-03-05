@@ -3,11 +3,11 @@
 
 #include "media/common/delay_timer.h"
 #include "media/common/data_queue.h"
+#include "media/common/sync_point.h"
 #include "media/audio/channels/audio_channel.h"
 
 
 #include <thread>
-#include <mutex>
 #include <atomic>
 
 namespace core
@@ -24,14 +24,12 @@ namespace channels
 
 class AudioChannelWorker : public AudioChannel
 {
-	using mutex_t = std::mutex;
-	using lock_t = std::lock_guard<mutex_t>;
+	SyncPoint			m_sync_point;
 
 	IAudoChannel&		m_audio_channel;
 	IMediaPoint&		m_media_point;
 
 	std::thread			m_dispatch_thread;
-	mutex_t				m_mutex;
 	std::atomic_bool	m_running;
 
 	DataQueue			m_audio_queue;
@@ -61,6 +59,14 @@ protected:
 
 private:
 	void audio_dispatcher_proc(const std::string device_name);
+
+	// IMediaWriteStatus interface
+public:
+	bool CanWrite() const override;
+
+	// IMediaReadStatus interface
+public:
+	bool CanRead() const override;
 };
 
 } // channels

@@ -29,7 +29,7 @@ struct audio_channel_params_t
 
 	channel_direction_t		direction;
 	audio_format_t			audio_format;
-	std::uint32_t			duration;
+	std::uint32_t			buffer_duration_ms;
 	bool					nonblock_mode;
 
 	audio_channel_params_t(channel_direction_t dir = channel_direction_t::both

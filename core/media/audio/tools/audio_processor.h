@@ -41,6 +41,7 @@ struct audio_processor_config_t
 	{
 		channels::audio_channel_params_t channel_params;
 		std::uint32_t					 duration_ms;
+		std::string						 device_name;
 	}recorder_config, playback_config, aux_playback_config;
 
 	struct event_server_config_t
@@ -54,26 +55,43 @@ class AudioProcessor : public SyncPoint
 {
 	using mutex_t = std::mutex;
 
-	class SyncAudioPointProxy : public IAudioPoint
+
+	class SyncAudioReaderProxy : public IAudioReader
 	{
-		IAudioPoint&			m_audio_point;
+		IAudioReader&			m_audio_reader;
 		const ISyncPoint&		m_sync_point;
-
 	public:
-		SyncAudioPointProxy(IAudioPoint& audio_point, const ISyncPoint& sync_point);
+		SyncAudioReaderProxy(IAudioReader& audio_reader, const ISyncPoint& m_sync_point);
 
-		// IAudioWriter interface
+		// IMediaReadStatus interface
 	public:
-		std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0) override;
+		bool CanRead() const override;
 
 		// IAudioReader interface
 	public:
-		std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) override;
+		int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, uint32_t options = 0) override;
+	};
+
+	class SyncAudioWriterProxy : public IAudioWriter
+	{
+		IAudioWriter&			m_audio_writer;
+		const ISyncPoint&		m_sync_point;
+	public:
+		SyncAudioWriterProxy(IAudioWriter& audio_writer, const ISyncPoint& m_sync_point);
+
+		// IMediaWriteStatus interface
+	public:
+		bool CanWrite() const override;
+
+		// IAudioWriter interface
+	public:
+		int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, uint32_t options = 0) override;
 	};
 
 	audio_processor_config_t		m_config;
-
 	mutex_t							m_mutex;
+
+	std::atomic_bool				m_is_running;
 
 	MediaQueue						m_composer_queue;
 	AudioQueue						m_event_queue;
@@ -91,8 +109,8 @@ class AudioProcessor : public SyncPoint
 	IAudioStream&					m_recorder_stream;
 	IAudioStream&					m_playback_stream;
 
-	SyncAudioPointProxy				m_recorder_stream_proxy;
-	SyncAudioPointProxy				m_playback_stream_proxy;
+	SyncAudioWriterProxy			m_recorder_stream_proxy;
+	SyncAudioReaderProxy			m_playback_stream_proxy;
 
 	AudioEventServer				m_audio_event_server;
 
@@ -101,7 +119,31 @@ class AudioProcessor : public SyncPoint
 
 public:
 	AudioProcessor(const audio_processor_config_t& config);
+	~AudioProcessor() override;
 
+	media_stream_id_t RegisterStream(const session_id_t& session_id
+									 , const audio_format_t& audio_format
+									 , bool is_writer);
+
+	bool UnregisterStream(media_stream_id_t audio_stream_id);
+
+	std::size_t Write(media_stream_id_t audio_stream_id, const void* data, std::size_t size, std::uint32_t options = 0);
+	std::size_t Read(media_stream_id_t audio_stream_id, void* data, std::size_t size, std::uint32_t options = 0);
+
+	std::size_t Write(media_stream_id_t audio_stream_id, const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0);
+	std::size_t Read(media_stream_id_t audio_stream_id, const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0);
+
+	const IAudioStream* operator[](media_stream_id_t audio_stream_id);
+
+	const audio_processor_config_t& GetConfig() const;
+
+	IVolumeController& GetRecorderVolumeController();
+	IVolumeController& GetPlaybackVolumeController();
+	IVolumeController& GetEventsVolumeController();
+
+private:
+	bool check_and_conrtol_audio_system();
+	bool control_audio_system(bool is_start);
 };
 
 } // tools

@@ -17,7 +17,7 @@ namespace audio
 
 AudioServer::AudioServer(IAudioComposer& audio_composer)
 	: m_audio_composer(audio_composer)
-	, m_stream_id(0)
+	, m_stream_id(media_stream_id_min)
 	, m_slot_id(0)
 {
 	LOG(debug) << "Create audio server with audio format [" << audio_composer.GetAudioFormat() << "]" LOG_END;
@@ -37,7 +37,7 @@ const IAudioStream* AudioServer::operator [](media_stream_id_t stream_id) const
 	return it != m_streams.end() ? it->second.get() : nullptr;
 }
 
-IAudioStream* AudioServer::AddStream(const audio_format_t& audio_format, const session_id_t& session_id, bool is_writer)
+IAudioStream* AudioServer::AddStream(const session_id_t& session_id, const audio_format_t& audio_format, bool is_writer)
 {
 
 	IAudioStream* result = nullptr;

@@ -28,7 +28,7 @@ namespace tools
 
 class AudioEventServer: public IDataCollection, public IVolumeController
 {
-	class AudioEvent : public IAudioReader, public IMediaReadStatus
+	class AudioEvent : public IAudioReader
 	{
 		std::string						m_file_name;
 		std::uint32_t					m_times;
@@ -91,6 +91,7 @@ public:
 
 	bool PlayEvent(const std::string& event_name);
 	bool StopEvent(const std::string& event_name);
+	void Stop();
 
 private:
 

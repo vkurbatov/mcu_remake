@@ -120,12 +120,7 @@ AudioEventServer::AudioEventServer(IAudioWriter& audio_writer, const audio_forma
 
 AudioEventServer::~AudioEventServer()
 {
-	m_running = false;
-
-	if (m_event_thread.joinable())
-	{
-		m_event_thread.join();
-	}
+	Stop();
 }
 
 std::size_t AudioEventServer::Count() const
@@ -229,6 +224,21 @@ bool AudioEventServer::StopEvent(const std::string &event_name)
 	}
 
 	return result;
+}
+
+void AudioEventServer::Stop()
+{
+	m_running = false;
+
+	if (m_event_thread.joinable())
+	{
+		m_event_thread.join();
+	}
+
+	for (auto& s : m_events)
+	{
+		s.second.Reset();
+	}
 }
 
 void AudioEventServer::event_proc()

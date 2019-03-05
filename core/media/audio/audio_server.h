@@ -46,7 +46,7 @@ public:
 	IAudioStream* operator [](media_stream_id_t stream_id) override;
 	const IAudioStream* operator [](media_stream_id_t stream_id) const override;
 
-	IAudioStream* AddStream(const audio_format_t& audio_format, const session_id_t& session_id, bool is_writer) override;
+	IAudioStream* AddStream(const session_id_t& session_id, const audio_format_t& audio_format, bool is_writer) override;
 	bool RemoveStream(media_stream_id_t stream_id) override;
 
 	// IDataCollection interface

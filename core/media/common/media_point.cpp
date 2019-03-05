@@ -18,7 +18,7 @@ int32_t MediaPoint::Read(void* data, std::size_t size, uint32_t flags)
 	return CanRead() ? internal_read(data, size, flags) : -EACCES;
 }
 
-bool MediaPoint::CanRead() const
+/*bool MediaPoint::CanRead() const
 {
 	return true;
 }
@@ -26,7 +26,7 @@ bool MediaPoint::CanRead() const
 bool MediaPoint::CanWrite() const
 {
 	return true;
-}
+}*/
 
 } // media
 

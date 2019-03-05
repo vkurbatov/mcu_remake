@@ -346,7 +346,7 @@ void test_audio_file()
 	auto w_param = r_file.GetAudioParams();
 
 	w_param.audio_format.sample_rate = 48000;
-	w_param.duration = 20;
+	w_param.buffer_duration_ms = 20;
 	w_param.nonblock_mode = 1;
 
 	w_param.direction = core::media::audio::channels::channel_direction_t::playback;
@@ -367,14 +367,14 @@ void test_audio_file()
 
 	if (w_channel.IsOpen())
 	{
-		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.duration);
+		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.buffer_duration_ms);
 
 		char buffer[10000];
 
 		while (auto ret = r_file.Read(buffer, part_size))
 		{
 			w_point.Write(r_file.GetAudioParams().audio_format, buffer, ret);
-			timer(w_param.duration);
+			timer(w_param.buffer_duration_ms);
 		}
 	}
 }
@@ -503,11 +503,11 @@ void test_composer()
 
 	// file_dispatcher.Start(duration_ms * 2);
 
-	auto* read_audio_stream = audio_server.AddStream(player.GetAudioFormat(), alsa_session_id, false);
-	auto* write_audio_stream = audio_server.AddStream(recorder.GetAudioFormat(), alsa_session_id, true);
-	auto* r_file_audio_stream1 = audio_server.AddStream(r_file1.GetAudioFormat(), file_session_id1, true);
-	auto* r_file_audio_stream2 = audio_server.AddStream(r_file2.GetAudioFormat(), file_session_id2, true);
-	auto* w_file_audio_stream1 = audio_server.AddStream(w_file1.GetAudioFormat(), file_session_id1, false);
+	auto* read_audio_stream = audio_server.AddStream(alsa_session_id, player.GetAudioFormat(), false);
+	auto* write_audio_stream = audio_server.AddStream(alsa_session_id, recorder.GetAudioFormat(), true);
+	auto* r_file_audio_stream1 = audio_server.AddStream(file_session_id1, r_file1.GetAudioFormat(), true);
+	auto* r_file_audio_stream2 = audio_server.AddStream(file_session_id2, r_file2.GetAudioFormat(), true);
+	auto* w_file_audio_stream1 = audio_server.AddStream(file_session_id1, w_file1.GetAudioFormat(), false);
 
 	core::media::audio::AudioDispatcher player_dispatcher(*read_audio_stream, player, player.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher recorder_dispatcher(recorder, *write_audio_stream, recorder.GetAudioFormat(), true);
@@ -549,7 +549,7 @@ void test_events()
 	auto recorder_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder);
 
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms , true);
+	core::media::audio::channels::audio_channel_params_t recorder_params( core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms * 8, true );
 	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
 	core::media::audio::channels::audio_channel_params_t player_params1(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate1, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
@@ -569,11 +569,13 @@ void test_events()
 	// mux.GetMainVolumeController().SetVolume(100);
 	// mux.GetMainVolumeController().SetMute(true);
 
-	core::media::audio::AudioDispatcher dispatcher(recorder, mux, player1.GetAudioFormat(), duration_ms);
+	core::media::audio::AudioDispatcher dispatcher(recorder, mux, player1.GetAudioFormat(), duration_ms * 2);
 
 	player1.Open("default");
 	player2.Open(playback_device_list[1].user_format());
 	recorder.Open(recorder_device_list[1].user_format());
+
+	// core::media::DelayTimer::Sleep(1000);
 
 	event_server.AddEvent(event_1, "/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav", 3, 2000);
 	event_server.AddEvent(event_2, "/home/vkurbatov/ivcscodec/test_sound/Side_Left.wav", 4, 1000);
@@ -586,6 +588,166 @@ void test_events()
 	core::media::DelayTimer::Sleep(20000);
 
 	event_server.RemoveEvent(event_1);
+}
+
+#include "media/audio/tools/audio_processor.h"
+
+class AudioProcessorWrapper : public core::media::audio::IAudioPoint
+{
+	core::media::audio::tools::AudioProcessor&	m_processor;
+	core::media::media_stream_id_t				m_stream_id;
+
+public:
+
+	AudioProcessorWrapper(core::media::audio::tools::AudioProcessor& processor
+						  , core::media::media_stream_id_t stream_id)
+		: m_processor(processor)
+		, m_stream_id(stream_id)
+	{
+
+	}
+
+	// IMediaWriteStatus interface
+public:
+	bool CanWrite() const override
+	{
+		return true;
+	}
+
+	// IMediaReadStatus interface
+public:
+	bool CanRead() const override
+	{
+		return true;
+	}
+
+	// IAudioWriter interface
+public:
+	std::int32_t Write(const core::media::audio::audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options) override
+	{
+		return m_processor.Write(m_stream_id, data, size, options);
+	}
+
+	// IAudioReader interface
+public:
+	std::int32_t Read(const core::media::audio::audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options) override
+	{
+		return m_processor.Read(m_stream_id, data, size, options);
+	}
+};
+
+void test_audio_processor()
+{
+
+	const std::uint32_t duration_ms = 10;
+	const std::uint32_t jitter_ms = 10;
+
+	const core::media::audio::session_id_t session_id_1 = "session_1";
+
+	auto recorder_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder);
+	auto playback_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::playback);
+
+	auto recorder1 = recorder_device_list[0].user_format();
+	auto recorder2 = recorder_device_list[1].user_format();
+
+	auto playback1 = playback_device_list[0].user_format();
+	auto playback2 = playback_device_list[1].user_format();
+
+
+	core::media::audio::tools::audio_processor_config_t	audio_processor_config;
+
+
+	audio_processor_config.composer_config.audio_format.sample_rate = 32000;
+	audio_processor_config.composer_config.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+	audio_processor_config.composer_config.audio_format.channels = 1;
+
+	audio_processor_config.composer_config.jitter_ms = jitter_ms;
+	audio_processor_config.composer_config.queue_size = 64000;
+
+
+	audio_processor_config.event_server_config.jittr_ms = jitter_ms;
+	audio_processor_config.event_server_config.duration_ms = duration_ms;
+
+
+	audio_processor_config.recorder_config.channel_params.direction = core::media::audio::channels::channel_direction_t::recorder;
+	audio_processor_config.recorder_config.channel_params.buffer_duration_ms = duration_ms * 8;
+	audio_processor_config.recorder_config.channel_params.nonblock_mode = true;
+
+	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 8000;
+	audio_processor_config.recorder_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+	audio_processor_config.recorder_config.channel_params.audio_format.channels = 1;
+
+	audio_processor_config.recorder_config.duration_ms = duration_ms;
+	audio_processor_config.recorder_config.device_name = recorder1;
+
+
+	audio_processor_config.playback_config.channel_params.direction = core::media::audio::channels::channel_direction_t::playback;
+	audio_processor_config.playback_config.channel_params.buffer_duration_ms = duration_ms * 2;
+	audio_processor_config.playback_config.channel_params.nonblock_mode = true;
+
+	audio_processor_config.playback_config.channel_params.audio_format.sample_rate = 48000;
+	audio_processor_config.playback_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+	audio_processor_config.playback_config.channel_params.audio_format.channels = 1;
+
+	audio_processor_config.playback_config.duration_ms = duration_ms;
+	audio_processor_config.playback_config.device_name = playback1;
+
+
+	audio_processor_config.aux_playback_config.channel_params.direction = core::media::audio::channels::channel_direction_t::playback;
+	audio_processor_config.aux_playback_config.channel_params.buffer_duration_ms = duration_ms * 8;
+	audio_processor_config.aux_playback_config.channel_params.nonblock_mode = true;
+
+	audio_processor_config.aux_playback_config.channel_params.audio_format.sample_rate = 16000;
+	audio_processor_config.aux_playback_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+	audio_processor_config.aux_playback_config.channel_params.audio_format.channels = 1;
+
+	audio_processor_config.aux_playback_config.duration_ms = duration_ms;
+	audio_processor_config.aux_playback_config.device_name = ""; // playback_device_list[1].user_format();
+
+
+	core::media::audio::channels::audio_channel_params_t player_params;
+	core::media::audio::channels::audio_channel_params_t recorder_params;
+
+	recorder_params.direction = core::media::audio::channels::channel_direction_t::recorder;
+	recorder_params.buffer_duration_ms = duration_ms * 2;
+	recorder_params.nonblock_mode = true;
+
+	recorder_params.audio_format.sample_rate = 48000;
+	recorder_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+	recorder_params.audio_format.channels = 1;
+
+
+	player_params.direction = core::media::audio::channels::channel_direction_t::playback;
+	player_params.buffer_duration_ms = duration_ms * 2;
+	player_params.nonblock_mode = true;
+
+	player_params.audio_format.sample_rate = 8000;
+	player_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+	player_params.audio_format.channels = 1;
+
+	core::media::audio::channels::alsa::AlsaChannel alsa_recorder(recorder_params);
+	core::media::audio::channels::alsa::AlsaChannel alsa_player(player_params);
+
+	alsa_recorder.Open(recorder2);
+	alsa_player.Open(playback2);
+
+
+	core::media::audio::tools::AudioProcessor audio_processor(audio_processor_config);
+
+	auto playback_stream_id = audio_processor.RegisterStream(session_id_1, alsa_player.GetAudioFormat(), false);
+	auto recorder_stream_id = audio_processor.RegisterStream(session_id_1, alsa_recorder.GetAudioFormat(), true);
+
+
+	AudioProcessorWrapper	playback_wrapper(audio_processor, playback_stream_id);
+	AudioProcessorWrapper	recorder_wrapper(audio_processor, recorder_stream_id);
+
+	core::media::audio::AudioDispatcher recorder_dispatcher(alsa_recorder, recorder_wrapper, alsa_recorder.GetAudioFormat(), true);
+	core::media::audio::AudioDispatcher playback_dispatcher(playback_wrapper, alsa_player, alsa_player.GetAudioFormat(), true);
+
+	recorder_dispatcher.Start(duration_ms);
+	playback_dispatcher.Start(duration_ms);
+
+	while(true);
 }
 
 int main()
@@ -604,7 +766,9 @@ int main()
 
 	// test_composer();
 
-	test_events();
+	// test_events();
+
+	test_audio_processor();
 
 	return 0;
 }

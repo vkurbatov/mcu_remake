@@ -17,8 +17,8 @@ public:
 	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t options = 0) override;
 	virtual std::int32_t Read(void* data, std::size_t size, std::uint32_t options = 0) override;
 
-	virtual bool CanRead() const override;
-	virtual bool CanWrite() const override;
+/*	virtual bool CanRead() const override;
+	virtual bool CanWrite() const override;*/
 
 protected:
 

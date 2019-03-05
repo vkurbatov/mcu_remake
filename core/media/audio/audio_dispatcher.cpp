@@ -105,17 +105,20 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 			buffer.resize(size);
 		}
 
-		auto result = m_audio_reader.Read(m_audio_format, buffer.data(), size);
-
-		if (result < size && m_is_strong_sizes)
+		if (m_audio_reader.CanRead())
 		{
-			std::memset(buffer.data() + result, 0, size - result);
-			result = size;
-		}
+			auto result = m_audio_reader.Read(m_audio_format, buffer.data(), size);
 
-		if (result > 0)
-		{
-			result = m_audio_writer.Write(m_audio_format, buffer.data(), result);
+			if (result < size && m_is_strong_sizes)
+			{
+				std::memset(buffer.data() + result, 0, size - result);
+				result = size;
+			}
+
+			if (result > 0)
+			{
+				result = m_audio_writer.Write(m_audio_format, buffer.data(), result);
+			}
 		}
 
 		delay(duration_ms);

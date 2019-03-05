@@ -1,5 +1,6 @@
 #include "audio_channel_worker.h"
 #include "media/common/delay_timer.h"
+#include "media/common/guard_lock.h"
 
 #include <core-tools/logging.h>
 #include "media/audio/audio_string_format_utils.h"
@@ -103,13 +104,13 @@ const std::string& AudioChannelWorker::GetName() const
 
 int32_t AudioChannelWorker::internal_write(const void* data, std::size_t size, uint32_t options)
 {
-	lock_t lock(m_mutex);
+	GuardLock lock(m_sync_point);
 	return m_audio_queue.Push(data, size);
 }
 
 int32_t AudioChannelWorker::internal_read(void* data, std::size_t size, uint32_t options)
 {
-	lock_t lock(m_mutex);
+	GuardLock lock(m_sync_point);
 	return m_audio_queue.Pop(data, size);
 }
 
@@ -127,7 +128,7 @@ bool AudioChannelWorker::internal_set_audio_params(const audio_channel_params_t&
 	if (result && audio_params != m_audio_channel.GetAudioParams())
 	{
 		{
-			lock_t lock(m_mutex);
+			GuardLock lock(m_sync_point);
 
 			m_audio_queue.Reset();
 		}
@@ -145,7 +146,7 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 
 	media_buffer_t buffer( m_audio_channel.GetAudioParams().buffer_size() );
 
-	auto delay_ms = m_audio_channel.GetAudioParams().duration;
+	auto delay_ms = m_audio_channel.GetAudioParams().buffer_duration_ms;
 
 	LOG(info) << "Started audio worker for device \'" << device_name << "\', duration = " << delay_ms << "ms" LOG_END;
 
@@ -157,7 +158,7 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 			{
 				std::int32_t result = 0;
 				{
-					lock_t lock(m_mutex);
+					GuardLock lock(m_sync_point);
 					result = m_audio_queue.Pop(buffer.data(), buffer.size());
 				}
 
@@ -173,7 +174,7 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 
 				if (result > 0)
 				{
-					lock_t lock(m_mutex);
+					GuardLock lock(m_sync_point);
 					m_audio_queue.Push(buffer.data(), result);
 				}
 			}
@@ -192,6 +193,16 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 	{
 		LOG(error) << "Can't open device \'" << device_name << "\'. Worker stopped." LOG_END;
 	}
+}
+
+bool AudioChannelWorker::CanWrite() const
+{
+	return IsOpen() && IsPlayback();
+}
+
+bool AudioChannelWorker::CanRead() const
+{
+	return IsOpen() && IsRecorder();
 }
 
 } // channels

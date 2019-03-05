@@ -2,12 +2,10 @@
 #define AUDIO_QUEUE_H
 
 //#include "media/audio/i_audio_formatter.h"
-#include "media/common/i_sync_point.h"
+#include "media/common/sync_point.h"
 #include "media/common/data_queue.h"
 #include "media/audio/i_audio_point.h"
 #include "media/audio/audio_resampler.h"
-
-#include <mutex>
 
 namespace core
 {
@@ -25,10 +23,7 @@ const std::uint32_t default_audio_queue_jitter_ms = 1000;
 
 class AudioQueue : public IAudioPoint, public IAudioFormatter, public IDataQueueControl, public ISyncPoint
 {
-	using mutex_t = std::mutex;
-	bool			m_thread_safe;
-
-	mutable mutex_t m_mutex;
+	SyncPoint		m_sync_point;
 
 	AudioResampler	m_resampler;
 	DataQueue		m_data_queue;
@@ -72,6 +67,14 @@ public:
 public:
 	void Lock() const override;
 	void Unlock() const override;
+
+	// IMediaWriteStatus interface
+public:
+	bool CanWrite() const override;
+
+	// IMediaReadStatus interface
+public:
+	bool CanRead() const override;
 };
 
 } // audio

@@ -57,6 +57,11 @@ std::int32_t AudioMux::Write(const audio_format_t& audio_format, const void* dat
 	return result;
 }
 
+bool AudioMux::CanWrite() const
+{
+	return m_audio_writer.CanWrite();
+}
+
 } // audio
 
 } // media

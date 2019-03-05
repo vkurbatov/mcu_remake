@@ -1,6 +1,7 @@
 #ifndef I_AUDIO_POINTH_H
 #define I_AUDIO_POINTH_H
 
+#include "media/common/i_media_point.h"
 #include <cstdint>
 
 namespace core
@@ -12,20 +13,18 @@ namespace media
 namespace audio
 {
 
-
-
 #ifndef AUDIO_FORMAT_H
 struct audio_format_t;
 #endif
 
-class IAudioReader
+class IAudioReader : public IMediaReadStatus
 {
 public:
 	virtual ~IAudioReader() = default;
 	virtual std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
-class IAudioWriter
+class IAudioWriter : public IMediaWriteStatus
 {
 public:
 	virtual ~IAudioWriter() = default;

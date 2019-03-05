@@ -45,7 +45,7 @@ private:
 	const IDataCollection&		m_slots_collection;
 	const ISyncPoint&			m_sync_point;
 
-	AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, const ISyncPoint& sync_point, const std::uint32_t& min_jitter_ms);
+	explicit AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, const ISyncPoint& sync_point, const std::uint32_t& min_jitter_ms);
 	~AudioSlot() override = default;
 
 	AudioSlot(const AudioSlot&) = delete;
@@ -66,6 +66,14 @@ public:
 	bool IsSkip() const override;
 	void Reset() override;
 
+	// IMediaWriteStatus interface
+public:
+	bool CanWrite() const override;
+
+	// IMediaReadStatus interface
+public:
+	bool CanRead() const override;
+
 private:
 
 	std::int32_t slot_push(const void* data, std::size_t size);
@@ -74,9 +82,6 @@ private:
 
 	std::int32_t internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options);
 	std::int32_t internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options);
-
-
-
 };
 
 } // audio

@@ -18,7 +18,7 @@ AudioQueue::AudioQueue(const audio_format_t& audio_format
 	, m_queue_duration_ms(queue_duration_ms)
 	, m_jitter_ms(jitter_ms)
 	, m_can_read(false)
-	, m_thread_safe(thread_safe)
+	, m_sync_point(!thread_safe)
 	, m_data_queue(audio_format.size_from_duration(queue_duration_ms))
 {
 
@@ -130,18 +130,22 @@ std::size_t AudioQueue::Capacity() const
 
 void AudioQueue::Lock() const
 {
-	if (m_thread_safe)
-	{
-		m_mutex.lock();
-	}
+	m_sync_point.Lock();
 }
 
 void AudioQueue::Unlock() const
 {
-	if (m_thread_safe)
-	{
-		m_mutex.unlock();
-	}
+	m_sync_point.Unlock();
+}
+
+bool AudioQueue::CanWrite() const
+{
+	return Capacity() > 0;
+}
+
+bool AudioQueue::CanRead() const
+{
+	return Size() > 0;
 }
 
 } // audio

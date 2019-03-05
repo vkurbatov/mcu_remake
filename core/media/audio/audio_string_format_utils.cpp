@@ -23,7 +23,7 @@ std::ostream &operator<<(std::ostream &ostream, const core::media::audio::audio_
 std::ostream &operator<<(std::ostream &ostream, const core::media::audio::channels::audio_channel_params_t &channel_params)
 {
 	return ostream << channel_params.direction << ", "
-				   << channel_params.duration << "ms, "
+				   << channel_params.buffer_duration_ms << "ms, "
 				   << (channel_params.nonblock_mode ? "nonblock" : "block") << ", ["
 				   << channel_params.audio_format << "]";
 }

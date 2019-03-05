@@ -31,7 +31,7 @@ private:
 	IAudioPoint&			m_audio_point;
 
 private:
-	AudioStream(media_stream_id_t stream_id
+	explicit AudioStream(media_stream_id_t stream_id
 				, const session_id_t& session_id
 				, const audio_format_t& audio_format
 				, IAudioPoint& audio_point

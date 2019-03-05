@@ -327,7 +327,7 @@ bool AlsaChannel::Open(const std::string &device_name)
 			if (result == false)
 			{
 				Close();
-				LOG(warning) << "Can't Open device [" << device_name << "]: error set hardware params" LOG_END;
+				LOG(error) << "Can't Open device [" << device_name << "]: error set hardware params" LOG_END;
 			}
 			else
 			{
@@ -337,7 +337,7 @@ bool AlsaChannel::Open(const std::string &device_name)
 		}
 		else
 		{
-			LOG(warning) << "Can't Open device [" << device_name << "]: errno = " << errno LOG_END;
+			LOG(error) << "Can't Open device [" << device_name << "]: errno = " << errno LOG_END;
 		}
 	}
 	else
@@ -460,11 +460,12 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 		if (err < 0)
 		{
-			io_complete |= true;
 			LOG(error) << "Can't read alsa device with error = " << err << ", retry = " << retry_read_count << ", trans_id = " << m_read_transaction_id LOG_END;
 		}
 
-		if ((io_complete |= (size == 0) || (retry_read_count >= default_max_io_retry_count)) == true)
+		io_complete |= (size == 0) || (retry_read_count >= default_max_io_retry_count);
+
+		if (io_complete == true)
 		{
 			result = err < 0 ? err : total;
 		}
@@ -528,11 +529,12 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 		if (err < 0)
 		{
-			io_complete |= true;
 			LOG(error) << "Can't write alsa device with error = " << err << ", retry = " << retry_write_count << ", id = " << m_write_transaction_id LOG_END;
 		}
 
-		if ((io_complete |= (size == 0) || (retry_write_count >= default_max_io_retry_count)) == true)
+		io_complete |= (size == 0) || (retry_write_count >= default_max_io_retry_count);
+
+		if (io_complete == true)
 		{
 			result = err < 0 ? err : total;
 		}
@@ -556,10 +558,15 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_t timeout_ms)
 {
 
+	// весь этот код нужно пересмотреть вокруг функции snd_pcm_recover,
+	// и все лишнее выкинуть нахуй
+
 	if (timeout_ms == 0)
 	{
 		timeout_ms = 0xffffffff;
 	}
+
+	error = snd_pcm_recover(m_handle, error, -1);
 
 	#define string_type(is_write) (is_write ? "write" : "read")
 
@@ -655,7 +662,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 				std::uint32_t periods = 2;
 
 				// default buffer_size ?
-				if(audio_params.duration != 0)
+				if(audio_params.buffer_duration_ms != 0)
 				{
 
 					snd_pcm_uframes_t period_size = audio_params.buffer_size() * periods;
@@ -685,6 +692,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 				do
 				{
 					result = snd_pcm_hw_params(m_handle, hw_params);
+
 					if (result == -EAGAIN)
 					{
 						snd_pcm_wait(m_handle, 1);
@@ -694,7 +702,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 
 				if(result < 0)
 				{
-					LOG(error) << "Can't set hardware params, errno = " << errno LOG_END;
+					LOG(error) << "Can't set hardware params, errno = " << result LOG_END;
 					break;
 				}
 
@@ -710,13 +718,10 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 
 		}
 
-		if (result < 0)
+		if (result >= 0)
 		{
-			result = -errno;
-		}
-		else
-		{
-			LOG(info) << "Set hardware params success " << errno LOG_END;
+			result = snd_pcm_prepare(m_handle);
+			LOG(info) << "Set hardware params success " << result LOG_END;
 		}
 	}
 

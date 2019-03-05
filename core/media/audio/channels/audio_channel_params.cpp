@@ -15,7 +15,7 @@ namespace channels
 audio_channel_params_t::audio_channel_params_t(channel_direction_t dir, const audio_format_t& afmt, uint32_t prd, bool nonblock)
 	: direction(dir)
 	, audio_format(afmt)
-	, duration(prd)
+	, buffer_duration_ms(prd)
 	, nonblock_mode(nonblock)
 {}
 
@@ -31,7 +31,7 @@ bool audio_channel_params_t::is_null() const
 
 std::size_t audio_channel_params_t::buffer_size() const
 {
-	return audio_format.size_from_duration(duration);
+	return audio_format.size_from_duration(buffer_duration_ms);
 }
 
 bool audio_channel_params_t::is_recorder_only() const
@@ -57,7 +57,7 @@ bool audio_channel_params_t::is_playback() const
 bool audio_channel_params_t::operator ==(const audio_channel_params_t& acp) const
 {
 	return direction == acp.direction
-			&& duration == acp.duration
+			&& buffer_duration_ms == acp.buffer_duration_ms
 			&& nonblock_mode == acp.nonblock_mode
 			&& audio_format == acp.audio_format;
 }

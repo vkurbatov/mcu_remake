@@ -78,6 +78,16 @@ void AudioSlot::Reset()
 	m_can_slot_read = false;
 }
 
+bool AudioSlot::CanWrite() const
+{
+	return m_media_slot.Capacity() > 0;
+}
+
+bool AudioSlot::CanRead() const
+{
+	return m_media_slot.Size() > 0;
+}
+
 int32_t AudioSlot::slot_push(const void* data, std::size_t size)
 {
 	return m_media_slot.Push(data, size);
