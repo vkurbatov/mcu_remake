@@ -36,7 +36,7 @@ struct alsa_channel_info
 
 	const std::string user_format() const
 	{
-		return card_name == "default" ? card_name : (card_name + "[" + device_name + "]");
+        return name == "default" ? name : (card_name == device_name ? card_name : card_name + "[" + device_name + "]");
 	}
 };
 

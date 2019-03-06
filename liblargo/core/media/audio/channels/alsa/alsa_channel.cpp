@@ -135,7 +135,6 @@ const std::string fetch_device_name(const std::string& device_name, channel_dire
 			}
 		}
 	}
-
 	return result;
 }
 
@@ -217,9 +216,10 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 			{
 				auto field_value = alsa_utils::get_field_from_hint(*it, f);
 
+                auto field_id = static_cast<fields_enum_t>(i++);
+
 				if ( field_value != "null" )
 				{
-					auto field_id = static_cast<fields_enum_t>(i++);
 
 					if (!field_value.empty() || field_id == fields_enum_t::ioid)
 					{
@@ -227,19 +227,19 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 						{
 							case fields_enum_t::name:
 
-								append = (field_value == default_device_name)
-										|| (hw_profile.empty())
+                                append = (hw_profile.empty())
 										|| (field_value.find(hw_profile) == 0);
 
 								if (append == true)
 								{
 									device_info.name = field_value;
 								}
-
-								if (field_value == default_device_name)
+                                else if (field_value.find(default_device_name) == 0)
 								{
+                                    device_info.name = default_device_name;
 									device_info.card_name = default_device_name;
 									device_info.device_name = default_device_name;
+                                    append = true;
 								}
 
 								break;
@@ -268,6 +268,7 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 						break;
 					}
 				}
+
 
 			}//foreach fields
 			it++;
