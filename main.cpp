@@ -3,6 +3,8 @@
 #include <cstring>
 #include <mutex>
 
+// #ifdef NODEF
+
 #include "core/media/audio/channels/alsa/alsa_channel.h"
 #include "core/media/common/data_queue.h"
 #include "core/media/audio/audio_resampler.h"
@@ -626,11 +628,6 @@ public:
 	{
 		auto ret = m_processor.Write(m_stream_id, data, size, options);
 
-		if (ret <= 0)
-		{
-			std::cout << "write ret = " << ret << std::endl;
-		}
-
 		return ret;
 	}
 
@@ -640,12 +637,58 @@ public:
 	{
 		auto ret = m_processor.Read(m_stream_id, data, size, options);
 
-		if (ret <= 0)
+		return ret;
+	}
+};
+
+class AudioProcessing: public core::media::audio::IAudioProcessing
+{
+
+	core::media::audio::VolumeController	m_input_volume_controller;
+	core::media::audio::VolumeController	m_output_volume_controller;
+
+public:
+	AudioProcessing(std::uint32_t input_volume = 100, std::uint32_t output_volume = 100)
+		: m_input_volume_controller(input_volume)
+		, m_output_volume_controller(output_volume)
+	{
+
+	}
+
+	// IAudioProcessing interface
+public:
+	std::size_t AudioProcessingRead(const core::media::audio::audio_format_t& audio_format, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) override
+	{
+		std::size_t result = input_size;
+
+		if (output_data != nullptr)
 		{
-			std::cout << "read ret = " << ret << std::endl;
+			result = m_input_volume_controller(audio_format.sample_format, input_data, input_size, output_data, output_size);
 		}
 
-		return ret;
+		return result;
+	}
+
+	std::size_t AudioProcessingWrite(const core::media::audio::audio_format_t& audio_format, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) override
+	{
+		std::size_t result = input_size;
+
+		if (output_data != nullptr)
+		{
+			result = m_output_volume_controller(audio_format.sample_format, input_data, input_size, output_data, output_size);
+		}
+
+		return result;
+	}
+
+	bool CanReadProcessing() const override
+	{
+		return true;
+	}
+
+	bool CanWriteProcessing() const override
+	{
+		return true;
 	}
 };
 
@@ -667,6 +710,8 @@ void test_audio_processor()
 	auto playback2 = playback_device_list[1].user_format();
 
 
+	std::string file_event1 = "/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav";
+
 	core::media::audio::tools::audio_processor_config_t	audio_processor_config;
 
 
@@ -674,18 +719,17 @@ void test_audio_processor()
 	audio_processor_config.composer_config.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
 	audio_processor_config.composer_config.audio_format.channels = 1;
 
-	audio_processor_config.composer_config.jitter_ms = jitter_ms;
+	audio_processor_config.composer_config.jitter_ms = 60;
 	audio_processor_config.composer_config.queue_size = 64000;
 
 	audio_processor_config.event_server_config.jittr_ms = jitter_ms;
-	audio_processor_config.event_server_config.duration_ms = duration_ms;
-
+	audio_processor_config.event_server_config.duration_ms = 2000;
 
 	audio_processor_config.recorder_config.channel_params.direction = core::media::audio::channels::channel_direction_t::recorder;
-	audio_processor_config.recorder_config.channel_params.buffer_duration_ms = duration_ms * 8;
+	audio_processor_config.recorder_config.channel_params.buffer_duration_ms = duration_ms * 2;
 	audio_processor_config.recorder_config.channel_params.nonblock_mode = true;
 
-	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 48000;
+	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 8000;
 	audio_processor_config.recorder_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
 	audio_processor_config.recorder_config.channel_params.audio_format.channels = 1;
 
@@ -694,7 +738,7 @@ void test_audio_processor()
 
 
 	audio_processor_config.playback_config.channel_params.direction = core::media::audio::channels::channel_direction_t::playback;
-	audio_processor_config.playback_config.channel_params.buffer_duration_ms = duration_ms * 8;
+	audio_processor_config.playback_config.channel_params.buffer_duration_ms = duration_ms * 2;
 	audio_processor_config.playback_config.channel_params.nonblock_mode = true;
 
 	audio_processor_config.playback_config.channel_params.audio_format.sample_rate = 48000;
@@ -743,7 +787,9 @@ void test_audio_processor()
 	alsa_recorder.Open(recorder2);
 	alsa_player.Open(playback2);
 
-	core::media::audio::tools::AudioProcessor audio_processor(audio_processor_config);
+	AudioProcessing	audio_processing(3, 100);
+
+	core::media::audio::tools::AudioProcessor audio_processor(audio_processor_config, &audio_processing);
 
 	auto playback_stream_id = audio_processor.RegisterStream(session_id_1, alsa_player.GetAudioFormat(), false);
 	auto recorder_stream_id = audio_processor.RegisterStream(session_id_1, alsa_recorder.GetAudioFormat(), true);
@@ -754,13 +800,23 @@ void test_audio_processor()
 	core::media::audio::AudioDispatcher recorder_dispatcher(alsa_recorder, recorder_wrapper, alsa_recorder.GetAudioFormat(), true);
 	core::media::audio::AudioDispatcher playback_dispatcher(playback_wrapper, alsa_player, alsa_player.GetAudioFormat(), true);
 
-	// recorder_dispatcher.Start(duration_ms);
-	// playback_dispatcher.Start(duration_ms);
+	recorder_dispatcher.Start(duration_ms);
+	playback_dispatcher.Start(duration_ms);
+
+	audio_processor.GetEventServer().AddEvent("incoming_call", file_event1, 3, 1000);
+	audio_processor.GetEventServer().PlayEvent("incoming_call");
+/*
+	audio_processor.GetRecorderVolumeController().SetVolume(10);
+	audio_processor.GetPlaybackVolumeController().SetVolume(3);
+	audio_processor.GetEventVolumeController().SetVolume(50);*/
+
 
 	core::media::DelayTimer delay;
 
 	while(true) delay(duration_ms);
 }
+
+//  #endif
 
 int main()
 {
@@ -780,7 +836,7 @@ int main()
 
 	// test_events();
 
-	test_audio_processor();
+	// test_audio_processor();
 
 	return 0;
 }

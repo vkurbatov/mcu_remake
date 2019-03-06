@@ -566,7 +566,8 @@ int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_
 		timeout_ms = 0xffffffff;
 	}
 
-	error = snd_pcm_recover(m_handle, error, -1);
+	// error = snd_pcm_recover(m_handle, error, -1);
+	snd_pcm_recover(m_handle, error, -1);
 
 	#define string_type(is_write) (is_write ? "write" : "read")
 

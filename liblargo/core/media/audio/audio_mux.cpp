@@ -43,6 +43,11 @@ std::int32_t AudioMux::Write(const audio_format_t& audio_format, const void* dat
 
 		auto mix_size = m_audio_reader.Read(audio_format, m_aux_input_buffer.data(), size);
 
+		if (mix_size <= 0)
+		{
+			mix_size = 0;
+		}
+
 		m_main_volume_controller(audio_format.sample_format, data, size, m_main_input_buffer.data());
 		m_aux_volume_controller(audio_format.sample_format, m_aux_input_buffer.data(), mix_size);
 

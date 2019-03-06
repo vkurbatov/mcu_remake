@@ -109,6 +109,12 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 		{
 			auto result = m_audio_reader.Read(m_audio_format, buffer.data(), size);
 
+			if (result < 0)
+			{
+				LOG(warning) << "Audio dispatcher read error = " << result LOG_END;
+				result = 0;
+			}
+
 			if (result < size && m_is_strong_sizes)
 			{
 				std::memset(buffer.data() + result, 0, size - result);
@@ -118,6 +124,10 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 			if (result > 0)
 			{
 				result = m_audio_writer.Write(m_audio_format, buffer.data(), result);
+			}
+			else
+			{
+				result = 0;
 			}
 		}
 

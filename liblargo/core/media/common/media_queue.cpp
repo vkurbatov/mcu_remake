@@ -7,8 +7,8 @@ namespace core
 namespace media
 {
 
-MediaQueue::MediaQueue(std::size_t capacity)
-	: m_multipoint_data_queue(capacity)
+MediaQueue::MediaQueue(std::size_t capacity, bool is_strong)
+	: m_multipoint_data_queue(capacity, is_strong)
 {
 
 }

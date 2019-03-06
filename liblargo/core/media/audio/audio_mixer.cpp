@@ -119,6 +119,10 @@ std::size_t mixed(const audio_format_t& audio_format, std::size_t stream_count, 
 		case audio_format_t::sample_format_t::float_64:
 			result = mixed<double>(stream_count, mix_method, input_data, input_data_size, mixed_data, mixed_data_size, output_data, output_data_size);
 			break;
+		default:
+			// ??
+			break;
+
 	}
 
 	return result;

@@ -170,7 +170,7 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	auto demix_size = m_palyback_queue.Pop(m_demix_buffer.data(), input_size);
 
-	//demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
+	demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
 
 
 	// resampling demix audio buffer

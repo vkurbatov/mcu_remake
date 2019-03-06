@@ -23,7 +23,7 @@ class MediaQueue : public IMediaQueue
 	MultipointDataQueue			m_multipoint_data_queue;
 
 public:
-	MediaQueue(std::size_t capacity);
+	MediaQueue(std::size_t capacity, bool is_strong = false);
 	~MediaQueue() override = default;
 
 	// IMediaQueue interface
