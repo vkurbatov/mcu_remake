@@ -21,16 +21,16 @@ namespace audio
 class AudioDispatcher
 {
 
-	std::thread				m_dispatch_thread;
-	std::atomic_bool		m_is_running;
-	std::atomic_uint32_t	m_cycle_counter;
-	bool					m_is_strong_sizes;
+    std::thread                 m_dispatch_thread;
+    std::atomic_bool            m_is_running;
+    std::atomic_uint_fast32_t	m_cycle_counter;
+    bool                        m_is_strong_sizes;
 
 	// Dependencies
 private:
-	IAudioReader&			m_audio_reader;
-	IAudioWriter&			m_audio_writer;
-	const audio_format_t&	m_audio_format;
+    IAudioReader&               m_audio_reader;
+    IAudioWriter&               m_audio_writer;
+    const audio_format_t&       m_audio_format;
 
 public:
 	AudioDispatcher(IAudioReader& audio_reader,

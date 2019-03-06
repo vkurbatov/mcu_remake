@@ -20,7 +20,7 @@ class IAudioSlot : public IAudioPoint
 {
 
 protected:
-	virtual ~IAudioSlot() override = default;
+	virtual ~IAudioSlot() override{}
 
 public:
 

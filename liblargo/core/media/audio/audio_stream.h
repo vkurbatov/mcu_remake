@@ -42,7 +42,7 @@ private:
 	AudioStream& operator=(const AudioStream&) = delete;
 	AudioStream& operator=(AudioStream&&) = delete;
 
-	virtual ~AudioStream() override = default;
+	virtual ~AudioStream() override{}
 
 	// IMediaStream interface
 public:

@@ -14,7 +14,7 @@ class IMediaQueue : public IDataQueueControl
 
 public:
 
-	virtual ~IMediaQueue() override = default;
+	virtual ~IMediaQueue() override{}
 
 	virtual IMediaSlot* operator[](media_slot_id_t media_slot_id) = 0;
 	virtual const IMediaSlot* operator[](media_slot_id_t media_slot_id) const = 0;

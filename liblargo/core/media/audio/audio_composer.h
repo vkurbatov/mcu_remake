@@ -54,7 +54,7 @@ public:
 				  , IMediaQueue& media_queue
 				  , std::uint32_t min_jitter_ms = default_jitter_ms
 				  , bool thread_safe = true);
-	~AudioComposer() override = default;
+	~AudioComposer() override{}
 
 	// IDataQueueControl interface
 public:

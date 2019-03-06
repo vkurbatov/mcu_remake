@@ -43,7 +43,7 @@ public:
 
 public:
 	AudioMixer(const audio_format_t& audio_format, bool is_mixed_mode = true);
-	~AudioMixer() override = default;
+	~AudioMixer() override{}
 
 	std::size_t operator()(std::size_t stream_count,
 						   const void* input_data, std::size_t input_data_size,

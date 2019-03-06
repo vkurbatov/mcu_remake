@@ -15,7 +15,7 @@ namespace audio
 class IAudioProcessing
 {
 public:
-	virtual ~IAudioProcessing() = default;
+	virtual ~IAudioProcessing(){}
 
 	virtual std::size_t AudioProcessingRead(const audio_format_t& audio_format, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) = 0;
 	virtual std::size_t AudioProcessingWrite(const audio_format_t& audio_format, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) = 0;

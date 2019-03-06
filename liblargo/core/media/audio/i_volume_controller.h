@@ -19,7 +19,7 @@ class IVolumeController
 {
 public:
 
-	virtual ~IVolumeController() = default;
+	virtual ~IVolumeController(){}
 
 	virtual std::uint32_t GetVolume() const = 0;
 	virtual void SetVolume(std::uint32_t volume) = 0;

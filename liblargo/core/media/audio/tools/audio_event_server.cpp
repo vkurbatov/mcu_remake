@@ -35,7 +35,7 @@ AudioEventServer::AudioEvent::AudioEvent(const std::string &file_name
 	, m_step(0)
 	, m_ref_count(0)
 {
-	LOG(debug) "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
+    LOG(debug) "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
 }
 
 void AudioEventServer::AudioEvent::Reset(const std::string& file_name, uint32_t times, uint32_t interval)
@@ -143,9 +143,9 @@ bool AudioEventServer::AddEvent(const std::string &event_name, const std::string
 	{
 		// C++11 method for emplace complex object (see C++11 documentation)
 
-		m_events.emplace(std::piecewise_construct
-						 , std::forward_as_tuple(event_name)
-						 , std::forward_as_tuple(file_name, times, interval));
+        m_events.emplace(std::piecewise_construct
+                         , std::forward_as_tuple(event_name)
+                         , std::forward_as_tuple(file_name, times, interval));
 
 		LOG(info) << "Register new audio event \'" << event_name << "\' [" << file_name << "/" << times << "/" << interval << "]" LOG_END;
 	}

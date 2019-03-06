@@ -9,7 +9,7 @@
 #include "media/audio/channels/file/file_channel.h"
 
 
-#include <map>
+#include <unordered_map>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -43,7 +43,6 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 		AudioEvent(const std::string& file_name
 								 , std::uint32_t times
 								 , std::uint32_t interval);
-		AudioEvent(const AudioEvent&) = default;
 
 		void Reset(const std::string& file_name, std::uint32_t times, std::uint32_t interval);
 		void Reset();
@@ -58,7 +57,7 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 
 	};
 
-	using event_map_t = std::map<std::string, AudioEvent>;
+    using event_map_t = std::unordered_map<std::string, AudioEvent>;
 
 	SyncPoint					m_sync_point;
 	audio_format_t				m_audio_format;

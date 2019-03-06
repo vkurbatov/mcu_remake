@@ -51,7 +51,7 @@ public:
 								   , void* output_data, std::size_t output_size = 0);
 
 	AudioResampler(const audio_format_t& audio_format);
-	virtual ~AudioResampler() override = default;
+    virtual ~AudioResampler() override {}
 
 	// methods with external output resampling buffer
 

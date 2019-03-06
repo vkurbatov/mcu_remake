@@ -34,7 +34,7 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 public:
 
 	AudioPoint();
-	virtual ~AudioPoint() override = default;
+	virtual ~AudioPoint() override{}
 
 	// IAudioPoint interface
 public:

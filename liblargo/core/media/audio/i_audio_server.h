@@ -22,7 +22,7 @@ class IAudioServer: public IDataCollection, public IAudioFormatter
 
 public:
 
-	virtual ~IAudioServer() = default;
+	virtual ~IAudioServer(){}
 
 	virtual IAudioStream* operator[](media_stream_id_t stream_id) = 0;
 	virtual const IAudioStream* operator[](media_stream_id_t stream_id) const = 0;

@@ -24,7 +24,7 @@ class IAudoChannel
 {
 public:
 
-	virtual ~IAudoChannel() = default;
+	virtual ~IAudoChannel(){}
 
 	virtual bool Open(const std::string& device_name) = 0;
 	virtual bool Close() = 0;

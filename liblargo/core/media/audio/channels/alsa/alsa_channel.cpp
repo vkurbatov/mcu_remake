@@ -354,7 +354,7 @@ bool AlsaChannel::Close()
 
 	if (m_handle != nullptr)
 	{
-		snd_pcm_abort(m_handle);
+        // snd_pcm_abort(m_handle);
 		snd_pcm_close(m_handle);
 
 		m_handle = nullptr;

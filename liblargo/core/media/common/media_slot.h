@@ -26,7 +26,7 @@ private:
 
 private:
 	explicit MediaSlot(media_slot_id_t media_slot_id, IMultipointDataQueue& multipoint_data_queue);
-	virtual ~MediaSlot() override = default;
+	virtual ~MediaSlot() override{}
 
 	MediaSlot(const MediaSlot&) = delete;
 	MediaSlot(MediaSlot&&) = delete;

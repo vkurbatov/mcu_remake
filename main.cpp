@@ -836,7 +836,7 @@ int main()
 
 	// test_events();
 
-	// test_audio_processor();
+    test_audio_processor();
 
 	return 0;
 }

@@ -15,7 +15,7 @@ class IMediaSlot : public IDataQueue
 {
 
 protected:
-	virtual ~IMediaSlot() override = default;
+	virtual ~IMediaSlot() override{}
 
 public:
 

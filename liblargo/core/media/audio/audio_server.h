@@ -38,7 +38,7 @@ private:
 
 public:
 	AudioServer(IAudioComposer& audio_composer);
-	virtual ~AudioServer() override = default;
+	virtual ~AudioServer() override{}
 
 
 	// IAudioServer interface
