@@ -36,7 +36,8 @@ const char default_device_name[] = "default";
 const std::int32_t default_max_io_retry_count = 5;
 const std::int32_t default_max_set_hw_retry_count = 10;
 
-
+AlsaChannel::alsa_device_list_t AlsaChannel::m_recorder_device_list;
+AlsaChannel::alsa_device_list_t AlsaChannel::m_playback_device_list;
 
 namespace alsa_utils
 {
@@ -115,25 +116,17 @@ bool is_device_notation(const std::string& device_name, const std::string& profi
 	return  device_name.find(profile + ":") != std::string::npos;
 }
 
-const std::string fetch_device_name(const std::string& device_name, channel_direction_t direction, const std::string& profile)
+const std::string fetch_device_name(const std::string& device_name, bool is_recorder, const std::string& profile)
 {
 	std::string result = device_name;
 
-	if (!is_device_notation(device_name, profile))
+	const auto& devices = AlsaChannel::GetDeviceList(is_recorder);
+
+	auto it = std::find_if(devices.begin(), devices.end(), [&device_name](const alsa_channel_info& alsa_info) { return alsa_info.display_format() == device_name; } );
+
+	if (it != devices.end())
 	{
-		result = "default";
-
-		if (!is_default_name(device_name))
-		{
-			auto devices = AlsaChannel::GetDeviceList(direction, profile);
-
-			auto it = std::find_if(devices.begin(), devices.end(), [&device_name](const alsa_channel_info& alsa_info) { return alsa_info.user_format() == device_name;} );
-
-			if (it != devices.end())
-			{
-				result = it->name;
-			}
-		}
+		result = it->native_format(profile);
 	}
 
 	return result;
@@ -141,56 +134,7 @@ const std::string fetch_device_name(const std::string& device_name, channel_dire
 
 } // alsa_utils
 
-/* oldstyle
-const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direction_t direction, const std::string &hw_profile)
-{
-	device_names_list_t device_list;
-
-	std::int32_t card_number = -1;
-
-	snd_ctl_card_info_t * info = NULL;
-	snd_ctl_card_info_alloca(&info);
-
-	snd_pcm_info_t * pcminfo = NULL;
-	snd_pcm_info_alloca(&pcminfo);
-
-	while (snd_card_next(&card_number) >=0 && card_number >=0)
-	{
-		snd_ctl_t *ctl_handle = nullptr;
-		std::string card_id = hw_profile + ":" + std::to_string(card_number);
-
-		if (snd_ctl_open(&ctl_handle, card_id.c_str(), 0) >= 0)
-		{
-			snd_ctl_card_info(ctl_handle, info);
-
-			std::int32_t device_number = -1;
-
-			while (snd_ctl_pcm_next_device(ctl_handle, device_number) >= 0 && device_number >= 0)
-			{
-				snd_pcm_info_set_device(pcminfo, device_number);
-				snd_pcm_info_set_subdevice(pcminfo, 0);
-				snd_pcm_info_set_stream(pcminfo, direction == channel_direction_t::recorder ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK);
-
-				if (snd_ctl_pcm_info(ctl_handle, pcminfo) >= 0)
-				{
-					char* card_name = nullptr;
-
-					snd_card_get_name(card_number, &card_name);
-
-					if (card_name != nullptr)
-					{
-						snd_pcm_info_get_name
-					}
-
-				}
-			}
-		}
-	}
-
-	return std::move(device_list);
-}
-*/
-
+/*
 const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direction_t direction, const std::string &hw_profile)
 {
 	char ** hints = nullptr;
@@ -205,7 +149,7 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 
 		while(*it != nullptr)
 		{
-			alsa_channel_info device_info = { "", "", "", "", false, false };
+			alsa_channel_info_extended device_info = { "", "", "", "", false, false };
 
 			enum fields_enum_t : std::uint32_t { name, desc, ioid };
 
@@ -283,6 +227,70 @@ const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direct
 	}
 
 	return std::move(device_list);
+}
+*/
+
+const AlsaChannel::alsa_device_list_t& AlsaChannel::GetDeviceList(bool is_recorder, bool update)
+{
+	alsa_device_list_t& device_list = is_recorder ? m_recorder_device_list : m_playback_device_list;
+
+	update |= device_list.size() == 0;
+
+	if (update)
+	{
+		device_list.clear();
+
+		device_list.emplace_back(is_recorder, -2, -1, "default", "default");
+
+		std::int32_t card_number = -1;
+
+		snd_ctl_card_info_t * info = NULL;
+		snd_ctl_card_info_alloca(&info);
+
+		snd_pcm_info_t * pcminfo = NULL;
+		snd_pcm_info_alloca(&pcminfo);
+
+		while (snd_card_next(&card_number) >=0 && card_number >=0 )
+		{
+			snd_ctl_t *ctl_handle = nullptr;
+			std::string card_id = "hw:" + std::to_string(card_number);
+
+			if (snd_ctl_open(&ctl_handle, card_id.c_str(), 0) >= 0)
+			{
+				snd_ctl_card_info(ctl_handle, info);
+
+				std::int32_t device_number = -1;
+
+				while (snd_ctl_pcm_next_device(ctl_handle, &device_number) >= 0 && device_number >= 0)
+				{
+					snd_pcm_info_set_device(pcminfo, device_number);
+					snd_pcm_info_set_subdevice(pcminfo, 0);
+					snd_pcm_info_set_stream(pcminfo, is_recorder ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK);
+
+					if (snd_ctl_pcm_info(ctl_handle, pcminfo) >= 0)
+					{
+						char* card_name = nullptr;
+
+						snd_card_get_name(card_number, &card_name);
+
+						if (card_name != nullptr)
+						{
+							device_list.emplace_back(is_recorder
+													 , card_number
+													 , device_number
+													 , card_name
+													 , snd_pcm_info_get_name(pcminfo));
+
+						}
+
+					}
+				}
+			}
+		}
+
+	}
+
+	return device_list;
 }
 
 AlsaChannel::AlsaChannel(const audio_channel_params_t& audio_params, const std::string& hw_profile)

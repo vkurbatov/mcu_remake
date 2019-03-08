@@ -13,14 +13,14 @@ void test_alsa()
 {
 	int i = 0;
 
-	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::playback, "plughw");
-	auto device_recorder_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder, "plughw");
+	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(false);
+	auto device_recorder_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(true);
 
 	std::cout << "ALSA playback list " << device_playback_list.size() << ":" << std::endl;
 
 	for (const auto& info : device_playback_list)
 	{
-		std::cout << "#" << i << ": " << info.name << ", " << info.card_name << ", " << info.device_name << std::endl;
+		std::cout << "#" << i << ": " << info.native_format() << ", " << info.display_format() << std::endl;
 		i++;
 	}
 
@@ -30,7 +30,7 @@ void test_alsa()
 
 	for (const auto& info : device_recorder_list)
 	{
-		std::cout << "#" << i << ": " << info.name << ", " << info.card_name << ", " << info.device_name << std::endl;;
+		std::cout << "#" << i << ": " << info.native_format() << ", " << info.display_format() << std::endl;
 		i++;
 	}
 
@@ -573,8 +573,8 @@ void test_events()
 	core::media::audio::AudioDispatcher dispatcher(recorder, mux, player1.GetAudioFormat(), duration_ms * 2);
 
 	player1.Open("default");
-	player2.Open(playback_device_list[1].user_format());
-	recorder.Open(recorder_device_list[1].user_format());
+	player2.Open(playback_device_list[1].display_format());
+	recorder.Open(recorder_device_list[1].display_format());
 
 	// core::media::DelayTimer::Sleep(1000);
 
@@ -703,11 +703,11 @@ void test_audio_processor()
 	auto recorder_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder);
 	auto playback_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::playback);
 
-	auto recorder1 = recorder_device_list[0].user_format();
-	auto recorder2 = recorder_device_list[1].user_format();
+	auto recorder1 = recorder_device_list[0].display_format();
+	auto recorder2 = recorder_device_list[1].display_format();
 
-	auto playback1 = playback_device_list[0].user_format();
-	auto playback2 = playback_device_list[1].user_format();
+	auto playback1 = playback_device_list[0].display_format();
+	auto playback2 = playback_device_list[1].display_format();
 
 
 	std::string file_event1 = "/home/vkurbatov/ivcscodec/test_sound/Front_Center.wav";
@@ -816,6 +816,34 @@ void test_audio_processor()
 	while(true) delay(duration_ms);
 }
 
+void test_device_list()
+{
+	int i = 0;
+
+	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(false);
+	auto device_recorder_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(true);
+
+	std::cout << "ALSA playback list " << device_playback_list.size() << ":" << std::endl;
+
+	for (const auto& info : device_playback_list)
+	{
+		std::cout << "#" << i << ": " << info.native_format() << ", " << info.display_format() << std::endl;
+		std::cout << "\t\t" << info.card_name << "/" << info.card_number << ", " << info.device_name << "/" << info.device_number << std::endl;
+		i++;
+	}
+
+	i = 0;
+
+	std::cout << "ALSA recorder list " << device_recorder_list.size() << ":" << std::endl;
+
+	for (const auto& info : device_recorder_list)
+	{
+		std::cout << "#" << i << ": " << info.native_format() << ", " << info.display_format() << std::endl;
+		std::cout << "\t\t" << info.card_name << "/" << info.card_number << ", " << info.device_name << "/" << info.device_number << std::endl;
+		i++;
+	}
+}
+
 //  #endif
 
 int main()
@@ -837,6 +865,8 @@ int main()
 	// test_events();
 
 	// test_audio_processor();
+
+	test_device_list();
 
 	return 0;
 }

@@ -24,19 +24,36 @@ namespace alsa
 struct snd_pcm_t;
 #endif
 
-
 struct alsa_channel_info
 {
-	std::string		name;
+	bool			is_recorder;
+	std::int32_t	card_number;
+	std::int32_t	device_number;
 	std::string		card_name;
 	std::string		device_name;
-	std::string		hint;
-	bool			input;
-	bool			output;
 
-	const std::string user_format() const
+	alsa_channel_info(bool is_rec
+					  , std::int32_t c_num
+					  , std::int32_t d_num
+					  , const std::string& c_name
+					  , const std::string& d_name)
+		: is_recorder(is_rec), card_number(c_num), device_number(d_num)
+		, card_name(c_name), device_name(d_name)
+	{ }
+
+	const std::string native_format(const std::string& hw_profile = "plughw") const
 	{
-		return card_name == "default" ? card_name : (card_name + "[" + device_name + "]");
+		return card_number < 0
+				? "default"
+				: hw_profile + ":" + std::to_string(card_number) +
+				  (device_number >= 0
+				   ? "," + std::to_string(device_number)
+				   : "");
+	}
+
+	const std::string display_format() const
+	{
+		return card_number < 0 ? "default" : (card_name + "[" + device_name + "]");
 	}
 };
 
@@ -44,8 +61,8 @@ class AlsaChannel : public AudioChannel
 {
 public:
 
-	using device_names_list_t = std::vector<alsa_channel_info>;
 	using sample_buffer_t = std::vector<std::uint8_t>;
+	using alsa_device_list_t = std::vector<alsa_channel_info>;
 
 private:
 
@@ -61,10 +78,13 @@ private:
 
 	std::size_t						m_frame_size;
 
+	static alsa_device_list_t		m_recorder_device_list;
+	static alsa_device_list_t		m_playback_device_list;
 
 public:
 
-	static const device_names_list_t GetDeviceList(channel_direction_t direction, const std::string& hw_profile = "plughw");
+	// static const device_names_list_t GetDeviceList(channel_direction_t direction, const std::string& hw_profile = "plughw");
+	static const alsa_device_list_t& GetDeviceList(bool is_recorder, bool update = false);
 
 	AlsaChannel(const audio_channel_params_t& audio_params, const std::string& hw_profile = "plughw");
 	~AlsaChannel() override;
