@@ -2,9 +2,9 @@
 #define AUDIO_SERVER_H
 
 
-#include "media/audio/i_audio_server.h"
-#include "media/audio/i_audio_composer.h"
-#include "media/audio/i_audio_slot.h"
+#include "core/media/audio/i_audio_server.h"
+#include "core/media/audio/i_audio_composer.h"
+#include "core/media/audio/i_audio_slot.h"
 
 #include <unordered_map>
 #include <memory>
@@ -38,7 +38,9 @@ private:
 
 public:
 	AudioServer(IAudioComposer& audio_composer);
-	virtual ~AudioServer() override = default;
+	virtual ~AudioServer() override{}
+
+	IAudioSlot*	GetAudioSlot(media_stream_id_t stream_id);
 
 
 	// IAudioServer interface
@@ -61,6 +63,7 @@ public:
 private:
 	media_stream_id_t get_stream_id();
 
+	IAudioSlot* get_slot(const session_id_t& session_id);
 	IAudioSlot* request_slot(const session_id_t& session_id);
 	std::size_t release_slot(const session_id_t& session_id);
 

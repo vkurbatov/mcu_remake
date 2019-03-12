@@ -1,8 +1,8 @@
 #ifndef AUDIO_MIXER_H
 #define AUDIO_MIXER_H
 
-#include "media/audio/audio_format.h"
-#include "media/audio/i_audio_mixer.h"
+#include "core/media/audio/audio_format.h"
+#include "core/media/audio/i_audio_mixer.h"
 
 namespace core
 {
@@ -43,7 +43,7 @@ public:
 
 public:
 	AudioMixer(const audio_format_t& audio_format, bool is_mixed_mode = true);
-	~AudioMixer() override = default;
+	~AudioMixer() override{}
 
 	std::size_t operator()(std::size_t stream_count,
 						   const void* input_data, std::size_t input_data_size,

@@ -1,8 +1,8 @@
 #ifndef MULTIPOINT_DATA_QUEUE_H
 #define MULTIPOINT_DATA_QUEUE_H
 
-#include "media/common/i_multipoint_data_queue.h"
-#include "media/common/media_types.h"
+#include "core/media/common/i_multipoint_data_queue.h"
+#include "core/media/common/media_types.h"
 
 namespace core
 {
@@ -21,7 +21,7 @@ class MultipointDataQueue : public IMultipointDataQueue
 public:
 
 	MultipointDataQueue(std::size_t capacity, bool is_strong = false);
-	virtual ~MultipointDataQueue() override = default;
+	virtual ~MultipointDataQueue() override{}
 
 	// IMultipointDataQueue interface
 public:

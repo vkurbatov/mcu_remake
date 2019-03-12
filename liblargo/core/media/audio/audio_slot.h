@@ -1,11 +1,11 @@
 #ifndef AUDIO_SLOT_H
 #define AUDIO_SLOT_H
 
-#include "media/common/data_queue.h"
-#include "media/common/i_data_collection.h"
-#include "media/common/i_media_slot.h"
-#include "media/common/i_sync_point.h"
-#include "media/audio/i_audio_slot.h"
+#include "core/media/common/data_queue.h"
+#include "core/media/common/i_data_collection.h"
+#include "core/media/common/i_media_slot.h"
+#include "core/media/common/i_sync_point.h"
+#include "core/media/audio/i_audio_slot.h"
 
 namespace core
 {
@@ -35,18 +35,25 @@ class AudioSlot : public IAudioSlot
 	std::vector<std::uint8_t>	m_input_resampler_buffer;
 	std::vector<std::uint8_t>	m_output_resampler_buffer;
 
-	bool						m_can_slot_read;
+	std::size_t					m_read_counter;
+	std::size_t					m_write_counter;
+	std::size_t					m_drop_bytes;
 
 	// Dependencies
 private:
+
 	const std::uint32_t&		m_min_jitter_ms;
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;
 	const IDataCollection&		m_slots_collection;
 	const ISyncPoint&			m_sync_point;
 
-	explicit AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, const ISyncPoint& sync_point, const std::uint32_t& min_jitter_ms);
-	~AudioSlot() override = default;
+	explicit AudioSlot(const audio_format_t& audio_format
+					   , IMediaSlot& media_slot
+					   , const IDataCollection& slot_collection
+					   , const ISyncPoint& sync_point
+					   , const std::uint32_t& min_jitter_ms);
+	~AudioSlot() override;
 
 	AudioSlot(const AudioSlot&) = delete;
 	AudioSlot(AudioSlot&&) = delete;
@@ -78,7 +85,9 @@ private:
 
 	std::int32_t slot_push(const void* data, std::size_t size);
 	std::int32_t slot_pop(void* data, std::size_t size);
-	bool check_jitter();
+	bool prepare_write(std::size_t write_size);
+	bool prepare_read(std::size_t read_size);
+	bool is_drop() const;
 
 	std::int32_t internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options);
 	std::int32_t internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options);

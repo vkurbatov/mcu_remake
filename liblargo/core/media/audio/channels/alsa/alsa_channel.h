@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "media/audio/channels/audio_channel.h"
+#include "core/media/audio/channels/audio_channel.h"
 
 namespace core
 {
@@ -53,7 +53,17 @@ struct alsa_channel_info
 
 	const std::string display_format() const
 	{
-		return card_number < 0 ? "default" : (card_name + "[" + device_name + "]");
+		return card_number < 0 ? "default" : (card_name + " [" + device_name + "]");
+	}
+
+	const std::string operator()() const
+	{
+		return display_format();
+	}
+
+	bool operator==(const std::string& name) const
+	{
+		return display_format() == name;
 	}
 };
 
@@ -61,8 +71,8 @@ class AlsaChannel : public AudioChannel
 {
 public:
 
-	using sample_buffer_t = std::vector<std::uint8_t>;
 	using alsa_device_list_t = std::vector<alsa_channel_info>;
+	using sample_buffer_t = std::vector<std::uint8_t>;
 
 private:
 
@@ -83,7 +93,6 @@ private:
 
 public:
 
-	// static const device_names_list_t GetDeviceList(channel_direction_t direction, const std::string& hw_profile = "plughw");
 	static const alsa_device_list_t& GetDeviceList(bool is_recorder, bool update = false);
 
 	AlsaChannel(const audio_channel_params_t& audio_params, const std::string& hw_profile = "plughw");

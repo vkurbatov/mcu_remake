@@ -1,9 +1,9 @@
 ﻿#ifndef AUDIO_CHANNEL_H
 #define AUDIO_CHANNEL_H
 
-#include "media/audio/channels/i_audio_channel.h"
-#include "media/audio/channels/audio_channel_params.h"
-#include "media/audio/audio_point.h"
+#include "core/media/audio/channels/i_audio_channel.h"
+#include "core/media/audio/channels/audio_channel_params.h"
+#include "core/media/audio/audio_point.h"
 
 namespace core
 {
@@ -23,7 +23,7 @@ class AudioChannel : public IAudoChannel, public AudioPoint
 public:
 
 	AudioChannel();
-	virtual ~AudioChannel() override = default;
+	virtual ~AudioChannel() override{}
 
 	// IAudoChannel interface
 public:

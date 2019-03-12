@@ -1,8 +1,8 @@
 #ifndef AUDIO_STRING_FORMAT_UTILS_H
 #define AUDIO_STRING_FORMAT_UTILS_H
 
-#include "media/audio/audio_format.h"
-#include "media/audio/channels/audio_channel_params.h"
+#include "core/media/audio/audio_format.h"
+#include "core/media/audio/channels/audio_channel_params.h"
 
 #include <ostream>
 

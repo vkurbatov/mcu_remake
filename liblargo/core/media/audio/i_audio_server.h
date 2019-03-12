@@ -1,8 +1,8 @@
 #ifndef I_AUDIO_SERVER_H
 #define I_AUDIO_SERVER_H
 
-#include "media/common/i_data_collection.h"
-#include "media/audio/i_audio_stream.h"
+#include "core/media/common/i_data_collection.h"
+#include "core/media/audio/i_audio_stream.h"
 
 namespace core
 {
@@ -22,7 +22,7 @@ class IAudioServer: public IDataCollection, public IAudioFormatter
 
 public:
 
-	virtual ~IAudioServer() = default;
+	virtual ~IAudioServer(){}
 
 	virtual IAudioStream* operator[](media_stream_id_t stream_id) = 0;
 	virtual const IAudioStream* operator[](media_stream_id_t stream_id) const = 0;

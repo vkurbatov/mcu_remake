@@ -11,7 +11,7 @@ extern "C"
 #include <algorithm>
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "alsa_channel"
 
@@ -30,9 +30,9 @@ namespace channels
 namespace alsa
 {
 
-const char* device_info_fields[] = {"NAME", "DESC",  "IOID" };
+// const char* device_info_fields[] = {"NAME", "DESC",  "IOID" };
 const char default_hw_profile[] = "plughw:";
-const char default_device_name[] = "default";
+// const char default_device_name[] = "default";
 const std::int32_t default_max_io_retry_count = 5;
 const std::int32_t default_max_set_hw_retry_count = 10;
 
@@ -41,56 +41,6 @@ AlsaChannel::alsa_device_list_t AlsaChannel::m_playback_device_list;
 
 namespace alsa_utils
 {
-
-static std::string get_field_from_hint(const void* hint, const char* field_name)
-{
-	std::string result;
-
-	auto filed_value = snd_device_name_get_hint(hint, field_name);
-
-	if (filed_value != nullptr)
-	{
-		result = filed_value;
-
-		if (std::strcmp(filed_value, "null") != 0)
-		{
-			free(filed_value);
-		}
-	}
-
-	return std::move(result);
-}
-
-void split_description(std::string& description, std::string& card_name, std::string& device_name, std::string& hint)
-{
-
-	if (description.empty() == false)
-	{
-		auto delimeter_pos_1 = description.find(", ");
-
-		if (delimeter_pos_1 != std::string::npos)
-		{
-			card_name = description.substr(0, delimeter_pos_1);
-
-			auto delimeter_pos_2 = description.find('\n');
-
-			if (delimeter_pos_2 != std::string::npos)
-			{
-				device_name = description.substr(delimeter_pos_1 + 2, delimeter_pos_2 - delimeter_pos_1 - 2);
-				hint = description.substr(delimeter_pos_2 + 1);
-			}
-			else
-			{
-				device_name = description.substr(delimeter_pos_1 + 2);
-			}
-		}
-		else
-		{
-			hint = description;
-		}
-	}
-
-}
 
 snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t sample_format)
 {
@@ -106,23 +56,13 @@ snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t s
 	return transform_format_array[static_cast<std::int32_t>(sample_format)];
 }
 
-bool is_default_name(const std::string& device_name)
-{
-	return device_name == "default" || device_name == "Default";
-}
-
-bool is_device_notation(const std::string& device_name, const std::string& profile)
-{
-	return  device_name.find(profile + ":") != std::string::npos;
-}
-
-const std::string fetch_device_name(const std::string& device_name, bool is_recorder, const std::string& profile)
+const std::string fetch_native_device_name(const std::string& device_name, bool is_recorder, const std::string& profile)
 {
 	std::string result = device_name;
 
 	const auto& devices = AlsaChannel::GetDeviceList(is_recorder);
 
-	auto it = std::find_if(devices.begin(), devices.end(), [&device_name](const alsa_channel_info& alsa_info) { return alsa_info.display_format() == device_name; } );
+	auto it = std::find(devices.begin(), devices.end(), device_name);
 
 	if (it != devices.end())
 	{
@@ -133,102 +73,6 @@ const std::string fetch_device_name(const std::string& device_name, bool is_reco
 }
 
 } // alsa_utils
-
-/*
-const AlsaChannel::device_names_list_t AlsaChannel::GetDeviceList(channel_direction_t direction, const std::string &hw_profile)
-{
-	char ** hints = nullptr;
-
-	device_names_list_t device_list;
-
-	auto result = snd_device_name_hint(-1, "pcm", (void ***)&hints);
-
-	if (result >=  0)
-	{
-		auto it = hints;
-
-		while(*it != nullptr)
-		{
-			alsa_channel_info_extended device_info = { "", "", "", "", false, false };
-
-			enum fields_enum_t : std::uint32_t { name, desc, ioid };
-
-			std::uint32_t i = 0;
-
-			bool append = false;
-
-			for (const auto f : device_info_fields)
-			{
-				auto field_value = alsa_utils::get_field_from_hint(*it, f);
-
-				if ( field_value != "null" )
-				{
-					auto field_id = static_cast<fields_enum_t>(i++);
-
-					if (!field_value.empty() || field_id == fields_enum_t::ioid)
-					{
-						switch(field_id)
-						{
-							case fields_enum_t::name:
-
-								append = (field_value == default_device_name)
-										|| (hw_profile.empty())
-										|| (field_value.find(hw_profile) == 0);
-
-								if (append == true)
-								{
-									device_info.name = field_value;
-								}
-
-								if (field_value == default_device_name)
-								{
-									device_info.card_name = default_device_name;
-									device_info.device_name = default_device_name;
-								}
-
-								break;
-
-							case fields_enum_t::desc:
-
-								alsa_utils::split_description(field_value, device_info.card_name, device_info.device_name, device_info.hint);
-
-
-								break;
-
-							case fields_enum_t::ioid:
-
-								device_info.input = field_value.empty() || field_value == "Input";
-								device_info.output = field_value.empty() || field_value == "Output";
-
-								append = (direction == channel_direction_t::both)
-										|| ((direction == channel_direction_t::recorder) && device_info.input)
-										|| ((direction == channel_direction_t::playback) && device_info.output);
-						}
-
-					}
-
-					if (append == false)
-					{
-						break;
-					}
-				}
-
-			}//foreach fields
-			it++;
-
-			if (append)
-			{
-				device_list.emplace_back(device_info);
-			}
-
-		}
-
-		snd_device_name_free_hint((void**)hints);
-	}
-
-	return std::move(device_list);
-}
-*/
 
 const AlsaChannel::alsa_device_list_t& AlsaChannel::GetDeviceList(bool is_recorder, bool update)
 {
@@ -323,34 +167,37 @@ bool AlsaChannel::Open(const std::string &device_name)
 	if ( m_audio_params.is_valid() )
 	{
 
+		m_handle = nullptr;
 		auto err = snd_pcm_open(&m_handle
-								, alsa_utils::fetch_device_name(device_name, GetAudioParams().direction, m_hw_profile).c_str()
+								, alsa_utils::fetch_native_device_name(device_name, IsRecorder(), m_hw_profile).c_str()
 								, IsRecorder() ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK
-												 , SND_PCM_NONBLOCK);
+								, SND_PCM_NONBLOCK);
 		if (err >= 0)
 		{
 
+			m_device_name = device_name;
 			result = set_hardware_params(m_audio_params) >= 0;
 
 			if (result == false)
 			{
+				LOG(error) << "Can't Open device \'" << device_name << "\': error set hardware params" LOG_END;
 				Close();
-				LOG(error) << "Can't Open device [" << device_name << "]: error set hardware params" LOG_END;
 			}
 			else
 			{
 				m_write_transaction_id = m_read_transaction_id = 0;
-				LOG(info) "Open device [" << device_name << "]: success" LOG_END;
+				LOG(info) << "Open device \'" << device_name << "\': success" LOG_END;
 			}
 		}
 		else
 		{
-			LOG(error) << "Can't Open device [" << device_name << "]: errno = " << errno LOG_END;
+			LOG(error) << "Can't Open device \'" << device_name << "\': errno = " << err LOG_END;
+			m_handle = nullptr;
 		}
 	}
 	else
 	{
-		LOG(warning) << "Can't Open device [" << device_name << "]: audio params not set" LOG_END;
+		LOG(warning) << "Can't Open device \'" << device_name << "\': audio params not set" LOG_END;
 	}
 
 	return result;
@@ -362,12 +209,12 @@ bool AlsaChannel::Close()
 
 	if (m_handle != nullptr)
 	{
-		snd_pcm_abort(m_handle);
+        // snd_pcm_abort(m_handle);
 		snd_pcm_close(m_handle);
 
 		m_handle = nullptr;
 
-		LOG(info) << "Device [" << m_device_name << "] closed" LOG_END;
+		LOG(info) << "Device \'" << m_device_name << "\' closed" LOG_END;
 	}
 
 	return result;
@@ -435,6 +282,8 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 	size_t sample_size = audio_format.bytes_per_sample();
 
+	auto errors = 0, last_error = 0;
+
 	std::int32_t retry_read_count = 0;
 	bool io_complete = false;
 
@@ -463,6 +312,8 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 		}
 		else
 		{
+			last_error = err;
+			errors++;
 			err = io_error_process(err, false, audio_format.duration_ms(size));
 		}
 
@@ -483,6 +334,10 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 	if (result >= 0)
 	{
 		// LOG ???
+		if (errors > 0)
+		{
+			LOG(debug) << "Success read " << result << " bytes, with " << errors << " errors. Last error = " << last_error << ". Frame size = " << m_frame_size LOG_END;
+		}
 	}
 	else
 	{
@@ -504,6 +359,8 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	std::int32_t retry_write_count = 0;
 	bool io_complete = false;
+
+	auto errors = 0, last_error = 0;
 
 	auto data_ptr = static_cast<const std::uint8_t*>(data);
 
@@ -532,12 +389,14 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		}
 		else
 		{
+			errors++;
+			last_error = err;
 			err = io_error_process(err, true, audio_format.duration_ms(size));
 		}
 
 		if (err < 0)
 		{
-			LOG(error) << "Can't write alsa device with error = " << err << ", retry = " << retry_write_count << ", id = " << m_write_transaction_id LOG_END;
+			// LOG(error) << "Can't write alsa device with error = " << err << ", retry = " << retry_write_count << ", id = " << m_write_transaction_id LOG_END;
 		}
 
 		io_complete |= (size == 0) || (retry_write_count >= default_max_io_retry_count);
@@ -551,6 +410,10 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	if (result >= 0)
 	{
+		if (errors > 0)
+		{
+			LOG(debug) << "Success write " << result << " bytes, with " << errors << " errors. Last error = " << last_error << ". Frame size = " << m_frame_size LOG_END;
+		}
 		// LOG ???
 	}
 	else
@@ -568,6 +431,8 @@ int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_
 
 	// весь этот код нужно пересмотреть вокруг функции snd_pcm_recover,
 	// и все лишнее выкинуть нахуй
+	// При работке с альсой (ошибои ввода-вывода), было вычитано что код пост-обработки
+	// ошибки должен быть резким, как понос с будуна. Убраны все логи!
 
 	if (timeout_ms == 0)
 	{
@@ -575,7 +440,7 @@ int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_
 	}
 
 	// error = snd_pcm_recover(m_handle, error, -1);
-	snd_pcm_recover(m_handle, error, -1);
+	// snd_pcm_recover(m_handle, error, -1);
 
 	#define string_type(is_write) (is_write ? "write" : "read")
 
@@ -583,34 +448,40 @@ int32_t AlsaChannel::io_error_process(int32_t error, bool is_write, std::uint32_
 	{
 		case -EPIPE:
 
-			LOG(error) << "IO Error[" << string_type(is_write) <<  "]: broken pipe. Need prepare device." LOG_END;
+			// LOG(error) << "IO Error[" << string_type(is_write) <<  "]: broken pipe. Need prepare device." LOG_END;
 
 			if ( (error = snd_pcm_prepare(m_handle)) >= 0 )
 			{			
-				auto frame_size = std::max(m_frame_size / 2, m_audio_params.audio_format.bytes_per_sample() * 2);
+				auto frame_size = std::max(m_frame_size - m_audio_params.audio_format.bytes_per_sample(), m_audio_params.audio_format.bytes_per_sample() * 2);
 
 				if (frame_size < m_frame_size)
 				{
-					LOG(info) << "Clamp frame_size from " << m_frame_size << " to " << frame_size LOG_END;
+					// LOG(info) << "Clamp frame_size from " << m_frame_size << " to " << frame_size LOG_END;
 					m_frame_size = frame_size;
 				}
 			}
 
 			break;
+		case -EBADFD:
 
+			// LOG(error) << "IO Error[" << string_type(is_write) <<  "]: bad faile descriptor. Need prepare device." LOG_END;
+			error = snd_pcm_prepare(m_handle);
+
+			break;
 		case -ESTRPIPE:
 		case -EAGAIN:
-
-			while ((error = snd_pcm_resume(m_handle)) == -EAGAIN && timeout_ms != 0)
 			{
-				usleep(1000); // 1 msec
-				timeout_ms -= 1;
-			}
+				while ( ((error = snd_pcm_resume(m_handle)) == -EAGAIN) && (timeout_ms != 0) )
+				{
+					usleep(1000); // 1 msec
+					timeout_ms -= 1;
+				}
 
-			if (error < 0)
-			{
-				LOG(error) "IO Error[" << string_type(is_write) <<  "]: Unblock IO failed(" << error << "). Need prepare device." LOG_END;
-				error = snd_pcm_prepare(m_handle);
+				if (error < 0)
+				{
+					// LOG(error) << "IO Error[" << string_type(is_write) <<  "]: Unblock IO failed(" << error << "). Need prepare device." LOG_END;
+					error = snd_pcm_prepare(m_handle);
+				}
 			}
 		break;
 	}
@@ -693,7 +564,6 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 
 					m_frame_size = audio_params.buffer_size() / 2;
 
-					// m_frame_size /=
 				}
 
 				std::int32_t max_try = default_max_set_hw_retry_count;

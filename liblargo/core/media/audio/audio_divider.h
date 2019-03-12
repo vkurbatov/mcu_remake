@@ -1,8 +1,8 @@
 #ifndef AUDIO_DIVIDER_H
 #define AUDIO_DIVIDER_H
 
-#include "media/audio/i_audio_point.h"
-#include "media/audio/i_audio_formatter.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/i_audio_formatter.h"
 
 namespace core
 {

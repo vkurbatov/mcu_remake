@@ -1,7 +1,7 @@
 #ifndef I_MULTIPOINT_DATA_QUEUE_H
 #define I_MULTIPOINT_DATA_QUEUE_H
 
-#include "media/common/i_data_queue.h"
+#include "core/media/common/i_data_queue.h"
 
 namespace core
 {
@@ -16,7 +16,7 @@ class IMultipointDataQueue : public IDataQueueControl
 
 public:
 
-	virtual ~IMultipointDataQueue() = default;
+	virtual ~IMultipointDataQueue(){}
 
 	virtual std::size_t Read(cursor_t cursor, void* data, std::size_t size) const = 0;
 	virtual std::size_t Write(cursor_t cursor, const void* data, std::size_t size) = 0;

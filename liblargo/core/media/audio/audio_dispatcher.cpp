@@ -1,8 +1,8 @@
 #include "audio_dispatcher.h"
-#include "media/common/delay_timer.h"
+#include "core/media/common/delay_timer.h"
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_dispatcher"
 

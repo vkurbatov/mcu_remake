@@ -1,8 +1,8 @@
 #ifndef I_AUDIO_SLOT_H
 #define I_AUDIO_SLOT_H
 
-#include "media/audio/i_audio_point.h"
-#include "media/audio/i_audio_formatter.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/i_audio_formatter.h"
 #include <cstdint>
 
 namespace core
@@ -20,7 +20,7 @@ class IAudioSlot : public IAudioPoint
 {
 
 protected:
-	virtual ~IAudioSlot() override = default;
+	virtual ~IAudioSlot() override{}
 
 public:
 

@@ -1,6 +1,8 @@
 #include "audio_mixer.h"
 #include <cstring>
 
+#include <limits>
+
 #define SCALED_MIXING	0
 
 namespace core
@@ -20,6 +22,15 @@ enum mix_method_t
 	mix,
 	demix
 };
+
+/*
+ * TODO: need inmulse limits clamp
+template<typename T>
+T max_val() { return std::numeric_limits<T>::max(); }
+
+template<> float max_val() { return 1.0f; }
+template<> double max_val() { return 1.0; }
+*/
 
 template<typename T>
 inline const T& clamp_value(const T& v1, const T& v2)

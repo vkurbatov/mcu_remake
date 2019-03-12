@@ -12,7 +12,7 @@ namespace media
 class IDataCollection
 {
 public:
-    virtual ~IDataCollection() = default;
+    virtual ~IDataCollection() {}
 
     virtual std::size_t Count() const = 0;
 };

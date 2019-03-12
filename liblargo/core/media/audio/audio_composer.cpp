@@ -1,10 +1,10 @@
 #include "audio_composer.h"
-#include "media/audio/audio_slot.h"
+#include "core/media/audio/audio_slot.h"
 
 #include <algorithm>
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_composer"
 
@@ -17,7 +17,10 @@ namespace media
 namespace audio
 {
 
-AudioComposer::AudioComposer(const audio_format_t& audio_format, IMediaQueue& media_queue, std::uint32_t min_jitter_ms, bool thread_safe)
+AudioComposer::AudioComposer(const audio_format_t& audio_format
+							 , IMediaQueue& media_queue
+							 , std::uint32_t min_jitter_ms
+							 , bool thread_safe)
 	: m_audio_format(audio_format)
 	, m_media_queue(media_queue)
 	, m_slot_collection(m_audio_slots)
@@ -168,7 +171,9 @@ AudioComposer::SlotCollectionWrapper::SlotCollectionWrapper(AudioComposer::audio
 
 std::size_t AudioComposer::SlotCollectionWrapper::Count() const
 {
-	return std::count_if(m_audio_slots.begin(), m_audio_slots.end(), [](const std::pair<audio_slot_id_t, audio_slot_t>& it) { return it.second->IsSkip() == false; });
+	return std::count_if(m_audio_slots.begin(), m_audio_slots.end(),
+						 [](const std::pair<audio_slot_id_t, audio_slot_t>& it) { return it.second->IsSkip() == false; }
+	);
 }
 
 } // audio

@@ -1,5 +1,5 @@
 #include "audio_queue.h"
-#include "media/common/guard_lock.h"
+#include "core/media/common/guard_lock.h"
 
 namespace core
 {

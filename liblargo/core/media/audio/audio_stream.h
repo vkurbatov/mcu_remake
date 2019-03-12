@@ -1,9 +1,9 @@
 #ifndef AUDIO_STREAM_H
 #define AUDIO_STREAM_H
 
-#include "media/audio/i_audio_stream.h"
-#include "media/audio/i_audio_point.h"
-#include "media/audio/audio_format.h"
+#include "core/media/audio/i_audio_stream.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/audio_format.h"
 
 #include <unordered_map>
 
@@ -42,7 +42,7 @@ private:
 	AudioStream& operator=(const AudioStream&) = delete;
 	AudioStream& operator=(AudioStream&&) = delete;
 
-	virtual ~AudioStream() override = default;
+	virtual ~AudioStream() override{}
 
 	// IMediaStream interface
 public:

@@ -1,9 +1,9 @@
 #ifndef AUDIO_MUX_H
 #define AUDIO_MUX_H
 
-#include "media/audio/i_audio_point.h"
-#include "media/audio/i_audio_formatter.h"
-#include "media/audio/volume_controller.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/i_audio_formatter.h"
+#include "core/media/audio/volume_controller.h"
 
 namespace core
 {

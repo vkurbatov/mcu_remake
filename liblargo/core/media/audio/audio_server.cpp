@@ -2,7 +2,7 @@
 #include "audio_stream.h"
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_server"
 
@@ -21,6 +21,13 @@ AudioServer::AudioServer(IAudioComposer& audio_composer)
 	, m_slot_id(0)
 {
 	LOG(debug) << "Create audio server with audio format [" << audio_composer.GetAudioFormat() << "]" LOG_END;
+}
+
+IAudioSlot* AudioServer::GetAudioSlot(media_stream_id_t stream_id)
+{
+	auto stream = operator[](stream_id);
+
+	return stream != nullptr ? get_slot(stream->GetSessionId()): nullptr;
 }
 
 IAudioStream* AudioServer::operator [](media_stream_id_t stream_id)
@@ -51,7 +58,7 @@ IAudioStream* AudioServer::AddStream(const session_id_t& session_id, const audio
 
 		audio_stream_t audio_stream(
 					new AudioStream(stream_id, session_id, audio_format, *audio_slot, is_writer)
-					, [](IAudioStream* audio_stream) { return static_cast<AudioStream*>(audio_stream); } );
+					, [](IAudioStream* audio_stream) { delete static_cast<AudioStream*>(audio_stream); } );
 
 		result = audio_stream.get();
 
@@ -118,6 +125,13 @@ bool AudioServer::SetAudioFormat(const audio_format_t& audio_format)
 media_stream_id_t AudioServer::get_stream_id()
 {
 	return m_stream_id++;
+}
+
+IAudioSlot* core::media::audio::AudioServer::get_slot(const session_id_t &session_id)
+{
+	auto it = m_sessions.find(session_id);
+
+	return it != m_sessions.end() ? m_audio_composer[it->second.first] : nullptr;
 }
 
 IAudioSlot *AudioServer::request_slot(const session_id_t &session_id)

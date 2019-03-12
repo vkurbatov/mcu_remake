@@ -1,8 +1,8 @@
 #ifndef MEDIA_QUEUE_H
 #define MEDIA_QUEUE_H
 
-#include "media/common/i_media_queue.h"
-#include "media/common/multipoint_data_queue.h"
+#include "core/media/common/i_media_queue.h"
+#include "core/media/common/multipoint_data_queue.h"
 #include <unordered_map>
 #include <memory>
 
@@ -24,7 +24,7 @@ class MediaQueue : public IMediaQueue
 
 public:
 	MediaQueue(std::size_t capacity, bool is_strong = false);
-	~MediaQueue() override = default;
+	~MediaQueue() override{}
 
 	// IMediaQueue interface
 public:

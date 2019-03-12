@@ -2,7 +2,7 @@
 #include <cstring>
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "file_channel"
 
@@ -133,6 +133,9 @@ bool audio_format_from_wav_header(const wav_header_t& wav_header, audio_format_t
 
 	return result;
 }
+#ifndef offsetof
+#define offsetof(s,m) ((std::size_t)(&((s*)(nullptr))->m) - (std::size_t)(s*)(nullptr))
+#endif
 
 #define calc_wav_field_size(field, data_size) (sizeof(wav_header_t) - sizeof(((wav_header_t*)nullptr)->field) - offsetof(wav_header_t, field) + data_size)
 
@@ -188,7 +191,7 @@ FileChannel::FileChannel(const audio_channel_params_t &audio_params
 FileChannel::~FileChannel()
 {
 	Close();
-	LOG(debug) << "Destory file channel \'" << m_file_name << "\' with params " << m_audio_params LOG_END;
+    LOG(debug) << "Destory file channel \'" << m_file_name << "\' with params " << m_audio_params LOG_END;
 }
 
 bool FileChannel::Open(const std::string& device_name)
@@ -224,13 +227,17 @@ bool FileChannel::Open(const std::string& device_name)
 
 			if (result == false)
 			{
-				LOG(warning) << "Open file \'" << device_name << "\' failed. Params = " << m_audio_params LOG_END;
+				LOG(error) << "Open file \'" << device_name << "\' failed. Params = " << m_audio_params LOG_END;
 				Close();
 			}
 			else
 			{
 				LOG(info) << "Open file \'" << device_name << "\' success. Params = " << m_audio_params LOG_END;
 			}
+		}
+		else
+		{
+			LOG(error) << "File \'" << device_name << "\' not opened. Params = " << m_audio_params LOG_END;
 		}
 
 	}

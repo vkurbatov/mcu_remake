@@ -1,7 +1,7 @@
 #ifndef AUDIO_RESAMPLER_H
 #define AUDIO_RESAMPLER_H
 
-#include "media/audio/audio_format.h"
+#include "core/media/audio/audio_format.h"
 
 #include "i_audio_formatter.h"
 
@@ -51,7 +51,7 @@ public:
 								   , void* output_data, std::size_t output_size = 0);
 
 	AudioResampler(const audio_format_t& audio_format);
-	virtual ~AudioResampler() override = default;
+    virtual ~AudioResampler() override {}
 
 	// methods with external output resampling buffer
 

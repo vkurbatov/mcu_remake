@@ -1,7 +1,7 @@
 #ifndef DATA_QUEUE_H
 #define DATA_QUEUE_H
 
-#include "media/common/i_data_queue.h"
+#include "core/media/common/i_data_queue.h"
 #include <vector>
 
 namespace core
@@ -22,7 +22,7 @@ class DataQueue : public IDataQueue
 public:
 
 	DataQueue(std::size_t capacity, bool is_strong = false);
-	virtual ~DataQueue() override = default;
+    virtual ~DataQueue() override {}
 
 	// IDataQueue interface
 public:

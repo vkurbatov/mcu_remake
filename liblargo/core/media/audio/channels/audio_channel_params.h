@@ -1,7 +1,7 @@
 #ifndef AUDIO_CHANNEL_PARAMS_H
 #define AUDIO_CHANNEL_PARAMS_H
 
-#include "media/audio/audio_format.h"
+#include "core/media/audio/audio_format.h"
 
 namespace core
 {

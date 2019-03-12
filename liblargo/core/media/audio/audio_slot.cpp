@@ -1,11 +1,11 @@
-#include "media/common/guard_lock.h"
-#include "media/audio/audio_resampler.h"
-#include "media/audio/audio_mixer.h"
+#include "core/media/common/guard_lock.h"
+#include "core/media/audio/audio_resampler.h"
+#include "core/media/audio/audio_mixer.h"
 
 #include "audio_slot.h"
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_slot"
 
@@ -33,7 +33,11 @@ namespace audio_slot_utils
 	}
 }
 
-AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot, const IDataCollection& slot_collection, const ISyncPoint& sync_point, const std::uint32_t& min_jitter_ms)
+AudioSlot::AudioSlot(const audio_format_t& audio_format
+					 , IMediaSlot& media_slot
+					 , const IDataCollection& slot_collection
+					 , const ISyncPoint& sync_point
+					 , const std::uint32_t& min_jitter_ms)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
 	, m_palyback_queue(media_slot.Capacity(), true)
@@ -41,11 +45,18 @@ AudioSlot::AudioSlot(const audio_format_t& audio_format, IMediaSlot& media_slot,
 	, m_sync_point(sync_point)
 	, m_min_jitter_ms(min_jitter_ms)
 	, m_ref_count(1)
-	, m_can_slot_read(false)
+	, m_read_counter(0)
+	, m_write_counter(0)
+	, m_drop_bytes(audio_format.size_from_duration(min_jitter_ms))
 {
 	LOG(debug) << "Create audio slot [id = " << m_media_slot.GetSlotId()
 			   << "\', format = " << audio_format
 			   << "]" LOG_END;
+}
+
+AudioSlot::~AudioSlot()
+{
+	LOG(debug) << "Destroy audio slot [id = " << m_media_slot.GetSlotId() << "]" LOG_END;
 }
 
 std::int32_t AudioSlot::Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options)
@@ -75,7 +86,9 @@ void AudioSlot::Reset()
 	m_input_resampler_buffer.clear();
 	m_output_resampler_buffer.clear();
 	m_palyback_queue.Reset();
-	m_can_slot_read = false;
+	m_read_counter = 0;
+	m_write_counter = 0;
+	m_drop_bytes = false;
 }
 
 bool AudioSlot::CanWrite() const
@@ -97,20 +110,66 @@ int32_t AudioSlot::slot_pop(void* data, std::size_t size)
 {
 	std::int32_t result = 0;
 
-	if (check_jitter())
-	{
-		result = m_media_slot.Pop(data, size);
-
-		m_can_slot_read &= result == size;
-	}
+	result = m_media_slot.Pop(data, size);
 
 	return result;
 }
 
-bool AudioSlot::check_jitter()
+bool AudioSlot::prepare_write(std::size_t write_size)
 {
-	return m_can_slot_read |= m_audio_format.duration_ms(m_media_slot.Size()) >= m_min_jitter_ms;
+	auto jitter = m_audio_format.duration_ms(m_media_slot.WriteJitter());
+
+	bool is_read_sync = (m_read_counter > m_write_counter) && (m_min_jitter_ms > 0);
+	bool is_write_sync = jitter > m_min_jitter_ms;//m_max_jitter_ms;
+
+	bool is_syncronize = (is_read_sync || is_write_sync);
+
+	if (is_syncronize)
+	{
+		if (is_read_sync)
+		{
+			LOG(warning) << "SLOT #" << GetSlotId() << ": read stream ahead write data on " << m_read_counter - m_write_counter << " bytes. Do syncronize stream" LOG_END;
+		}
+
+		if (is_write_sync)
+		{
+			LOG(warning) << "SLOT #" << GetSlotId() << ": write stream delay from the compose queue on " << jitter << " ms. Do syncronize stream" LOG_END;
+		}
+
+		m_write_counter = m_read_counter;
+
+		m_media_slot.Reset();
+		m_palyback_queue.Reset();
+
+		m_drop_bytes = m_audio_format.size_from_duration(m_min_jitter_ms);
+
+	}
+
+	m_write_counter += write_size;
+
+	return is_syncronize;
 }
+
+bool AudioSlot::prepare_read(std::size_t read_size)
+{
+
+	if (m_drop_bytes > 0)
+	{
+		m_drop_bytes -= std::min(read_size, m_drop_bytes);
+	}
+	else
+	{
+		m_read_counter += read_size;
+	}
+
+	return is_drop();
+}
+
+bool audio::AudioSlot::is_drop() const
+{
+	return m_drop_bytes > 0;
+}
+
 
 std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options)
 {
@@ -119,17 +178,20 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 
 	// prepare resample buffer and resampling
 
-	auto output_size = m_audio_format.size_from_format(audio_format, size);
+	auto real_output_size = m_audio_format.size_from_format(audio_format, size);
 
-	audio_slot_utils::prepare_buffer(m_output_resampler_buffer, output_size);
+	audio_slot_utils::prepare_buffer(m_output_resampler_buffer, real_output_size);
 
-	output_size = AudioResampler::Resampling(audio_format, m_audio_format, data, size, m_output_resampler_buffer.data(), output_size);
+	real_output_size = AudioResampler::Resampling(audio_format, m_audio_format, data, size, m_output_resampler_buffer.data(), real_output_size);
 
+	prepare_write(real_output_size);
 
 	// push playback data for future demixing
 
-	output_size = m_palyback_queue.Push(m_output_resampler_buffer.data(), output_size);
+	auto output_size = m_palyback_queue.Push(m_output_resampler_buffer.data(), real_output_size);
 
+
+	// LOG(debug) << "Write slot #" << GetSlotId() << ": push to playback buffer " << output_size << " bytes of " << real_output_size LOG_END;
 
 	// prepare mixing buffer and mixing
 
@@ -144,6 +206,8 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 
 	output_size = slot_push(m_mix_buffer.data(), mix_size);
 
+	// LOG(debug) << "Write slot #" << GetSlotId() << ": push to media queue " << output_size << " bytes of " << mix_size LOG_END;
+
 	return audio_format.size_from_format(m_audio_format, output_size);
 }
 
@@ -154,32 +218,43 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 
 	// prepare resampling and demixind buffer
 
-	auto input_size = m_audio_format.size_from_format(audio_format, size);
+	auto real_input_size = m_audio_format.size_from_format(audio_format, size);
 
-	audio_slot_utils::prepare_buffer(m_input_resampler_buffer, input_size);
+	prepare_read(real_input_size);
 
-	audio_slot_utils::prepare_buffer(m_demix_buffer, input_size);
+	if (!is_drop())
+	{
 
+		audio_slot_utils::prepare_buffer(m_input_resampler_buffer, real_input_size);
 
-	// read audio data form media queue
-
-	input_size = slot_pop(m_input_resampler_buffer.data(), input_size);
-
-
-	// fetch playback data and demix
-
-	auto demix_size = m_palyback_queue.Pop(m_demix_buffer.data(), input_size);
-
-	demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
+		audio_slot_utils::prepare_buffer(m_demix_buffer, real_input_size);
 
 
-	// resampling demix audio buffer
+		// read audio data form media queue
 
-	// input_size = AudioResampler::Resampling(audio_format, m_audio_format, m_input_resampler_buffer.data(), input_size, data, size);
+		auto input_size = slot_pop(m_input_resampler_buffer.data(), real_input_size);
 
-	input_size = AudioResampler::Resampling(m_audio_format, audio_format, m_input_resampler_buffer.data(), input_size, data, size);
 
-	return input_size;
+		// fetch playback data and demix
+
+		auto demix_size = m_palyback_queue.Pop(m_demix_buffer.data(), input_size);
+
+		// LOG(debug) << "Read slot #" << GetSlotId() << ": pop from media queue " << demix_size << " bytes of " << input_size LOG_END;
+
+		demix_size = AudioMixer::Demixed(m_audio_format, m_slots_collection.Count(), m_demix_buffer.data(), demix_size, m_input_resampler_buffer.data(), input_size);
+
+		// resampling demix audio buffer
+
+
+		size = AudioResampler::Resampling(m_audio_format, audio_format, m_input_resampler_buffer.data(), input_size, data, size);
+
+	}
+	else
+	{
+		size = 0;
+	}
+
+	return size;
 }
 
 } // audio

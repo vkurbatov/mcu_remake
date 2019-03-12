@@ -45,7 +45,13 @@ void MediaSlot::Reset()
 
 std::size_t MediaSlot::Size() const
 {
-	return (m_write_cursor + Capacity() - m_read_cursor) % Capacity();
+	// return (m_write_cursor + Capacity() - m_read_cursor) % Capacity();
+
+	auto write_cursor = m_multipoint_data_queue.GetWriteCursor();
+	auto size = m_read_cursor < write_cursor ? (write_cursor - m_read_cursor) : 0;
+
+	return size >= Capacity() ? Capacity() - 1 : size;
+	// return m_read_cursor < write_cursor ? (write_cursor + Capacity() - m_read_cursor) % Capacity() : 0;
 }
 
 std::size_t MediaSlot::Capacity() const
@@ -58,14 +64,32 @@ media_slot_id_t MediaSlot::GetSlotId() const
 	return m_media_slot_id;
 }
 
+std::size_t MediaSlot::ReadJitter() const
+{
+	return m_read_cursor < m_multipoint_data_queue.GetWriteCursor()
+			? m_multipoint_data_queue.GetWriteCursor() - m_read_cursor
+			: 0;
+}
+
+std::size_t MediaSlot::WriteJitter() const
+{
+	return m_write_cursor < m_multipoint_data_queue.GetWriteCursor()
+			? m_multipoint_data_queue.GetWriteCursor() - m_write_cursor
+			: 0;
+}
+
 std::size_t MediaSlot::internal_pop(void* data, std::size_t size)
 {
+
+	auto real_size = size;
 
 	size = std::min(size, Size());
 
 	auto result = internal_read(data, size, false);
 
-	internal_drop(result);
+	// internal_drop(real_size); ??
+	internal_drop(size);
+
 
 	return result;
 }
@@ -88,9 +112,10 @@ std::size_t MediaSlot::internal_drop(std::size_t size)
 
 	m_read_cursor += size;
 
-	if (m_read_cursor > m_write_cursor)
+
+	if (m_read_cursor > m_multipoint_data_queue.GetWriteCursor())
 	{
-		m_read_cursor = m_write_cursor;
+		m_read_cursor = m_multipoint_data_queue.GetWriteCursor();
 	}
 
 	return size;

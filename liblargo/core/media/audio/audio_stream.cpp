@@ -1,7 +1,7 @@
 #include "audio_stream.h"
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_stream"
 

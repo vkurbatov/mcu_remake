@@ -1,9 +1,9 @@
 #include "audio_processor.h"
 
-#include "media/common/guard_lock.h"
+#include "core/media/common/guard_lock.h"
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_event_server"
 
@@ -21,11 +21,37 @@ namespace tools
 
 const session_id_t local_session_id = "local_audio";
 
+const std::vector<std::string>& AudioProcessor::GetDeviceList(bool is_recorder, bool update)
+{
+
+	static std::vector<std::string> recorder_list;
+	static std::vector<std::string> playback_list;
+
+	auto& result = is_recorder ? recorder_list : playback_list;
+
+	update |= result.empty();
+
+	if (update)
+	{
+		const auto& device_list = audio::channels::alsa::AlsaChannel::GetDeviceList(is_recorder, update);
+
+		result.clear();
+
+		for (const auto& it : device_list)
+		{
+			result.push_back(it.display_format());
+		}
+	}
+
+	return result;
+}
+
 AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 							  , IAudioProcessing* external_audio_processing)
-	: m_config(config)
+	: SyncPoint(false)
+	, m_config(config)
 	, m_is_running(false)
-	, m_composer_queue(config.composer_config.queue_size)
+	, m_composer_queue(config.composer_config.queue_size, true)
 	, m_event_queue(config.playback_config.channel_params.audio_format
 					, config.event_server_config.duration_ms
 					, config.event_server_config.jittr_ms)
@@ -40,11 +66,12 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 
 	, m_audio_composer(config.composer_config.audio_format
 						, m_composer_queue
-						, config.composer_config.jitter_ms
+						, config.composer_config.min_jitter_ms
 						, false)
+
 	, m_audio_event_server(m_event_queue
 							, config.playback_config.channel_params.audio_format
-							, config.playback_config.channel_params.buffer_duration_ms)
+							, config.playback_config.duration_ms)
 	, m_audio_server(m_audio_composer)
 
 	, m_recorder_stream(*m_audio_server.AddStream(local_session_id, m_recorder_channel.GetAudioFormat(), true))
@@ -62,7 +89,7 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 								, m_recorder_channel.GetAudioFormat()
 								, true)
 {
-
+	control_audio_system(true);
 }
 
 AudioProcessor::~AudioProcessor()
@@ -74,18 +101,20 @@ media_stream_id_t AudioProcessor::RegisterStream(const session_id_t& session_id,
 {
 	media_stream_id_t result = media_stream_id_none;
 
+	if (session_id != local_session_id)
 	{
+		{
+			GuardLock lock(*this);
 
-		GuardLock lock(*this);
+			auto stream = m_audio_server.AddStream(session_id, audio_format, is_writer);
 
-		auto stream = m_audio_server.AddStream(session_id, audio_format, is_writer);
+			result = stream != nullptr ? stream->GetStreamId() : media_stream_id_none;
+		}
 
-		result = stream != nullptr ? stream->GetStreamId() : media_stream_id_none;
-	}
-
-	if (result != media_stream_id_none)
-	{
-		check_and_conrtol_audio_system();
+		/*if (result != media_stream_id_none)
+		{
+			check_and_conrtol_audio_system();
+		}*/
 	}
 
 	return result;
@@ -95,16 +124,18 @@ bool AudioProcessor::UnregisterStream(media_stream_id_t audio_stream_id)
 {
 	bool result = false;
 
+	if (audio_stream_id != m_recorder_stream.GetStreamId() && audio_stream_id != m_playback_stream.GetStreamId())
+
 	{
 		GuardLock lock(*this);
 
 		result = m_audio_server.RemoveStream(audio_stream_id);
 	}
 
-	if (result == true)
+	/*if (result == true)
 	{
-		check_and_conrtol_audio_system();
-	}
+		// check_and_conrtol_audio_system();
+	}*/
 
 	return result;
 
@@ -116,7 +147,11 @@ std::size_t AudioProcessor::Write(media_stream_id_t audio_stream_id, const void*
 
 	auto stream = m_audio_server[audio_stream_id];
 
-	return stream != nullptr ? stream->Write(data, size, options) : 0;
+	auto result =  stream != nullptr ? stream->Write(data, size, options) : 0;
+
+	// LOG(debug) << "Write " << result << " bytes of " <<  size << ", for audio stream #" << audio_stream_id << ":" << stream LOG_END;
+
+	return result;
 
 }
 
@@ -126,7 +161,11 @@ std::size_t AudioProcessor::Read(media_stream_id_t audio_stream_id, void* data, 
 
 	auto stream = m_audio_server[audio_stream_id];
 
-	return stream != nullptr ? stream->Read(data, size) : 0;
+	auto result = stream != nullptr ? stream->Read(data, size) : 0;
+
+	// LOG(debug) << "Read " << result << " bytes of " <<  size << ", for audio stream #" << audio_stream_id << ":" << stream LOG_END;
+
+	return result;
 }
 
 std::size_t AudioProcessor::Write(media_stream_id_t audio_stream_id, const audio_format_t& audio_format, const void* data, std::size_t size, uint32_t options)
@@ -145,6 +184,33 @@ std::size_t AudioProcessor::Read(media_stream_id_t audio_stream_id, const audio_
 	auto stream = m_audio_server[audio_stream_id];
 
 	return stream != nullptr ? stream->Read(audio_format, data, size) : 0;
+}
+
+bool AudioProcessor::SetStreamAudioFormat(media_stream_id_t audio_stream_id, const audio_format_t &audio_format_t)
+{
+	GuardLock lock(*this);
+
+	auto stream = m_audio_server[audio_stream_id];
+
+	return stream != nullptr && stream->SetAudioFormat(audio_format_t);
+}
+
+bool AudioProcessor::ResetStream(media_stream_id_t audio_stream_id)
+{
+
+	bool result = false;
+
+	GuardLock lock(*this);
+
+	auto audio_slot = m_audio_server.GetAudioSlot(audio_stream_id);
+
+	if (audio_slot != nullptr)
+	{
+		audio_slot->Reset();
+		result = true;
+	}
+
+	return result;
 }
 
 const IAudioStream* AudioProcessor::operator[](media_stream_id_t audio_stream_id)
@@ -172,9 +238,60 @@ IVolumeController& AudioProcessor::GetEventVolumeController()
 	return m_audio_mux.GetAuxVolumeController();
 }
 
-AudioEventServer&AudioProcessor::GetEventServer()
+AudioEventServer& AudioProcessor::GetEventServer()
 {
 	return m_audio_event_server;
+}
+
+const std::string& AudioProcessor::GetRecorderDeviceName() const
+{
+	return m_config.recorder_config.device_name;
+}
+
+const std::string& AudioProcessor::GetPlaybackDeviceName() const
+{
+	return m_config.playback_config.device_name;
+}
+
+bool AudioProcessor::SetRecorderDeviceName(const std::string &device_name)
+{
+	LOG(info) << "Set recorder device name \'" << device_name << "\'" LOG_END;
+
+	if (m_config.recorder_config.device_name != device_name)
+	{
+		m_recorder_audio_dispatcher.Stop();
+
+		GuardLock lock(*this);
+
+		m_recorder_channel.Close();
+
+		m_config.recorder_config.device_name = device_name;
+
+		control_audio_system(true);
+	}
+
+	return true;
+}
+
+bool AudioProcessor::SetPlaybackDeviceName(const std::string &device_name)
+{
+	LOG(info) << "Set playback device name \'" << device_name << "\'" LOG_END;
+
+	if (m_config.playback_config.device_name != device_name)
+	{
+
+		m_playback_audio_dispatcher.Stop();
+
+		GuardLock lock(*this);
+
+		m_playback_channel.Close();
+
+		m_config.playback_config.device_name = device_name;
+
+		control_audio_system(true);
+	}
+
+	return true;
 }
 
 bool AudioProcessor::check_and_conrtol_audio_system()
@@ -197,25 +314,38 @@ bool AudioProcessor::control_audio_system(bool is_start)
 {
 	if (is_start)
 	{
-		if (!m_config.recorder_config.device_name.empty())
+		if (!m_recorder_audio_dispatcher.IsRunning())
 		{
-			m_recorder_channel.Open(m_config.recorder_config.device_name);
+			if (!m_config.recorder_config.device_name.empty())
+			{
+				m_recorder_channel.Open(m_config.recorder_config.device_name);
+			}
+
+			if (m_recorder_channel.IsOpen())
+			{
+				LOG(info) << "Running recorder dispatcher" LOG_END;
+				m_recorder_audio_dispatcher.Start(m_config.recorder_config.duration_ms);
+			}
 		}
 
-		if (!m_config.playback_config.device_name.empty())
+		if (!m_playback_audio_dispatcher.IsRunning())
 		{
-			m_playback_channel.Open(m_config.playback_config.device_name);
+			if (!m_config.playback_config.device_name.empty())
+			{
+				m_playback_channel.Open(m_config.playback_config.device_name);
+			}
+
+			if (!m_config.aux_playback_config.device_name.empty())
+			{
+				m_aux_playback_channel.Open(m_config.aux_playback_config.device_name);
+			}
+
+			if (m_playback_channel.IsOpen() || m_aux_playback_channel.IsOpen())
+			{
+				LOG(info) << "Running playback dispatcher" LOG_END;
+				m_playback_audio_dispatcher.Start(m_config.playback_config.duration_ms);
+			}
 		}
-
-		if (!m_config.aux_playback_config.device_name.empty())
-		{
-			m_aux_playback_channel.Open(m_config.aux_playback_config.device_name);
-		}
-
-		m_recorder_audio_dispatcher.Start(m_config.recorder_config.duration_ms);
-		m_playback_audio_dispatcher.Start(m_config.playback_config.duration_ms);
-
-		LOG(info) << "Audio processor running" LOG_END;
 	}
 	else
 	{
@@ -304,8 +434,6 @@ std::int32_t AudioProcessor::AudioProcessingPoint::Write(const audio_format_t& a
 
 	if (m_audio_processing != nullptr)
 	{
-		void*			output_data = nullptr;
-		std::size_t		output_size = 0;
 
 		if (m_audio_processing->CanWriteProcessing())
 		{
@@ -314,18 +442,16 @@ std::int32_t AudioProcessor::AudioProcessingPoint::Write(const audio_format_t& a
 				m_writer_buffer.resize(size);
 			}
 
-			output_data = m_writer_buffer.data();
-			output_size = size;
+			size = m_audio_processing->AudioProcessingWrite(audio_format, data, size,  m_writer_buffer.data(), size);
+			data = m_writer_buffer.data();
 		}
-
-		output_size = m_audio_processing->AudioProcessingWrite(audio_format, data, size, output_data, output_size);
-
-		result = m_audio_writer.Write(audio_format, output_data, output_size, options);
+		else
+		{
+			size = m_audio_processing->AudioProcessingWrite(audio_format, data, size, nullptr, 0);
+		}
 	}
-	else
-	{
-		result = m_audio_writer.Write(audio_format, data, size, options);
-	}
+
+	result = m_audio_writer.Write(audio_format, data, size, options);
 
 	return result;
 }

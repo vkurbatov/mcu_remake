@@ -1,11 +1,11 @@
 #ifndef AUDIO_POINT_H
 #define AUDIO_POINT_H
 
-#include "media/audio/audio_format.h"
-#include "media/audio/i_audio_point.h"
-#include "media/audio/volume_controller.h"
-#include "media/common/media_point.h"
-#include "media/audio/audio_resampler.h"
+#include "core/media/audio/audio_format.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/volume_controller.h"
+#include "core/media/common/media_point.h"
+#include "core/media/audio/audio_resampler.h"
 
 namespace core
 {
@@ -34,7 +34,7 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 public:
 
 	AudioPoint();
-	virtual ~AudioPoint() override = default;
+	virtual ~AudioPoint() override{}
 
 	// IAudioPoint interface
 public:

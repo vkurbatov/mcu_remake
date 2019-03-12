@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 set(TARGET largo)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 project(${TARGET})
 
 set(SOURCES
@@ -37,7 +39,6 @@ set(SOURCES
 )
 
 set(PRIVATE_HEADERS
-    "core/core-tools/logging.h"
     "core/media/common/media_types.h"
     "core/media/common/data_queue.h"
     "core/media/common/multipoint_data_queue.h"
@@ -92,9 +93,6 @@ set(PUBLIC_HEADERS
     "core/media/audio/channels/i_audio_channel.h"
 )
 
-include_directories(
-    "core"
-)
 
 add_library(${TARGET}
     ${SOURCES}
@@ -107,3 +105,9 @@ target_link_libraries(${TARGET} PRIVATE
     rt
     asound
 )
+
+# install(TARGETS ${TARGET} LIBRARY DESTINATION ${INSTALL_LIBRARIES_DIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+    DESTINATION "${LARGO_INCLUDE_DIR}/liblargo"
+        FILES_MATCHING PATTERN "*.h"
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)

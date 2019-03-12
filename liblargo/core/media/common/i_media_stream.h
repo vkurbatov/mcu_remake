@@ -1,7 +1,7 @@
 #ifndef I_MEDIA_STREAM_H
 #define I_MEDIA_STREAM_H
 
-#include "media/common/i_media_point.h"
+#include "core/media/common/i_media_point.h"
 //#include <cstdint>
 
 namespace core
@@ -18,7 +18,7 @@ const media_stream_id_t media_stream_id_min = 1;
 class IMediaStream : public IMediaPoint
 {
 public:
-	virtual ~IMediaStream() = default;
+	virtual ~IMediaStream(){}
 
 	virtual media_stream_id_t GetStreamId() const = 0;
 

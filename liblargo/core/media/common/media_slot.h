@@ -1,8 +1,8 @@
 #ifndef MEDIA_SLOT_H
 #define MEDIA_SLOT_H
 
-#include "media/common/i_media_slot.h"
-#include "media/common/i_multipoint_data_queue.h"
+#include "core/media/common/i_media_slot.h"
+#include "core/media/common/i_multipoint_data_queue.h"
 
 namespace core
 {
@@ -26,7 +26,7 @@ private:
 
 private:
 	explicit MediaSlot(media_slot_id_t media_slot_id, IMultipointDataQueue& multipoint_data_queue);
-	virtual ~MediaSlot() override = default;
+	virtual ~MediaSlot() override{}
 
 	MediaSlot(const MediaSlot&) = delete;
 	MediaSlot(MediaSlot&&) = delete;
@@ -48,6 +48,8 @@ public:
 public:
 
 	media_slot_id_t GetSlotId() const override;
+	std::size_t ReadJitter() const override;
+	std::size_t WriteJitter() const override;
 
 private:
 
@@ -56,6 +58,7 @@ private:
 	std::size_t internal_drop(std::size_t size);
 	std::size_t internal_push(const void* data, std::size_t size);
 	void internal_reset();
+
 };
 
 } //media

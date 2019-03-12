@@ -1,10 +1,10 @@
 #ifndef AUDIO_CHANNEL_WORKER_H
 #define AUDIO_CHANNEL_WORKER_H
 
-#include "media/common/delay_timer.h"
-#include "media/common/data_queue.h"
-#include "media/common/sync_point.h"
-#include "media/audio/channels/audio_channel.h"
+#include "core/media/common/delay_timer.h"
+#include "core/media/common/data_queue.h"
+#include "core/media/common/sync_point.h"
+#include "core/media/audio/channels/audio_channel.h"
 
 
 #include <thread>

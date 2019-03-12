@@ -127,7 +127,7 @@ std::size_t audio_format_t::size_from_duration(uint32_t duration_ms) const
 
 std::size_t audio_format_t::size_from_format(const audio_format_t& af, std::size_t size) const
 {
-	return is_valid() ? size * bytes_per_second() / af.bytes_per_second() : 0;
+	return af.is_valid() ? size * bytes_per_second() / af.bytes_per_second() : 0;
 }
 
 size_t audio_format_t::samples_from_size(std::size_t size) const

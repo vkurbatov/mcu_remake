@@ -1,7 +1,7 @@
 #ifndef SYNC_POINT_H
 #define SYNC_POINT_H
 
-#include "media/common/i_sync_point.h"
+#include "core/media/common/i_sync_point.h"
 
 #include <mutex>
 

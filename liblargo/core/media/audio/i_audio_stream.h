@@ -1,9 +1,9 @@
 #ifndef I_AUDIO_STREAM_H
 #define I_AUDIO_STREAM_H
 
-#include "media/common/i_media_stream.h"
-#include "media/audio/i_audio_point.h"
-#include "media/audio/i_audio_formatter.h"
+#include "core/media/common/i_media_stream.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/i_audio_formatter.h"
 
 #include <string>
 
@@ -22,7 +22,7 @@ class IAudioStream : virtual public IMediaStream, virtual public IAudioPoint, pu
 {
 
 protected:
-	virtual ~IAudioStream() = default;
+	virtual ~IAudioStream(){}
 
 public:
 	virtual const session_id_t& GetSessionId() const = 0;

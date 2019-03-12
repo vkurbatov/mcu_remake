@@ -19,7 +19,7 @@ struct audio_format_t;
 class IAudioMixer
 {
 public:
-	virtual ~IAudioMixer() = default;
+	virtual ~IAudioMixer(){}
 
 	virtual std::size_t operator()(std::size_t stream_count,
 						   const void* input_data, std::size_t input_data_size,

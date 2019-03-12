@@ -1,20 +1,22 @@
 #ifndef AUDIO_PROCESSOR_H
 #define AUDIO_PROCESSOR_H
 
-#include "media/common/media_queue.h"
-#include "media/common/sync_point.h"
+#include "core/media/common/media_queue.h"
+#include "core/media/common/sync_point.h"
 
-#include "media/audio/audio_composer.h"
-#include "media/audio/audio_server.h"
-#include "media/audio/audio_dispatcher.h"
-#include "media/audio/audio_divider.h"
-#include "media/audio/audio_queue.h"
-#include "media/audio/audio_mux.h"
-#include "media/audio/i_audio_processing.h"
+#include "core/media/audio/audio_composer.h"
+#include "core/media/audio/audio_server.h"
+#include "core/media/audio/audio_dispatcher.h"
+#include "core/media/audio/audio_divider.h"
+#include "core/media/audio/audio_queue.h"
+#include "core/media/audio/audio_mux.h"
+#include "core/media/audio/i_audio_processing.h"
 
-#include "media/audio/channels/alsa/alsa_channel.h"
+#include "core/media/audio/channels/alsa/alsa_channel.h"
 
-#include "media/audio/tools/audio_event_server.h"
+#include "core/media/audio/tools/audio_event_server.h"
+
+#include <vector>
 
 
 namespace core
@@ -35,7 +37,8 @@ struct audio_processor_config_t
 	{
 		audio_format_t	audio_format;
 		std::size_t		queue_size;
-		std::uint32_t	jitter_ms;
+		std::uint32_t	min_jitter_ms;
+		std::uint32_t	max_jitter_ms;
 	}composer_config;
 
 	struct audio_device_config_t
@@ -151,6 +154,10 @@ class AudioProcessor : public SyncPoint
 
 
 public:
+
+	static const std::vector<std::string>& GetDeviceList(bool is_recorder, bool update = false);
+
+public:
 	explicit AudioProcessor(const audio_processor_config_t& config, IAudioProcessing* external_audio_processing = nullptr);
 	AudioProcessor(const AudioProcessor&) = delete;
 	AudioProcessor(AudioProcessor&&) = delete;
@@ -171,6 +178,10 @@ public:
 	std::size_t Write(media_stream_id_t audio_stream_id, const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0);
 	std::size_t Read(media_stream_id_t audio_stream_id, const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0);
 
+	bool SetStreamAudioFormat(media_stream_id_t audio_stream_id, const audio_format_t& audio_format_t);
+
+	bool ResetStream(media_stream_id_t audio_stream_id);
+
 	const IAudioStream* operator[](media_stream_id_t audio_stream_id);
 
 	const audio_processor_config_t& GetConfig() const;
@@ -180,6 +191,12 @@ public:
 	IVolumeController& GetEventVolumeController();
 
 	AudioEventServer& GetEventServer();
+
+	const std::string& GetRecorderDeviceName() const;
+	const std::string& GetPlaybackDeviceName() const;
+
+	bool SetRecorderDeviceName(const std::string& device_name);
+	bool SetPlaybackDeviceName(const std::string& device_name);
 
 private:
 	bool check_and_conrtol_audio_system();

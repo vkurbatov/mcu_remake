@@ -1,9 +1,9 @@
 #ifndef I_AUDIO_COMPOUSER_H
 #define I_AUDIO_COMPOUSER_H
 
-#include "media/common/i_data_queue.h"
-#include "media/common/i_data_collection.h"
-#include "media/audio/i_audio_slot.h"
+#include "core/media/common/i_data_queue.h"
+#include "core/media/common/i_data_collection.h"
+#include "core/media/audio/i_audio_slot.h"
 
 namespace core
 {
@@ -22,7 +22,7 @@ class IAudioComposer : public IAudioFormatter, public IDataQueueControl, public 
 {
 
 public:
-	virtual ~IAudioComposer() override = default;
+	virtual ~IAudioComposer() override{}
 
 	virtual IAudioSlot* operator[](audio_slot_id_t audio_slot_id) = 0;
 	virtual const IAudioSlot* operator[](audio_slot_id_t audio_slot_id) const = 0;

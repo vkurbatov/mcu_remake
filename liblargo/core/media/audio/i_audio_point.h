@@ -1,7 +1,7 @@
 #ifndef I_AUDIO_POINTH_H
 #define I_AUDIO_POINTH_H
 
-#include "media/common/i_media_point.h"
+#include "core/media/common/i_media_point.h"
 #include <cstdint>
 
 namespace core
@@ -20,14 +20,14 @@ struct audio_format_t;
 class IAudioReader : public IMediaReadStatus
 {
 public:
-	virtual ~IAudioReader() = default;
+	virtual ~IAudioReader(){}
 	virtual std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
 class IAudioWriter : public IMediaWriteStatus
 {
 public:
-	virtual ~IAudioWriter() = default;
+	virtual ~IAudioWriter(){}
 	virtual std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
@@ -35,7 +35,7 @@ class IAudioPoint : public IAudioReader, public IAudioWriter
 {
 public:
 
-	virtual ~IAudioPoint() = default;
+	virtual ~IAudioPoint(){}
 
 };
 

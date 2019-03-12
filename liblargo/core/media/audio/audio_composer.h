@@ -1,11 +1,11 @@
 #ifndef AUDIO_COMPOSER_H
 #define AUDIO_COMPOSER_H
 
-#include "media/common/data_queue.h"
-#include "media/common/i_media_queue.h"
-#include "media/common/sync_point.h"
-#include "media/audio/i_audio_composer.h"
-#include "media/audio/audio_format.h"
+#include "core/media/common/data_queue.h"
+#include "core/media/common/i_media_queue.h"
+#include "core/media/common/sync_point.h"
+#include "core/media/audio/i_audio_composer.h"
+#include "core/media/audio/audio_format.h"
 
 #include <unordered_map>
 #include <memory>
@@ -54,7 +54,7 @@ public:
 				  , IMediaQueue& media_queue
 				  , std::uint32_t min_jitter_ms = default_jitter_ms
 				  , bool thread_safe = true);
-	~AudioComposer() override = default;
+	~AudioComposer() override{}
 
 	// IDataQueueControl interface
 public:

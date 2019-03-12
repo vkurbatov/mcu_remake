@@ -1,5 +1,5 @@
 #include "media_queue.h"
-#include "media/common/media_slot.h"
+#include "core/media/common/media_slot.h"
 
 namespace core
 {

@@ -137,7 +137,10 @@ int32_t AudioPoint::Read(void* data, std::size_t size, uint32_t flags)
 
 	auto result = MediaPoint::Read(data, size, flags);
 
-	m_volume_controller(GetAudioFormat().sample_format, data, result);
+	if (result > 0)
+	{
+		m_volume_controller(GetAudioFormat().sample_format, data, result);
+	}
 
 	return result;
 

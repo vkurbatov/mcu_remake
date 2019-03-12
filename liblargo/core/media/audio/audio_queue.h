@@ -1,11 +1,11 @@
 #ifndef AUDIO_QUEUE_H
 #define AUDIO_QUEUE_H
 
-//#include "media/audio/i_audio_formatter.h"
-#include "media/common/sync_point.h"
-#include "media/common/data_queue.h"
-#include "media/audio/i_audio_point.h"
-#include "media/audio/audio_resampler.h"
+//#include "core/media/audio/i_audio_formatter.h"
+#include "core/media/common/sync_point.h"
+#include "core/media/common/data_queue.h"
+#include "core/media/audio/i_audio_point.h"
+#include "core/media/audio/audio_resampler.h"
 
 namespace core
 {

@@ -1,5 +1,5 @@
 #include "audio_mux.h"
-#include "media/audio/audio_mixer.h"
+#include "core/media/audio/audio_mixer.h"
 
 namespace core
 {

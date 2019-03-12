@@ -1,7 +1,7 @@
 #ifndef I_MEDIA_SLOT_H
 #define I_MEDIA_SLOT_H
 
-#include "media/common/i_data_queue.h"
+#include "core/media/common/i_data_queue.h"
 
 namespace core
 {
@@ -15,11 +15,13 @@ class IMediaSlot : public IDataQueue
 {
 
 protected:
-	virtual ~IMediaSlot() override = default;
+	virtual ~IMediaSlot() override{}
 
 public:
 
 	virtual media_slot_id_t GetSlotId() const = 0;
+	virtual std::size_t ReadJitter() const = 0;
+	virtual std::size_t WriteJitter() const = 0;
 
 };
 

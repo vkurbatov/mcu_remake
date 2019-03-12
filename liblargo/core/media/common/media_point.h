@@ -1,7 +1,7 @@
 #ifndef MEDIA_POINT_H
 #define MEDIA_POINT_H
 
-#include "media/common/i_media_point.h"
+#include "core/media/common/i_media_point.h"
 
 namespace core
 {
@@ -12,7 +12,7 @@ namespace media
 class MediaPoint : public IMediaPoint
 {
 public:
-	virtual ~MediaPoint() override = default;
+	virtual ~MediaPoint() override{}
 
 	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t options = 0) override;
 	virtual std::int32_t Read(void* data, std::size_t size, std::uint32_t options = 0) override;

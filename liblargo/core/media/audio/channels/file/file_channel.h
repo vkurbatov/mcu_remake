@@ -4,7 +4,7 @@
 #include <vector>
 #include <fstream>
 
-#include "media/audio/channels/audio_channel.h"
+#include "core/media/audio/channels/audio_channel.h"
 
 namespace core
 {

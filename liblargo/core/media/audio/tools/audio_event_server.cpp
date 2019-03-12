@@ -1,13 +1,13 @@
 #include "audio_event_server.h"
 
-#include "media/audio/audio_mixer.h"
-#include "media/common/guard_lock.h"
+#include "core/media/audio/audio_mixer.h"
+#include "core/media/common/guard_lock.h"
 
 #include <algorithm>
 #include <cstring>
 
 #include <core-tools/logging.h>
-#include "media/audio/audio_string_format_utils.h"
+#include "core/media/audio/audio_string_format_utils.h"
 
 #define PTraceModule() "audio_event_server"
 
@@ -35,7 +35,7 @@ AudioEventServer::AudioEvent::AudioEvent(const std::string &file_name
 	, m_step(0)
 	, m_ref_count(0)
 {
-	LOG(debug) "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
+    LOG(debug) << "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
 }
 
 void AudioEventServer::AudioEvent::Reset(const std::string& file_name, uint32_t times, uint32_t interval)
@@ -115,7 +115,7 @@ AudioEventServer::AudioEventServer(IAudioWriter& audio_writer, const audio_forma
 	, m_duration_ms(duration_ms)
 	, m_running(false)
 {
-	LOG(debug) "Create audio event server [" << audio_format << "/" << m_duration_ms << "]" LOG_END;
+        LOG(debug) << "Create audio event server [" << audio_format << "/" << m_duration_ms << "]" LOG_END;
 }
 
 AudioEventServer::~AudioEventServer()
@@ -143,9 +143,9 @@ bool AudioEventServer::AddEvent(const std::string &event_name, const std::string
 	{
 		// C++11 method for emplace complex object (see C++11 documentation)
 
-		m_events.emplace(std::piecewise_construct
-						 , std::forward_as_tuple(event_name)
-						 , std::forward_as_tuple(file_name, times, interval));
+        m_events.emplace(std::piecewise_construct
+                         , std::forward_as_tuple(event_name)
+                         , std::forward_as_tuple(file_name, times, interval));
 
 		LOG(info) << "Register new audio event \'" << event_name << "\' [" << file_name << "/" << times << "/" << interval << "]" LOG_END;
 	}
@@ -185,7 +185,7 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 	if (result)
 	{
 
-		LOG(info) << "Playing audio event \'" << event_name << "\'" LOG_END;
+		LOG(info) << "Playing audio event \'" << event_name << "\'." LOG_END;
 
 		it->second.Start();
 
@@ -193,6 +193,11 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 
 		if ( m_running.compare_exchange_strong(flag, true) )
 		{
+			if (m_event_thread.joinable())
+			{
+				m_event_thread.join();
+			}
+
 			m_event_thread = std::thread(&AudioEventServer::event_proc, this);
 		}
 	}
