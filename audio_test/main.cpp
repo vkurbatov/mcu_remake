@@ -720,7 +720,7 @@ void test_audio_processor()
 	audio_processor_config.composer_config.audio_format.channels = 1;
 
 	audio_processor_config.composer_config.min_jitter_ms = 60;
-	audio_processor_config.composer_config.queue_size = 64000;
+	audio_processor_config.composer_config.queue_duration_ms = 2000;
 
 	audio_processor_config.event_server_config.jittr_ms = jitter_ms;
 	audio_processor_config.event_server_config.duration_ms = 2000;
