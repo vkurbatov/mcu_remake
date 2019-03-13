@@ -93,6 +93,8 @@ set(PUBLIC_HEADERS
     "core/media/audio/channels/i_audio_channel.h"
 )
 
+include_directories(
+)
 
 add_library(${TARGET}
     ${SOURCES}

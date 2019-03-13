@@ -36,7 +36,7 @@ struct audio_processor_config_t
 	struct audio_composer_config_t
 	{
 		audio_format_t	audio_format;
-		std::size_t		queue_size;
+		std::size_t		queue_duration_ms;
 		std::uint32_t	min_jitter_ms;
 		std::uint32_t	max_jitter_ms;
 	}composer_config;

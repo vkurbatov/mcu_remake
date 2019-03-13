@@ -35,8 +35,6 @@ class AudioSlot : public IAudioSlot
 	std::vector<std::uint8_t>	m_input_resampler_buffer;
 	std::vector<std::uint8_t>	m_output_resampler_buffer;
 
-	std::size_t					m_read_counter;
-	std::size_t					m_write_counter;
 	std::size_t					m_drop_bytes;
 
 	// Dependencies

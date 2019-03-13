@@ -127,6 +127,7 @@ private:
 private:
 	std::int32_t io_error_process(std::int32_t error, bool is_write, std::uint32_t timeout_ms = 0);
 	std::int32_t set_hardware_params(const audio_channel_params_t& audio_params);
+	void prepare_frame_size(std::size_t size);
 };
 
 } // alsa

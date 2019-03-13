@@ -287,6 +287,8 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 	std::int32_t retry_read_count = 0;
 	bool io_complete = false;
 
+	prepare_frame_size(std::max(size, sample_size));
+
 	do
 	{
 
@@ -363,6 +365,8 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 	auto errors = 0, last_error = 0;
 
 	auto data_ptr = static_cast<const std::uint8_t*>(data);
+
+	prepare_frame_size(std::max(size, sample_size));
 
 	do
 	{
@@ -562,7 +566,7 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 					}
 
 
-					m_frame_size = audio_params.buffer_size() / 2;
+					// m_frame_size = audio_params.audio_format.size_from_duration(10);
 
 				}
 
@@ -605,6 +609,14 @@ std::int32_t AlsaChannel::set_hardware_params(const audio_channel_params_t& audi
 	}
 
 	return result;
+}
+
+void core::media::audio::channels::alsa::AlsaChannel::prepare_frame_size(size_t size)
+{
+	if (m_frame_size == 0 || m_frame_size > size)
+	{
+		m_frame_size = size;
+	}
 }
 
 } // alsa

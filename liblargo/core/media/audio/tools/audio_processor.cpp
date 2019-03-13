@@ -51,7 +51,7 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 	: SyncPoint(false)
 	, m_config(config)
 	, m_is_running(false)
-	, m_composer_queue(config.composer_config.queue_size, true)
+	, m_composer_queue(config.composer_config.audio_format.size_from_duration(config.composer_config.queue_duration_ms), false)
 	, m_event_queue(config.playback_config.channel_params.audio_format
 					, config.event_server_config.duration_ms
 					, config.event_server_config.jittr_ms)
@@ -110,11 +110,6 @@ media_stream_id_t AudioProcessor::RegisterStream(const session_id_t& session_id,
 
 			result = stream != nullptr ? stream->GetStreamId() : media_stream_id_none;
 		}
-
-		/*if (result != media_stream_id_none)
-		{
-			check_and_conrtol_audio_system();
-		}*/
 	}
 
 	return result;
@@ -131,11 +126,6 @@ bool AudioProcessor::UnregisterStream(media_stream_id_t audio_stream_id)
 
 		result = m_audio_server.RemoveStream(audio_stream_id);
 	}
-
-	/*if (result == true)
-	{
-		// check_and_conrtol_audio_system();
-	}*/
 
 	return result;
 

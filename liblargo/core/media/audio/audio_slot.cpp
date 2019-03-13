@@ -40,13 +40,11 @@ AudioSlot::AudioSlot(const audio_format_t& audio_format
 					 , const std::uint32_t& min_jitter_ms)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
-	, m_palyback_queue(media_slot.Capacity(), true)
+	, m_palyback_queue(media_slot.Capacity(), false)
 	, m_slots_collection(slot_collection)
 	, m_sync_point(sync_point)
 	, m_min_jitter_ms(min_jitter_ms)
 	, m_ref_count(1)
-	, m_read_counter(0)
-	, m_write_counter(0)
 	, m_drop_bytes(audio_format.size_from_duration(min_jitter_ms))
 {
 	LOG(debug) << "Create audio slot [id = " << m_media_slot.GetSlotId()
@@ -86,8 +84,6 @@ void AudioSlot::Reset()
 	m_input_resampler_buffer.clear();
 	m_output_resampler_buffer.clear();
 	m_palyback_queue.Reset();
-	m_read_counter = 0;
-	m_write_counter = 0;
 	m_drop_bytes = false;
 }
 
@@ -117,35 +113,20 @@ int32_t AudioSlot::slot_pop(void* data, std::size_t size)
 
 bool AudioSlot::prepare_write(std::size_t write_size)
 {
-	auto jitter = m_audio_format.duration_ms(m_media_slot.WriteJitter());
 
-	bool is_read_sync = (m_read_counter > m_write_counter) && (m_min_jitter_ms > 0);
-	bool is_write_sync = jitter > m_min_jitter_ms;//m_max_jitter_ms;
+	auto write_jitter = m_audio_format.duration_ms(m_media_slot.WriteJitter());
 
-	bool is_syncronize = (is_read_sync || is_write_sync);
+	// TODO: джиттер для записи и чтения нужно разделять
+
+	bool is_syncronize = write_jitter > m_min_jitter_ms && !is_drop();
 
 	if (is_syncronize)
 	{
-		if (is_read_sync)
-		{
-			LOG(warning) << "SLOT #" << GetSlotId() << ": read stream ahead write data on " << m_read_counter - m_write_counter << " bytes. Do syncronize stream" LOG_END;
-		}
+		LOG(warning) << "SLOT #" << GetSlotId() << ": write jitter exceeded by " << write_jitter << " ms. Do syncronize stream" LOG_END;
 
-		if (is_write_sync)
-		{
-			LOG(warning) << "SLOT #" << GetSlotId() << ": write stream delay from the compose queue on " << jitter << " ms. Do syncronize stream" LOG_END;
-		}
-
-		m_write_counter = m_read_counter;
-
-		m_media_slot.Reset();
 		m_palyback_queue.Reset();
-
-		m_drop_bytes = m_audio_format.size_from_duration(m_min_jitter_ms);
-
+		m_media_slot.Reset();
 	}
-
-	m_write_counter += write_size;
 
 	return is_syncronize;
 }
@@ -153,13 +134,24 @@ bool AudioSlot::prepare_write(std::size_t write_size)
 bool AudioSlot::prepare_read(std::size_t read_size)
 {
 
-	if (m_drop_bytes > 0)
+	if (is_drop())
 	{
 		m_drop_bytes -= std::min(read_size, m_drop_bytes);
 	}
 	else
 	{
-		m_read_counter += read_size;
+		auto write_jitter = m_audio_format.duration_ms(m_media_slot.WriteJitter());
+		auto read_jitter = m_audio_format.duration_ms(m_media_slot.ReadJitter());
+
+		read_jitter = read_jitter > m_min_jitter_ms ? read_jitter - m_min_jitter_ms : 0;
+
+		bool is_syncronize = (read_jitter < write_jitter ) && (m_min_jitter_ms > 0);
+
+		if (is_syncronize)
+		{
+			LOG(warning) << "SLOT #" << GetSlotId() << ": read jitter exceeded by " << write_jitter - read_jitter << " ms. Do syncronize stream" LOG_END;
+			m_drop_bytes = m_audio_format.size_from_duration(m_min_jitter_ms);
+		}
 	}
 
 	return is_drop();
@@ -198,6 +190,7 @@ std::int32_t AudioSlot::internal_write(const void* data, std::size_t size, const
 	audio_slot_utils::prepare_buffer(m_mix_buffer, output_size);
 
 	auto mix_size = m_media_slot.Read(m_mix_buffer.data(), output_size, true);
+
 
 	mix_size = AudioMixer::Mixed(m_audio_format, m_slots_collection.Count(), m_output_resampler_buffer.data(), output_size, m_mix_buffer.data(), mix_size, m_mix_buffer.data(), output_size);
 

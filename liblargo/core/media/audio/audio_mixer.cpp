@@ -3,6 +3,11 @@
 
 #include <limits>
 
+#include <core-tools/logging.h>
+#include "core/media/audio/audio_string_format_utils.h"
+
+#define PTraceModule() "audio_mixer"
+
 #define SCALED_MIXING	0
 
 namespace core
@@ -24,7 +29,7 @@ enum mix_method_t
 };
 
 /*
- * TODO: need inmulse limits clamp
+ * TODO: need impulse limits clamp
 template<typename T>
 T max_val() { return std::numeric_limits<T>::max(); }
 
@@ -81,7 +86,7 @@ std::size_t mixed(std::size_t stream_count, mix_method_t mix_method,
 	input_data_size = std::min(input_data_size, output_data_size);
 	mixed_data_size = std::min(mixed_data_size, output_data_size);
 
-	auto sample_mixed_count = std::min(mixed_data_size, output_data_size) / sizeof(T);
+	auto sample_mixed_count = mixed_data_size / sizeof(T);
 	auto sample_output_count = output_data_size / sizeof(T);
 
 	if (stream_count < 1)
@@ -101,6 +106,7 @@ std::size_t mixed(std::size_t stream_count, mix_method_t mix_method,
 		{
 			mix_sample(input_samples[i], static_cast<T>(0), output_samples[i], stream_count, mix_method);
 		}
+
 	}
 
 	return output_data_size;
