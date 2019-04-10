@@ -23,6 +23,7 @@ public:
 	virtual bool CanReadProcessing() const = 0;
 	virtual bool CanWriteProcessing() const = 0;
 
+	virtual void Reset() = 0;
 };
 
 } // audio

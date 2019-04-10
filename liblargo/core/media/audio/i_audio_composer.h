@@ -18,7 +18,7 @@ namespace audio
 struct audio_format_t;
 #endif
 
-class IAudioComposer : public IAudioFormatter, public IDataQueueControl, public IDataCollection
+class IAudioComposer : virtual public IAudioFormatter, virtual public IDataQueueControl, virtual public IDataCollection
 {
 
 public:

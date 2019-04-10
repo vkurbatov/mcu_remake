@@ -11,7 +11,7 @@ namespace media
 
 using media_slot_id_t = std::uint32_t;
 
-class IMediaSlot : public IDataQueue
+class IMediaSlot : virtual public IDataQueue
 {
 
 protected:

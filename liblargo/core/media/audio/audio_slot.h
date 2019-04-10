@@ -40,7 +40,9 @@ class AudioSlot : public IAudioSlot
 	// Dependencies
 private:
 
-	const std::uint32_t&		m_min_jitter_ms;
+	const std::uint32_t&		m_jitter_ms;
+	const std::uint32_t&		m_read_delay_ms;
+	const std::uint32_t&		m_dead_zone_ms;
 	const audio_format_t&		m_audio_format;
 	IMediaSlot&					m_media_slot;
 	const IDataCollection&		m_slots_collection;
@@ -50,7 +52,9 @@ private:
 					   , IMediaSlot& media_slot
 					   , const IDataCollection& slot_collection
 					   , const ISyncPoint& sync_point
-					   , const std::uint32_t& min_jitter_ms);
+					   , const std::uint32_t& jitter_ms
+					   , const std::uint32_t& read_delay_ms
+					   , const std::uint32_t& dead_zone_ms);
 	~AudioSlot() override;
 
 	AudioSlot(const AudioSlot&) = delete;

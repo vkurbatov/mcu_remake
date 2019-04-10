@@ -37,15 +37,19 @@ AudioSlot::AudioSlot(const audio_format_t& audio_format
 					 , IMediaSlot& media_slot
 					 , const IDataCollection& slot_collection
 					 , const ISyncPoint& sync_point
-					 , const std::uint32_t& min_jitter_ms)
+					 , const std::uint32_t& jitter_ms
+					 , const std::uint32_t& read_delay_ms
+					 , const std::uint32_t& dead_zone_ms)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
 	, m_palyback_queue(media_slot.Capacity(), false)
 	, m_slots_collection(slot_collection)
 	, m_sync_point(sync_point)
-	, m_min_jitter_ms(min_jitter_ms)
+	, m_jitter_ms(jitter_ms)
+	, m_read_delay_ms(read_delay_ms)
+	, m_dead_zone_ms(dead_zone_ms)
 	, m_ref_count(1)
-	, m_drop_bytes(audio_format.size_from_duration(min_jitter_ms))
+	, m_drop_bytes(audio_format.size_from_duration(jitter_ms + read_delay_ms))
 {
 	LOG(debug) << "Create audio slot [id = " << m_media_slot.GetSlotId()
 			   << "\', format = " << audio_format
@@ -84,7 +88,7 @@ void AudioSlot::Reset()
 	m_input_resampler_buffer.clear();
 	m_output_resampler_buffer.clear();
 	m_palyback_queue.Reset();
-	m_drop_bytes = false;
+	m_drop_bytes = m_audio_format.size_from_duration(m_jitter_ms + m_read_delay_ms);
 }
 
 bool AudioSlot::CanWrite() const
@@ -118,7 +122,7 @@ bool AudioSlot::prepare_write(std::size_t write_size)
 
 	// TODO: джиттер для записи и чтения нужно разделять
 
-	bool is_syncronize = write_jitter > m_min_jitter_ms && !is_drop();
+	bool is_syncronize = write_jitter > m_jitter_ms;
 
 	if (is_syncronize)
 	{
@@ -126,6 +130,7 @@ bool AudioSlot::prepare_write(std::size_t write_size)
 
 		m_palyback_queue.Reset();
 		m_media_slot.Reset();
+		m_drop_bytes = m_audio_format.size_from_duration(m_jitter_ms + m_read_delay_ms);
 	}
 
 	return is_syncronize;
@@ -140,18 +145,18 @@ bool AudioSlot::prepare_read(std::size_t read_size)
 	}
 	else
 	{
-		auto write_jitter = m_audio_format.duration_ms(m_media_slot.WriteJitter());
+
 		auto read_jitter = m_audio_format.duration_ms(m_media_slot.ReadJitter());
 
-		read_jitter = read_jitter > m_min_jitter_ms ? read_jitter - m_min_jitter_ms : 0;
-
-		bool is_syncronize = (read_jitter < write_jitter ) && (m_min_jitter_ms > 0);
+		bool is_syncronize = read_jitter <= (m_jitter_ms + m_dead_zone_ms);
 
 		if (is_syncronize)
 		{
-			LOG(warning) << "SLOT #" << GetSlotId() << ": read jitter exceeded by " << write_jitter - read_jitter << " ms. Do syncronize stream" LOG_END;
-			m_drop_bytes = m_audio_format.size_from_duration(m_min_jitter_ms);
+			auto delay = (m_jitter_ms + m_jitter_ms + m_dead_zone_ms) - read_jitter;
+			LOG(warning) << "SLOT #" << GetSlotId() << ": read delay exceeded by " << delay << " ms. Do syncronize stream" LOG_END;
+			m_drop_bytes = m_audio_format.size_from_duration(delay);
 		}
+
 	}
 
 	return is_drop();

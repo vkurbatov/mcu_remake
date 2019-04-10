@@ -19,20 +19,25 @@ namespace audio
 
 AudioComposer::AudioComposer(const audio_format_t& audio_format
 							 , IMediaQueue& media_queue
-							 , std::uint32_t min_jitter_ms
+							 , std::uint32_t jitter_ms
+							 , std::uint32_t read_delay_ms
+							 , std::uint32_t dead_zone_ms
 							 , bool thread_safe)
 	: m_audio_format(audio_format)
 	, m_media_queue(media_queue)
 	, m_slot_collection(m_audio_slots)
-	, m_min_jitter_ms(min_jitter_ms)
+	, m_jitter_ms(jitter_ms)
+	, m_read_delay_ms(read_delay_ms)
+	, m_dead_zone_ms(dead_zone_ms)
 	, m_sync_point(!thread_safe)
 {
-	LOG(debug) << "Create audio composer with format [" << audio_format << "], jitter = " << min_jitter_ms << "ms" LOG_END;
+	LOG(debug) << "Create audio composer with format [" << audio_format << "], jitter = " << jitter_ms << "ms" LOG_END;
 }
 
 void AudioComposer::Reset()
 {
 	m_media_queue.Reset();
+
 	for (auto& s : m_audio_slots)
 	{
 		s.second->Reset();
@@ -75,7 +80,7 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 		if (media_slot != nullptr)
 		{
 			audio_slot_t audio_slot(
-						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, m_sync_point, m_min_jitter_ms)
+						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, m_sync_point, m_jitter_ms, m_read_delay_ms, m_dead_zone_ms)
 						, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
 			);
 

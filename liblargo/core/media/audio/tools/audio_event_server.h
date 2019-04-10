@@ -3,6 +3,7 @@
 
 #include "core/media/common/i_media_point.h"
 #include "core/media/common/i_data_collection.h"
+#include "core/media/common/i_process_state_notifier.h"
 #include "core/media/common/delay_timer.h"
 #include "core/media/common/sync_point.h"
 #include "core/media/audio/i_audio_point.h"
@@ -48,7 +49,7 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 		void Reset();
 
 		void Start();
-		void Stop();
+		void Stop(bool force = false);
 
 		bool IsPlay() const;
 
@@ -72,13 +73,17 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 	std::vector<std::uint8_t>	m_audio_buffer;
 	std::vector<std::uint8_t>	m_mix_buffer;
 
+	ProcessState				m_process_state;
+	IProcessStateNotifier*		m_state_notifier;
+
+
 	// Dependencies
 private:
 	IAudioWriter&				m_audio_writer;
 
 public:
 
-	AudioEventServer(IAudioWriter& audio_writer, const audio_format_t& audio_format, std::uint32_t duration_ms);
+	AudioEventServer(IAudioWriter& audio_writer, const audio_format_t& audio_format, std::uint32_t duration_ms, IProcessStateNotifier* state_notifier = nullptr);
 	~AudioEventServer();
 
 	// IDataCollection interface
@@ -89,12 +94,15 @@ public:
 	bool RemoveEvent(const std::string& event_name);
 
 	bool PlayEvent(const std::string& event_name);
-	bool StopEvent(const std::string& event_name);
+	bool StopEvent(const std::string& event_name, bool force = false);
 	void Stop();
+
+	bool IsRunning() const;
 
 private:
 
 	void event_proc();
+	void set_state(const ProcessState& process_state);
 
 	// IVolumeController interface
 public:

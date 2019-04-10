@@ -16,7 +16,7 @@ namespace audio
 
 using audio_slot_id_t = std::uint32_t;
 
-class IAudioSlot : public IAudioPoint
+class IAudioSlot : virtual public IAudioPoint
 {
 
 protected:

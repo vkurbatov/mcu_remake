@@ -37,13 +37,13 @@ public:
 	virtual std::size_t Push(const void* data, std::size_t size) = 0;
 };
 
-class IDataQueueIO : public IDataQueueReader, public IDataQueueWriter
+class IDataQueueIO : virtual public IDataQueueReader, virtual public IDataQueueWriter
 {
 public:
     virtual ~IDataQueueIO() override {}
 };
 
-class IDataQueue : public IDataQueueControl, public IDataQueueIO
+class IDataQueue : virtual public IDataQueueControl, virtual public IDataQueueIO
 {
 
 public:

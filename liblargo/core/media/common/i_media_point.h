@@ -16,7 +16,7 @@ public:
 	virtual bool CanRead() const = 0;
 };
 
-class IMediaReader : public IMediaReadStatus
+class IMediaReader : virtual public IMediaReadStatus
 {
 public:
     virtual ~IMediaReader() {}
@@ -30,7 +30,7 @@ public:
 	virtual bool CanWrite() const = 0;
 };
 
-class IMediaWriter : public IMediaWriteStatus
+class IMediaWriter : virtual public IMediaWriteStatus
 {
 public:
     virtual ~IMediaWriter() {}
@@ -38,7 +38,7 @@ public:
 	virtual std::int32_t Write(const void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
-class IMediaPoint : public IMediaReader, public IMediaWriter
+class IMediaPoint : virtual public IMediaReader, virtual public IMediaWriter
 {
 public:
     virtual ~IMediaPoint() override {}

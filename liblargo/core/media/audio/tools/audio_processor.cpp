@@ -5,7 +5,7 @@
 #include <core-tools/logging.h>
 #include "core/media/audio/audio_string_format_utils.h"
 
-#define PTraceModule() "audio_event_server"
+#define PTraceModule() "audio_processor"
 
 namespace core
 {
@@ -39,7 +39,7 @@ const std::vector<std::string>& AudioProcessor::GetDeviceList(bool is_recorder, 
 
 		for (const auto& it : device_list)
 		{
-			result.push_back(it.display_format());
+			result.emplace_back(it.display_format());
 		}
 	}
 
@@ -66,12 +66,14 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 
 	, m_audio_composer(config.composer_config.audio_format
 						, m_composer_queue
-						, config.composer_config.min_jitter_ms
+						, config.composer_config.jitter_ms
+						, config.composer_config.read_delay_ms
 						, false)
 
 	, m_audio_event_server(m_event_queue
 							, config.playback_config.channel_params.audio_format
-							, config.playback_config.duration_ms)
+							, config.playback_config.duration_ms
+							, this)
 	, m_audio_server(m_audio_composer)
 
 	, m_recorder_stream(*m_audio_server.AddStream(local_session_id, m_recorder_channel.GetAudioFormat(), true))
@@ -89,7 +91,7 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 								, m_recorder_channel.GetAudioFormat()
 								, true)
 {
-	control_audio_system(true);
+	// control_audio_system(true);
 }
 
 AudioProcessor::~AudioProcessor()
@@ -110,6 +112,8 @@ media_stream_id_t AudioProcessor::RegisterStream(const session_id_t& session_id,
 
 			result = stream != nullptr ? stream->GetStreamId() : media_stream_id_none;
 		}
+
+		check_and_conrtol_audio_system();
 	}
 
 	return result;
@@ -126,6 +130,8 @@ bool AudioProcessor::UnregisterStream(media_stream_id_t audio_stream_id)
 
 		result = m_audio_server.RemoveStream(audio_stream_id);
 	}
+
+	check_and_conrtol_audio_system();
 
 	return result;
 
@@ -256,9 +262,9 @@ bool AudioProcessor::SetRecorderDeviceName(const std::string &device_name)
 		m_recorder_channel.Close();
 
 		m_config.recorder_config.device_name = device_name;
-
-		control_audio_system(true);
 	}
+
+	check_and_conrtol_audio_system();
 
 	return true;
 }
@@ -277,11 +283,18 @@ bool AudioProcessor::SetPlaybackDeviceName(const std::string &device_name)
 		m_playback_channel.Close();
 
 		m_config.playback_config.device_name = device_name;
-
-		control_audio_system(true);
 	}
 
+	check_and_conrtol_audio_system();
+
 	return true;
+}
+
+void AudioProcessor::Reset()
+{
+	GuardLock lock(*this);
+
+	m_audio_processing_point.Reset();
 }
 
 bool AudioProcessor::check_and_conrtol_audio_system()
@@ -289,11 +302,11 @@ bool AudioProcessor::check_and_conrtol_audio_system()
 	auto slot_count = m_audio_composer.Count();
 	// auto stream_count = m_audio_server.Count(); // ??
 
-	bool need_running = slot_count > 1;
+	bool need_running = slot_count > 1 || m_audio_event_server.IsRunning();
 
 	if (m_is_running != need_running)
 	{
-		LOG(info) << "Current audio slots " << slot_count << ". Need " << (need_running ? "started" : " stopped") << " audio processor" LOG_END;
+		// LOG(info) << "Current audio slots " << slot_count << ". Need " << (need_running ? "started" : " stopped") << " audio processor" LOG_END;
 		control_audio_system(need_running);
 	}
 
@@ -302,7 +315,10 @@ bool AudioProcessor::check_and_conrtol_audio_system()
 
 bool AudioProcessor::control_audio_system(bool is_start)
 {
-	if (is_start)
+
+	m_is_running = is_start;
+
+	if (is_start == true)
 	{
 		if (!m_recorder_audio_dispatcher.IsRunning())
 		{
@@ -336,9 +352,13 @@ bool AudioProcessor::control_audio_system(bool is_start)
 				m_playback_audio_dispatcher.Start(m_config.playback_config.duration_ms);
 			}
 		}
+		m_audio_processing_point.Reset();
 	}
 	else
 	{
+
+		LOG(info) << "Audio processor BEGIN stopped" LOG_END;
+
 		m_audio_event_server.Stop();
 		m_recorder_audio_dispatcher.Stop();
 		m_playback_audio_dispatcher.Stop();
@@ -348,14 +368,24 @@ bool AudioProcessor::control_audio_system(bool is_start)
 		m_aux_playback_channel.Close();
 
 		m_event_queue.Reset();
-		m_composer_queue.Reset();
+		m_audio_composer.Reset();
 
 		LOG(info) << "Audio processor stopped" LOG_END;
 	}
 
-	m_is_running = is_start;
-
 	return m_is_running;
+}
+
+void AudioProcessor::StateChangeNotify(const ProcessState &new_state, const ProcessState &old_state, void *context)
+{
+	switch(new_state)
+	{
+		case ProcessState::start:
+		case ProcessState::stop:
+		case ProcessState::pause:
+			check_and_conrtol_audio_system();
+		break;
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -459,6 +489,14 @@ std::int32_t AudioProcessor::AudioProcessingPoint::Read(const audio_format_t& au
 	}
 
 	return result;
+}
+
+void AudioProcessor::AudioProcessingPoint::Reset()
+{
+	if (m_audio_processing != nullptr)
+	{
+		m_audio_processing->Reset();
+	}
 }
 
 //-------------------------------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 #ifndef AUDIO_PROCESSOR_H
 #define AUDIO_PROCESSOR_H
 
+#include "core/media/common/i_process_state_notifier.h"
 #include "core/media/common/media_queue.h"
 #include "core/media/common/sync_point.h"
 
@@ -37,8 +38,9 @@ struct audio_processor_config_t
 	{
 		audio_format_t	audio_format;
 		std::size_t		queue_duration_ms;
-		std::uint32_t	min_jitter_ms;
-		std::uint32_t	max_jitter_ms;
+		std::uint32_t	jitter_ms;
+		std::uint32_t	read_delay_ms;
+		std::uint32_t	dead_zone_ms;
 	}composer_config;
 
 	struct audio_device_config_t
@@ -55,7 +57,7 @@ struct audio_processor_config_t
 	}event_server_config;
 };
 
-class AudioProcessor : public SyncPoint
+class AudioProcessor : public SyncPoint, private IProcessStateNotifier
 {
 	using mutex_t = std::mutex;
 
@@ -63,7 +65,6 @@ class AudioProcessor : public SyncPoint
 	{
 		IAudioReader&			m_audio_reader;
 		const ISyncPoint&		m_sync_point;
-
 
 	public:
 		SyncAudioReaderProxy(IAudioReader& audio_reader, const ISyncPoint& m_sync_point);
@@ -119,6 +120,8 @@ class AudioProcessor : public SyncPoint
 		// IAudioReader interface
 	public:
 		int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, uint32_t options) override;
+
+		void Reset();
 	};
 
 	audio_processor_config_t		m_config;
@@ -198,9 +201,15 @@ public:
 	bool SetRecorderDeviceName(const std::string& device_name);
 	bool SetPlaybackDeviceName(const std::string& device_name);
 
+	void Reset();
+
 private:
 	bool check_and_conrtol_audio_system();
 	bool control_audio_system(bool is_start);
+
+	// IProcessStateNotifier interface
+public:
+	void StateChangeNotify(const ProcessState &new_state, const ProcessState &old_state, void *context) override;
 };
 
 } // tools

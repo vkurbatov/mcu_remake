@@ -24,13 +24,16 @@ class AudioComposer : public IAudioComposer
 
 	static const std::uint32_t max_queue_duration = 10;
 	static const std::uint32_t default_jitter_ms = 40;
+	static const std::uint32_t default_dead_zone_ms = 40;
 
 	using audio_slot_t = std::shared_ptr<IAudioSlot>;
 	using audio_slot_map_t = std::unordered_map<audio_slot_id_t, audio_slot_t>;
 
 	audio_format_t				m_audio_format;
 	audio_slot_map_t			m_audio_slots;
-	std::uint32_t				m_min_jitter_ms;
+	std::uint32_t				m_jitter_ms;
+	std::uint32_t				m_read_delay_ms;
+	std::uint32_t				m_dead_zone_ms;
 
 	SyncPoint					m_sync_point;
 
@@ -52,7 +55,9 @@ private:
 public:
 	AudioComposer(const audio_format_t& audio_format
 				  , IMediaQueue& media_queue
-				  , std::uint32_t min_jitter_ms = default_jitter_ms
+				  , std::uint32_t jitter_ms = default_jitter_ms
+				  , std::uint32_t read_delay_ms = default_jitter_ms
+				  , std::uint32_t  dead_zone_ms = default_dead_zone_ms
 				  , bool thread_safe = true);
 	~AudioComposer() override{}
 

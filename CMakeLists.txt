@@ -8,8 +8,10 @@ endif()
 include_directories(
     "liblargo"
     "liblargo/core"
+    "liblgcodec"
 )
 
 add_subdirectory(liblargo)
+add_subdirectory(liblgcodec)
 add_subdirectory(audio_test)
 add_subdirectory(video_test)

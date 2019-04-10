@@ -60,11 +60,11 @@ void AudioEventServer::AudioEvent::Start()
 	m_step = 0;
 }
 
-void AudioEventServer::AudioEvent::Stop()
+void AudioEventServer::AudioEvent::Stop(bool force)
 {
 	m_ref_count -= static_cast<std::size_t>(m_ref_count > 0);
 
-	if (m_ref_count == 0)
+	if (force || m_ref_count == 0)
 	{
 		Reset();
 	}
@@ -109,11 +109,13 @@ bool AudioEventServer::AudioEvent::CanRead() const
 	return IsPlay() && m_file.CanRead();
 }
 
-AudioEventServer::AudioEventServer(IAudioWriter& audio_writer, const audio_format_t &audio_format, uint32_t duration_ms)
+AudioEventServer::AudioEventServer(IAudioWriter& audio_writer, const audio_format_t &audio_format, uint32_t duration_ms, IProcessStateNotifier* state_notifier)
 	: m_audio_writer(audio_writer)
 	, m_audio_format(audio_format)
 	, m_duration_ms(duration_ms)
+	, m_state_notifier(state_notifier)
 	, m_running(false)
+	, m_process_state(ProcessState::init)
 {
         LOG(debug) << "Create audio event server [" << audio_format << "/" << m_duration_ms << "]" LOG_END;
 }
@@ -209,7 +211,7 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 	return result;
 }
 
-bool AudioEventServer::StopEvent(const std::string &event_name)
+bool AudioEventServer::StopEvent(const std::string &event_name, bool force)
 {
 	GuardLock lock(m_sync_point);
 
@@ -221,7 +223,7 @@ bool AudioEventServer::StopEvent(const std::string &event_name)
 	{
 		LOG(info) << "Stopped audio event \'" << event_name << "\'" LOG_END;
 
-		it->second.Stop();
+		it->second.Stop(force);
 	}
 	else
 	{
@@ -233,17 +235,26 @@ bool AudioEventServer::StopEvent(const std::string &event_name)
 
 void AudioEventServer::Stop()
 {
-	m_running = false;
 
-	if (m_event_thread.joinable())
+	if (m_running == true)
 	{
-		m_event_thread.join();
+		m_running = false;
+
+		if (m_event_thread.joinable())
+		{
+			m_event_thread.join();
+		}
 	}
 
 	for (auto& s : m_events)
 	{
 		s.second.Reset();
 	}
+}
+
+bool AudioEventServer::IsRunning() const
+{
+	return m_running;
 }
 
 void AudioEventServer::event_proc()
@@ -257,6 +268,8 @@ void AudioEventServer::event_proc()
 	DelayTimer	delay_timer;
 
 	LOG(info) << "Started audio event thread" LOG_END;
+
+	set_state(ProcessState::start);
 
 	while (m_running)
 	{
@@ -312,6 +325,20 @@ void AudioEventServer::event_proc()
 	}
 
 	LOG(info) << "Stopped audio event thread" LOG_END;
+
+	set_state(ProcessState::stop);
+}
+
+void AudioEventServer::set_state(const ProcessState& process_state)
+{
+	if (process_state != m_process_state)
+	{
+		if (m_state_notifier != nullptr)
+		{
+			m_state_notifier->StateChangeNotify(process_state, m_process_state, this);
+		}
+		m_process_state = process_state;
+	}
 }
 
 uint32_t AudioEventServer::GetVolume() const
@@ -319,7 +346,7 @@ uint32_t AudioEventServer::GetVolume() const
 	return m_volume_controller.GetVolume();
 }
 
-void AudioEventServer::SetVolume(uint32_t volume)
+void AudioEventServer::SetVolume(std::uint32_t volume)
 {
 	m_volume_controller.SetVolume(volume);
 }

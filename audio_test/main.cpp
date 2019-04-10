@@ -690,6 +690,11 @@ public:
 	{
 		return true;
 	}
+
+	void Reset() override
+	{
+
+	}
 };
 
 void test_audio_processor()
@@ -719,7 +724,7 @@ void test_audio_processor()
 	audio_processor_config.composer_config.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
 	audio_processor_config.composer_config.audio_format.channels = 1;
 
-	audio_processor_config.composer_config.min_jitter_ms = 60;
+	audio_processor_config.composer_config.jitter_ms = 60;
 	audio_processor_config.composer_config.queue_duration_ms = 2000;
 
 	audio_processor_config.event_server_config.jittr_ms = jitter_ms;

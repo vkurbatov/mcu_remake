@@ -168,8 +168,6 @@ std::int32_t AudioResampler::Resampling(
 				input_size = (output_size * input_format.bytes_per_second()) / output_format.bytes_per_second();
 			}
 
-			/*auto input_sample_count = input_size / input_format.bytes_per_sample();
-			auto output_sample_count = output_size / output_format.bytes_per_sample();*/
 
 			auto out_inc = output_format.bytes_per_sample();
 

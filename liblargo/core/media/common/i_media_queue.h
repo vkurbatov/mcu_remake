@@ -9,7 +9,7 @@ namespace core
 namespace media
 {
 
-class IMediaQueue : public IDataQueueControl
+class IMediaQueue : virtual public IDataQueueControl
 {
 
 public:

@@ -17,21 +17,21 @@ namespace audio
 struct audio_format_t;
 #endif
 
-class IAudioReader : public IMediaReadStatus
+class IAudioReader : virtual public IMediaReadStatus
 {
 public:
 	virtual ~IAudioReader(){}
 	virtual std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
-class IAudioWriter : public IMediaWriteStatus
+class IAudioWriter : virtual public IMediaWriteStatus
 {
 public:
 	virtual ~IAudioWriter(){}
 	virtual std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
-class IAudioPoint : public IAudioReader, public IAudioWriter
+class IAudioPoint : virtual public IAudioReader, virtual public IAudioWriter
 {
 public:
 

@@ -88,8 +88,8 @@ private:
 
 	std::size_t						m_frame_size;
 
-	static alsa_device_list_t		m_recorder_device_list;
-	static alsa_device_list_t		m_playback_device_list;
+	sample_buffer_t					m_silense_buffer;
+	bool							m_resume_support;
 
 public:
 
@@ -125,9 +125,10 @@ private:
 	std::int32_t internal_write(const void* data, std::size_t size, std::uint32_t options = 0) override final;
 
 private:
-	std::int32_t io_error_process(std::int32_t error, bool is_write, std::uint32_t timeout_ms = 0);
 	std::int32_t set_hardware_params(const audio_channel_params_t& audio_params);
+	std::int32_t io_error_process(std::int32_t error, bool is_write, std::uint32_t timeout_ms = 0);
 	void prepare_frame_size(std::size_t size);
+	std::int32_t prepare_playback();
 };
 
 } // alsa

@@ -9,9 +9,9 @@ namespace core
 namespace media
 {
 
-using cursor_t = std::uint32_t;
+using cursor_t = std::size_t;
 
-class IMultipointDataQueue : public IDataQueueControl
+class IMultipointDataQueue : virtual public IDataQueueControl
 {
 
 public:
