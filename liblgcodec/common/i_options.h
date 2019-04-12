@@ -3,27 +3,48 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace largo
 {
 
 using option_key_t = std::string;
 using option_type_id_t = std::size_t;
-const option_type_id_t any_option_type = 0;
+const option_type_id_t option_type_id_any = 0;
 
-struct option_meta_data_t
+struct option_meta_info_t
 {
-	option_type_id_t	type_id;
-	std::size_t			size;
+	option_type_id_t			type_id;
+	std::vector<std::uint8_t>	meta_data;
+
+	option_meta_info_t(option_type_id_t t_id = option_type_id_any) : type_id(t_id)
+		, meta_data()
+	{
+
+	}
+
+	option_meta_info_t(const void* dt, std::size_t sz, option_type_id_t t_id = option_type_id_any) : type_id(t_id)
+		, meta_data(static_cast<const std::uint8_t*>(dt), static_cast<const std::uint8_t*>(dt) + sz)
+	{
+
+	}
+
+	bool is_empty() const
+	{
+		return type_id == option_type_id_any && meta_data.empty();
+	}
 };
 
 class IOptions
 {
 public:
 	virtual ~IOptions() {}
-	virtual const option_type_id_t& GetOptionMetaData() const = 0;
-	virtual bool GetOption(const option_key_t& key, void* data, std::size_t size, option_type_id_t type = any_option_type) = 0;
-	virtual void SetOption(const option_key_t& key, const void* data, std::size_t size, option_type_id_t type = any_option_type) = 0;
+	virtual const option_meta_info_t& operator [] (const option_key_t& key) const = 0;
+	virtual bool GetOption(const option_key_t& key, void* option_data, std::size_t option_data_size = 0, option_type_id_t type_id = option_type_id_any) const = 0;
+	virtual void SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id = option_type_id_any) = 0;
+	virtual bool RemoveOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) = 0;
+	virtual bool HasOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) const = 0;
+	virtual void Clear() = 0;
 	//virtual bool GetOption(const option_key_t& key, void* data, std::size_t size);
 
 };

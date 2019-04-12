@@ -8,10 +8,13 @@ project(${TARGET})
 
 set(SOURCES
     main.cpp
+    common/options.cpp
 )
 
 set(PRIVATE_HEADERS
-    
+    common/options.h
+    common/options_helper.h
+    common/options_helper.tpp
 )
 
 set(PUBLIC_HEADERS
