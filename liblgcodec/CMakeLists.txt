@@ -9,12 +9,14 @@ project(${TARGET})
 set(SOURCES
     main.cpp
     common/options.cpp
+    codec/common/codec_options.cpp
 )
 
 set(PRIVATE_HEADERS
     common/options.h
     common/options_helper.h
     common/options_helper.tpp
+    codec/common/codec_options.h
 )
 
 set(PUBLIC_HEADERS

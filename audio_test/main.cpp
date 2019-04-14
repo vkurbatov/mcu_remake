@@ -851,6 +851,46 @@ void test_device_list()
 
 //  #endif
 
+#include "codec/common/codec_options.h"
+#include "common/options_helper.h"
+
+void test_options()
+{
+	largo::codec::CodecOptions	options;
+	largo::OptionsHelper opt(options);
+
+	struct struct_1_t
+	{
+		signed n_val = 0;
+		unsigned u_val = 0;
+		bool f_val = false;
+		double db_val = 0;
+		float fl_val = 0;
+	}struct_1;
+
+	struct_1.n_val = -1;
+	struct_1.u_val = 2;
+	struct_1.f_val = true;
+	struct_1.db_val = -1234.5678;
+	struct_1.fl_val = 1234.1234;
+
+	opt.SetOption<std::int32_t>("opt1", -1);
+	opt.SetOption<std::string>("opt2", "string");
+	opt.SetOption<double>("opt3", -12345.567f);
+	opt.SetOption("opt4", struct_1);
+
+	auto opt1 = opt.GetOption<std::uint32_t>("opt1");
+	auto opt2 = opt.GetOption<std::string>("opt2");
+	auto opt3 = opt.GetOption<double>("opt3");
+	auto opt4 = opt.GetOption<struct_1_t>("opt4");
+	std::cout << "opt1 = " << opt1
+			  << ", opt2 = " << opt2
+			  << ", opt3 = " << opt3
+			  << ", opt4 = " << opt4.n_val << ":" << opt4.u_val << ":" << opt4.f_val << ":" << opt4.db_val << ":" << opt4.fl_val
+			  << std::endl;
+
+}
+
 int main()
 {
 	// test_queue();
@@ -871,7 +911,9 @@ int main()
 
 	// test_audio_processor();
 
-	test_device_list();
+	// test_device_list();
+
+	test_options();
 
 	return 0;
 }

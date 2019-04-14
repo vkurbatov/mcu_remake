@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
                         asound
                         pthread
                         largo
+                        lgcodec
                         )
 
 
