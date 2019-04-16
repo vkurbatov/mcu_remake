@@ -18,7 +18,7 @@ struct audio_format_t
 
 	enum class sample_format_t
 	{
-		unknown,
+		unknown = -1,
 		pcm_8,
 		pcm_16,
 		pcm_32,

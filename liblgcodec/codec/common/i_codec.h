@@ -20,7 +20,7 @@ enum class codec_type_t
 class ICodec : virtual public ICodecModule, virtual public ICodecControl, virtual public ICodecTranscoder
 {
 public:
-		virtual ~ICodec() {}
+		virtual ~ICodec() override {}
 };
 
 }

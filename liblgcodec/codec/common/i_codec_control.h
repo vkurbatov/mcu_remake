@@ -6,17 +6,17 @@
 namespace largo
 {
 
+class IOptions;
+
 namespace codec
 {
-
-class ICodecOptions;
 
 class ICodecControl
 {
 public:
 	virtual ~ICodecControl() {}
-	virtual bool SetOptions(const ICodecOptions& options) = 0;
-	virtual const ICodecOptions& GetOption() const = 0;
+	virtual bool SetOptions(const IOptions& options) = 0;
+	virtual const IOptions& GetOption() const = 0;
 };
 
 }

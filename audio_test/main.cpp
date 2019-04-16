@@ -856,7 +856,7 @@ void test_device_list()
 
 void test_options()
 {
-	largo::codec::CodecOptions	options;
+	largo::codec::CodecOptions	options({8000, 6300});
 	largo::OptionsHelper opt(options);
 
 	struct struct_1_t

@@ -10,6 +10,11 @@ set(SOURCES
     main.cpp
     common/options.cpp
     codec/common/codec_options.cpp
+    codec/audio/audio_codec_options.cpp
+    codec/audio/av/av_codec.cpp
+    codec/audio/av/av_encoder.cpp
+    codec/audio/av/av_decoder.cpp
+    codec/audio/aac/aac_codec_options.cpp
 )
 
 set(PRIVATE_HEADERS
@@ -17,6 +22,11 @@ set(PRIVATE_HEADERS
     common/options_helper.h
     common/options_helper.tpp
     codec/common/codec_options.h
+    codec/audio/audio_codec_options.h
+    codec/audio/av/av_codec.h
+    codec/audio/av/av_encoder.h
+    codec/audio/av/av_decoder.h
+    codec/audio/aac/aac_codec_options.h
 )
 
 set(PUBLIC_HEADERS
@@ -24,8 +34,8 @@ set(PUBLIC_HEADERS
     codec/common/i_codec_module.h
     codec/common/i_codec_control.h
     codec/common/i_codec_transcoder.h
-    codec/common/i_codec_options.h
     codec/common/i_codec.h
+    codec/common/i_packetizer.h
 )
 
 include_directories(

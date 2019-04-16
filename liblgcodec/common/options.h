@@ -14,7 +14,7 @@ class Options : virtual public IOptions
 
 public:
 	Options();
-
+	virtual ~Options() {}
 	// IOptions interface
 public:
 	virtual const option_meta_info_t& operator [] (const option_key_t& key) const override;
@@ -22,6 +22,9 @@ public:
 	void SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id = option_type_id_any) override;
 	bool RemoveOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) override;
 	bool HasOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) const override;
+	std::size_t MergeFrom(const IOptions& options) override;
+	std::size_t MergeTo(IOptions& options) const override;
+	std::size_t Size() const override;
 	void Clear() override;
 };
 

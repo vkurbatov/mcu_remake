@@ -44,6 +44,9 @@ public:
 	virtual void SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id = option_type_id_any) = 0;
 	virtual bool RemoveOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) = 0;
 	virtual bool HasOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) const = 0;
+	virtual std::size_t MergeFrom(const IOptions& options) = 0;
+	virtual std::size_t MergeTo(IOptions& options) const = 0;
+	virtual std::size_t Size() const = 0;
 	virtual void Clear() = 0;
 	//virtual bool GetOption(const option_key_t& key, void* data, std::size_t size);
 
