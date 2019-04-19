@@ -9,11 +9,11 @@ namespace largo
 namespace codec
 {
 
-enum class transcoder_mode_t
+enum class transcoder_direction_t
 {
 	unknown_transcoder = -1,
-	encoder_mode,
-	decoder_mode
+	encoder_direction,
+	decoder_direction
 };
 
 class ICodecTranscoder
@@ -26,7 +26,7 @@ public:
 							   , void* output_data
 							   , std::size_t output_size) = 0;
 
-	virtual transcoder_mode_t GetTranscoderMode() const = 0;
+	virtual transcoder_direction_t GetTranscoderMode() const = 0;
 
 	// virtual void Reset() = 0;
 };

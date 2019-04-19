@@ -11,10 +11,8 @@ set(SOURCES
     common/options.cpp
     codec/common/codec_options.cpp
     codec/audio/audio_codec_options.cpp
-    codec/audio/av/av_codec.cpp
-    codec/audio/av/av_encoder.cpp
-    codec/audio/av/av_decoder.cpp
     codec/audio/aac/aac_codec_options.cpp
+    codec/audio/libav/av_codec.cpp
 )
 
 set(PRIVATE_HEADERS
@@ -23,10 +21,8 @@ set(PRIVATE_HEADERS
     common/options_helper.tpp
     codec/common/codec_options.h
     codec/audio/audio_codec_options.h
-    codec/audio/av/av_codec.h
-    codec/audio/av/av_encoder.h
-    codec/audio/av/av_decoder.h
     codec/audio/aac/aac_codec_options.h
+    codec/audio/libav/av_codec.h
 )
 
 set(PUBLIC_HEADERS
@@ -49,6 +45,8 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET} PRIVATE
     pthread
+    avcodec
+    avutil
     rt
     fdk-aac
 
