@@ -26,7 +26,7 @@ public:
 							   , void* output_data
 							   , std::size_t output_size) = 0;
 
-	virtual transcoder_direction_t GetTranscoderMode() const = 0;
+	virtual transcoder_direction_t GetTranscodeDirection() const = 0;
 
 	// virtual void Reset() = 0;
 };

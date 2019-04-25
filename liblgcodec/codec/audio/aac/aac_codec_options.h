@@ -12,8 +12,6 @@ namespace codec
 namespace audio
 {
 
-namespace aac
-{
 
 struct aac_audio_codec_options_t
 {
@@ -30,7 +28,6 @@ public:
 	virtual ~AacCodecOptions() override {}
 };
 
-} // aac
 
 } // audio
 

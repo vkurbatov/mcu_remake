@@ -17,13 +17,13 @@ public:
 	virtual ~Options() {}
 	// IOptions interface
 public:
-	virtual const option_meta_info_t& operator [] (const option_key_t& key) const override;
+	const option_meta_info_t& operator [] (const option_key_t& key) const override;
 	bool GetOption(const option_key_t& key, void* option_data, std::size_t option_data_size = 0, option_type_id_t type_id = option_type_id_any) const override;
 	void SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id = option_type_id_any) override;
 	bool RemoveOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) override;
 	bool HasOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) const override;
-	std::size_t MergeFrom(const IOptions& options) override;
-	std::size_t MergeTo(IOptions& options) const override;
+	IOptions& operator << (const IOptions& options) override;
+	IOptions& operator >> (IOptions& options) const override;
 	std::size_t Size() const override;
 	void Clear() override;
 };

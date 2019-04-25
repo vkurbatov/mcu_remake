@@ -9,29 +9,36 @@ project(${TARGET})
 set(SOURCES
     main.cpp
     common/options.cpp
-    codec/common/codec_options.cpp
+    codec/audio/audio_codec_utils.cpp
     codec/audio/audio_codec_options.cpp
+    codec/audio/audio_codec.cpp
     codec/audio/aac/aac_codec_options.cpp
-    codec/audio/libav/av_codec.cpp
+    codec/audio/libav/libav_wrapper.cpp
+    codec/audio/libav/libav_audio_transcoder.cpp
+
 )
 
 set(PRIVATE_HEADERS
     common/options.h
     common/options_helper.h
     common/options_helper.tpp
-    codec/common/codec_options.h
+    codec/audio/audio_codec_utils.h
     codec/audio/audio_codec_options.h
+    codec/audio/audio_codec.h
     codec/audio/aac/aac_codec_options.h
-    codec/audio/libav/av_codec.h
+    codec/audio/libav/libav_wrapper.h
+    codec/audio/libav/libav_audio_transcoder.h
 )
 
-set(PUBLIC_HEADERS
+set(PUBLIC_HEADERS   
+    codec/audio/audio_codec_types.h
     common/i_options.h
     codec/common/i_codec_module.h
     codec/common/i_codec_control.h
     codec/common/i_codec_transcoder.h
     codec/common/i_codec.h
     codec/common/i_packetizer.h
+    codec/audio/i_audio_codec.h
 )
 
 include_directories(

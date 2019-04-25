@@ -71,20 +71,6 @@ bool Options::HasOption(const option_key_t& key, option_type_id_t type_id) const
 	return it != m_options_table.end() && (type_id == option_type_id_any || it->second.type_id == option_type_id_any || type_id == it->second.type_id);
 }
 
-std::size_t Options::MergeFrom(const IOptions& options)
-{
-	return options.MergeTo(*this);
-}
-
-std::size_t Options::MergeTo(IOptions& options) const
-{
-	for(const auto& o : m_options_table)
-	{
-		options.SetOption(o.first, o.second.meta_data.data(), o.second.meta_data.size());
-	}
-
-	return Size();
-}
 
 std::size_t Options::Size() const
 {
@@ -94,6 +80,21 @@ std::size_t Options::Size() const
 void Options::Clear()
 {
 	m_options_table.clear();
+}
+
+IOptions& Options::operator << (const IOptions& options)
+{
+	return options >> *this;
+}
+
+IOptions& Options::operator >> (IOptions& options) const
+{
+	for(const auto& o : m_options_table)
+	{
+		options.SetOption(o.first, o.second.meta_data.data(), o.second.meta_data.size());
+	}
+
+	return options;
 }
 
 } // largo

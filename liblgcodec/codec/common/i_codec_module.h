@@ -2,6 +2,7 @@
 #define I_CODEC_MODULE_H
 
 #include <cstdint>
+#include <string>
 
 namespace largo
 {
@@ -26,7 +27,9 @@ public:
 	virtual bool Close() = 0;
 
 	virtual bool IsOpen() const = 0;
-	virtual bool IsInit() const = 0;
+
+	virtual const std::string& GetCodecFamily() const = 0;
+	virtual const std::string& GetCodecName() const = 0;
 
 	virtual codec_media_type_t GetCodecMediaType() const = 0;
 };

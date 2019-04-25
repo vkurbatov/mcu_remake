@@ -1,4 +1,4 @@
-#include "av_codec.h"
+#include "libav_wrapper.h"
 #include <cstring>
 
 extern "C"
@@ -16,9 +16,6 @@ namespace codec
 namespace audio
 {
 
-namespace libav
-{
-
 struct libav_context_t
 {
 	AVCodec *			codec;
@@ -28,7 +25,7 @@ struct libav_context_t
 
 };
 
-namespace libav_utils
+namespace utils
 {
 
 template<typename T1, typename T2>
@@ -40,16 +37,16 @@ void set_av_param(T1& param, const T2& default_store_value, const T2& new_value)
 	}
 }
 
-AVCodecID get_av_codec_id(const libav_codec_id_t& codec_id)
+AVCodecID get_av_codec_id(const audio_codec_id_t& codec_id)
 {
 	AVCodecID result = AV_CODEC_ID_NONE;
 
 	switch(codec_id)
 	{
-		case libav_codec_id_t::codec_g723_1:
+		case audio_codec_id_t::audio_codec_g723_1:
 			result = AV_CODEC_ID_G723_1;
 		break;
-		case libav_codec_id_t::codec_aac_ld:
+		case audio_codec_id_t::audio_codec_aac_ld:
 			result = AV_CODEC_ID_AAC;
 		break;
 	}
@@ -83,17 +80,24 @@ AVSampleFormat get_av_sample_format(sample_format_t sample_format)
 	return result;
 }
 
-void init_context(AVCodecID av_codec_id, AVCodecContext& av_codec_context, const libav_codec_config_t& libav_codec_config)
+void init_context(AVCodecID av_codec_id, libav_context_t& context, const libav_codec_config_t& libav_codec_config)
 {
-	av_codec_context.bit_rate = libav_codec_config.bit_rate;
-	av_codec_context.sample_fmt = get_av_sample_format(libav_codec_config.sample_format);
-	av_codec_context.sample_rate = libav_codec_config.sample_rate;
-	av_codec_context.channel_layout = AV_CH_LAYOUT_MONO;
-	av_codec_context.channels = 1;
-	av_codec_context.frame_size = libav_codec_config.frame_size;
-	av_codec_context.profile = libav_codec_config.profile;
-	av_codec_context.flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_LOW_DELAY;
+	context.codec_context->bit_rate = libav_codec_config.bit_rate;
+	context.codec_context->sample_fmt = get_av_sample_format(libav_codec_config.sample_format);
+	context.codec_context->sample_rate = libav_codec_config.sample_rate;
+	context.codec_context->channel_layout = AV_CH_LAYOUT_MONO;
+	context.codec_context->channels = 1;
+	context.codec_context->frame_size = libav_codec_config.frame_size;
+	context.codec_context->profile = libav_codec_config.profile;
+	context.codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
+
+	context.frame->channels = context.codec_context->channels;
+	context.frame->channel_layout = context.codec_context->channel_layout;
+	context.frame->format = context.codec_context->sample_fmt;
+	context.frame->sample_rate = context.codec_context->sample_rate;
+	context.frame->nb_samples = context.codec_context->frame_size;
 }
+
 
 libav_context_t* create_context(AVCodecID codec_id, bool is_encoder, const libav_codec_config_t& libav_codec_config)
 {
@@ -135,7 +139,7 @@ libav_context_t* create_context(AVCodecID codec_id, bool is_encoder, const libav
 						context->frame = frame;
 						context->packet = packet;
 
-						init_context(codec_id, *codec_context, libav_codec_config);
+						init_context(codec_id, *context, libav_codec_config);
 
 						return context;
 					}
@@ -177,22 +181,17 @@ std::int32_t encoder(libav_context_t * context,
 	{
 		if (input_data != NULL && output_data != NULL)
 		{
-
-			context->frame->channels = context->codec_context->channels;
-			context->frame->channel_layout = context->codec_context->channel_layout;
-			context->frame->format = context->codec_context->sample_fmt;
-			context->frame->sample_rate = context->codec_context->sample_rate;
 			context->frame->nb_samples = input_size / av_get_bytes_per_sample(context->codec_context->sample_fmt);
 
-			auto buff_size = av_samples_get_buffer_size(NULL, context->codec_context->channels, context->codec_context->frame_size,
-																				 context->codec_context->sample_fmt, 0);
+			/*auto buff_size = av_samples_get_buffer_size(NULL, context->codec_context->channels, context->codec_context->frame_size,
+																				 context->codec_context->sample_fmt, 1);*/
 
 			result = avcodec_fill_audio_frame(context->frame,
 											  context->codec_context->channels,
 											  context->codec_context->sample_fmt,
 											  static_cast<const std::uint8_t*>(input_data),
 											  input_size,
-											  0);
+											  1);
 
 			if (result >= 0)
 			{
@@ -316,61 +315,58 @@ std::int32_t codec_close(libav_context_t* context)
 
 } // libav_utils
 
-AvCodec::AvCodec(libav_codec_id_t codec_id
+LibavWrapper::LibavWrapper(audio_codec_id_t codec_id
 				 , const libav_codec_config_t& config
 				 , bool is_encoder)
 	: m_codec_id(codec_id)
 	, m_is_encoder(is_encoder)
 	, m_codec_config(config)
 	, m_context(
-		  libav_utils::create_context(
-			  libav_utils::get_av_codec_id(codec_id)
+		  utils::create_context(
+			  utils::get_av_codec_id(codec_id)
 			  , is_encoder
-			  ,  config))
+			  ,  config),
+		  [](libav_context_t *ctx) { utils::destroy_context(ctx); })
 {
 
 }
 
-AvCodec::~AvCodec()
+LibavWrapper::~LibavWrapper()
 {
 	Close();
-
-	libav_utils::destroy_context(m_context);
-
-	m_context = nullptr;
 }
 
-bool AvCodec::Open()
+bool LibavWrapper::Open()
 {
 
 	Close();
 
-	m_is_open = libav_utils::codec_open(m_context) >= 0;
+	m_is_open = utils::codec_open(m_context.get()) >= 0;
 
 	return m_is_open;
 
 }
 
-bool AvCodec::Close()
+bool LibavWrapper::Close()
 {
 
 	m_is_open = false;
 
-	return libav_utils::codec_close(m_context) >= 0;
+	return utils::codec_close(m_context.get()) >= 0;
 
 }
 
-bool AvCodec::IsOpen() const
+bool LibavWrapper::IsOpen() const
 {
 	return m_is_open;
 }
 
-bool AvCodec::IsEncoder() const
+bool LibavWrapper::IsEncoder() const
 {
 	return m_is_encoder;
 }
 
-int32_t AvCodec::Transcode(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
+int32_t LibavWrapper::Transcode(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
 {
 	std::int32_t result = -EINVAL;
 
@@ -383,26 +379,40 @@ int32_t AvCodec::Transcode(const void* input_data, std::size_t input_size, void*
 
 		std::memcpy(m_buffer.data(), input_data, input_size);
 
-		auto transcode_proc = IsEncoder() ? libav_utils::encoder : libav_utils::decoder;
+		auto transcode_proc = IsEncoder() ? utils::encoder : utils::decoder;
 
-		result = transcode_proc(m_context, m_buffer.data(), input_size, output_data, output_size);
+		result = transcode_proc(m_context.get(), m_buffer.data(), input_size, output_data, output_size);
 
 	}
 
 	return result;
 }
 
-const libav_codec_config_t& AvCodec::GetConfig() const
+void LibavWrapper::SetConfig(const libav_codec_config_t& config)
+{
+	bool need_open = IsOpen();
+
+	Close();
+
+	m_codec_config = config;
+
+	utils::init_context(utils::get_av_codec_id(m_codec_id), *m_context.get(), m_codec_config);
+
+	if (need_open)
+	{
+		Open();
+	}
+}
+
+const libav_codec_config_t& LibavWrapper::GetConfig() const
 {
 	return m_codec_config;
 }
 
-libav_codec_id_t AvCodec::GetCodecId() const
+audio_codec_id_t LibavWrapper::GetCodecId() const
 {
 	return m_codec_id;
 }
-
-} // libav
 
 } // audio
 

@@ -9,8 +9,6 @@ namespace codec
 namespace audio
 {
 
-namespace aac
-{
 
 const option_key_t AacCodecOptions::aac_audio_codec_option_profile = "codec.audio.aac.profile";
 
@@ -19,8 +17,6 @@ AacCodecOptions::AacCodecOptions(const aac_audio_codec_options_t& aac_audio_code
 {
 	SetOption(aac_audio_codec_option_profile, &aac_audio_codec_options.profile, sizeof(aac_audio_codec_options.profile));
 }
-
-} // aac
 
 } // audio
 
