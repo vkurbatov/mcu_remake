@@ -36,6 +36,15 @@ AudioCodecOptions::AudioCodecOptions(const audio_codec_options_t& audio_codec_op
 	SetAudioCodecOptions(audio_codec_options);
 }
 
+AudioCodecOptions::AudioCodecOptions(const IOptions& options)
+{
+	audio_codec_options_t audio_codec_options = default_audio_codec_options;
+
+	GetAudioCodecOptions(options, audio_codec_options);
+
+	SetAudioCodecOptions(audio_codec_options);
+}
+
 bool AudioCodecOptions::GetAudioCodecOptions(audio_codec_options_t& audio_codec_options) const
 {
 	return GetAudioCodecOptions(*this, audio_codec_options);

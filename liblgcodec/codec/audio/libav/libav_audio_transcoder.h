@@ -23,7 +23,7 @@ public:
 	static const option_key_t libav_audio_codec_option_profile;
 
 public:
-	LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder);
+	LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options);
 	virtual ~LibavAudioTranscoder();
 
 	// AudioCodec interface
@@ -36,6 +36,9 @@ protected:
 	// IAudioCodec interface
 public:
 	audio_codec_id_t GetCodecId() const override;
+
+private:
+	static LibavWrapper* create_libav_wrapper(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options);
 
 };
 

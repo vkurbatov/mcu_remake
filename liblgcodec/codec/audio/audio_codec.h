@@ -22,7 +22,7 @@ class AudioCodec : virtual public IAudioCodec
 	bool					m_is_encoder;
 
 public:
-	AudioCodec(bool is_encoder, const std::string& codec_family, const audio_codec_options_t& audio_codec_options = default_audio_codec_options);
+	AudioCodec(bool is_encoder, const std::string& codec_family, const IOptions& options);
 	virtual ~AudioCodec() {}
 
 	// ICodecTranscoder interface
@@ -33,7 +33,7 @@ public:
 	// ICodecControl interface
 public:
 	bool SetOptions(const IOptions& options) override;
-	const IOptions& GetOption() const override;
+	const IOptions& GetOptions() const override;
 
 	// ICodecModule interface
 public:

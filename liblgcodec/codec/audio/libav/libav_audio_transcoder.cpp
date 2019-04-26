@@ -39,10 +39,10 @@ void store_libav_config(const libav_codec_config_t& libav_config, IOptions& opti
 const option_key_t LibavAudioTranscoder::libav_audio_codec_option_frame_size = "codec.audio.libav.frame_size";
 const option_key_t LibavAudioTranscoder::libav_audio_codec_option_profile = "codec.audio.libav.profile";
 
-LibavAudioTranscoder::LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder)
-	: AudioCodec(true, get_codec_name_from_id(codec_id))
+LibavAudioTranscoder::LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options)
+	: AudioCodec(true, get_codec_name_from_id(codec_id), options)
 	, m_codec_id(codec_id)
-	, m_av_codec(new LibavWrapper(codec_id, default_libav_codec_config, is_encoder))
+	, m_av_codec(create_libav_wrapper(codec_id, is_encoder, options))
 {
 
 }
@@ -74,6 +74,9 @@ bool LibavAudioTranscoder::internal_reconfigure(AudioCodecOptions& audio_codec_o
 		libav_utils::load_libav_config(libav_config, audio_codec_options);
 
 		m_av_codec->SetConfig(libav_config);
+
+		libav_utils::store_libav_config(m_av_codec->GetConfig(), audio_codec_options);
+
 	}
 
 	return result;
@@ -94,6 +97,29 @@ int32_t LibavAudioTranscoder::internal_transcode(const void* input_data, std::si
 audio_codec_id_t LibavAudioTranscoder::GetCodecId() const
 {
 	return m_codec_id;
+}
+
+LibavWrapper* LibavAudioTranscoder::create_libav_wrapper(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options)
+{
+	LibavWrapper* libav_wrapper = nullptr;
+
+	switch (codec_id)
+	{
+		case audio_codec_id_t::audio_codec_g723_1:
+		case audio_codec_id_t::audio_codec_aac_ld:
+		{
+
+			libav_codec_config_t libav_codec_config = default_libav_codec_config;
+
+			libav_utils::load_libav_config(libav_codec_config, options);
+
+			libav_wrapper = new LibavWrapper(codec_id, is_encoder, libav_codec_config);
+		}
+		break;
+
+	}
+
+	return libav_wrapper;
 }
 
 } // audio

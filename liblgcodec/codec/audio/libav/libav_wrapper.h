@@ -25,7 +25,7 @@ const sample_format_t default_libav_sample_format = sample_format_t::pcm_16;
 const std::uint32_t default_libav_channels = 1;
 const std::uint32_t default_libav_bit_rate = 0;
 const std::uint32_t default_libav_frame_size = 0;
-const std::uint32_t default_libav_profile = 0;
+const std::int32_t default_libav_profile = -99;
 
 struct libav_codec_config_t
 {
@@ -34,7 +34,8 @@ struct libav_codec_config_t
 	std::uint32_t				channels;
 	std::uint32_t				bit_rate;
 	std::uint32_t				frame_size;
-	std::uint32_t				profile;
+	std::int32_t				profile;
+
 };
 
 const libav_codec_config_t default_libav_codec_config = { default_libav_sample_rate
@@ -59,8 +60,8 @@ class LibavWrapper
 
 public:
 	LibavWrapper(audio_codec_id_t codec_id
-			, const libav_codec_config_t& config
-			, bool is_encoder);
+			, bool is_encoder
+			, const libav_codec_config_t& config);
 	~LibavWrapper();
 
 	bool Open();

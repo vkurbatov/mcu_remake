@@ -9,8 +9,8 @@ namespace codec
 namespace audio
 {
 
-AudioCodec::AudioCodec(bool is_encoder, const std::string& codec_family, const audio_codec_options_t& audio_codec_options)
-	: m_audio_codec_options(audio_codec_options)
+AudioCodec::AudioCodec(bool is_encoder, const std::string& codec_family, const IOptions& options)
+	: m_audio_codec_options(options)
 	, m_codec_family(codec_family)
 	, m_is_open(false)
 	, m_is_encoder(is_encoder)
@@ -50,7 +50,7 @@ bool AudioCodec::SetOptions(const IOptions& options)
 	return result;
 }
 
-const IOptions& AudioCodec::GetOption() const
+const IOptions& AudioCodec::GetOptions() const
 {
 	return m_audio_codec_options;
 }

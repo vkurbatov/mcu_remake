@@ -929,8 +929,8 @@ void test_libav_wrapper()
 
 	decoder_config = encoder_config;
 
-	largo::codec::audio::LibavWrapper	libav_encoder(codec_id, encoder_config, true);
-	largo::codec::audio::LibavWrapper	libav_decoder(codec_id, decoder_config, false);
+	largo::codec::audio::LibavWrapper	libav_encoder(codec_id, true, encoder_config);
+	largo::codec::audio::LibavWrapper	libav_decoder(codec_id, false, decoder_config);
 
 	libav_encoder.Open();
 	libav_decoder.Open();
@@ -1013,8 +1013,8 @@ void test_libav_codec_system()
 
 	largo::codec::audio::audio_codec_id_t codec_id = largo::codec::audio::audio_codec_id_t::audio_codec_g723_1;
 
-	largo::codec::audio::LibavAudioTranscoder libav_encoder(codec_id, true);
-	largo::codec::audio::LibavAudioTranscoder libav_decoder(codec_id, false);
+	largo::codec::audio::LibavAudioTranscoder libav_encoder(codec_id, true, encoder_options);
+	largo::codec::audio::LibavAudioTranscoder libav_decoder(codec_id, false, encoder_options);
 
 
 	libav_encoder.SetOptions(encoder_options);

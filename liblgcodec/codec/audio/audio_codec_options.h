@@ -41,6 +41,7 @@ public:
 
 public:
 	AudioCodecOptions(const audio_codec_options_t& audio_codec_options = default_audio_codec_options);
+	AudioCodecOptions(const IOptions& options);
 	virtual ~AudioCodecOptions() override {}
 
 	bool GetAudioCodecOptions(audio_codec_options_t& audio_codec_options) const;
