@@ -47,7 +47,7 @@ AVCodecID get_av_codec_id(const audio_codec_id_t& codec_id)
 		case audio_codec_id_t::audio_codec_g723_1:
 			result = AV_CODEC_ID_G723_1;
 		break;
-		case audio_codec_id_t::audio_codec_aac_ld:
+		case audio_codec_id_t::audio_codec_aac:
 			result = AV_CODEC_ID_AAC;
 		break;
 	}
@@ -99,7 +99,12 @@ void init_context(libav_context_t& context, const libav_codec_config_t& libav_co
 	context.codec_context->sample_rate = libav_codec_config.sample_rate;
 	context.codec_context->channel_layout = AV_CH_LAYOUT_MONO;
 	context.codec_context->channels = 1;
-	// context.codec_context->frame_size = libav_codec_config.frame_size;
+
+	if (context.codec_context->frame_size != 0)
+	{
+		context.codec_context->frame_size = libav_codec_config.frame_size;
+	}
+
 	if (context.codec_id == AV_CODEC_ID_AAC)
 	{
 		context.codec_context->profile = libav_codec_config.profile;

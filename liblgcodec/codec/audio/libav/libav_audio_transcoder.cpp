@@ -106,7 +106,7 @@ LibavWrapper* LibavAudioTranscoder::create_libav_wrapper(audio_codec_id_t codec_
 	switch (codec_id)
 	{
 		case audio_codec_id_t::audio_codec_g723_1:
-		case audio_codec_id_t::audio_codec_aac_ld:
+		case audio_codec_id_t::audio_codec_aac:
 		{
 
 			libav_codec_config_t libav_codec_config = default_libav_codec_config;

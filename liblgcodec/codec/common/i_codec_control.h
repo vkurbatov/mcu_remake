@@ -17,7 +17,6 @@ public:
 	virtual ~ICodecControl() {}
 	virtual bool SetOptions(const IOptions& options) = 0;
 	virtual const IOptions& GetOptions() const = 0;
-	virtual void NormalizeOptions() const = 0;
 };
 
 }

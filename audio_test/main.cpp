@@ -856,7 +856,7 @@ void test_device_list()
 
 void test_options()
 {
-	largo::codec::audio::AudioCodecOptions	options({8000, 6300, 1, largo::codec::audio::sample_format_t::pcm_16 });
+	largo::codec::audio::AudioCodecOptions	options( 8000, 6300, 1, largo::codec::audio::sample_format_t::pcm_16 );
 	largo::OptionsHelper opt(options);
 
 	struct struct_1_t
@@ -1014,7 +1014,7 @@ void test_libav_codec_system()
 	largo::codec::audio::audio_codec_id_t codec_id = largo::codec::audio::audio_codec_id_t::audio_codec_g723_1;
 
 	largo::codec::audio::LibavAudioTranscoder libav_encoder(codec_id, true, encoder_options);
-	largo::codec::audio::LibavAudioTranscoder libav_decoder(codec_id, false, encoder_options);
+	largo::codec::audio::LibavAudioTranscoder libav_decoder(codec_id, false, decoder_options);
 
 
 	libav_encoder.SetOptions(encoder_options);
@@ -1052,6 +1052,65 @@ void test_libav_codec_system()
 	}
 }
 
+#include <codec/audio/aac/acc_audio_transcoder.h>
+
+void test_aac_codec()
+{
+
+	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(false);
+
+	static const std::uint32_t duration_ms = 30;
+	static const std::uint32_t recorder_sample_rate = 8000;
+	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
+	static const std::uint32_t playback_sample_rate = 8000;
+	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
+	static const std::uint32_t buffers_count = 10;
+
+	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+	core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+
+	core::media::audio::channels::alsa::AlsaChannel	recorder(recorder_params);
+	core::media::audio::channels::alsa::AlsaChannel	playback(playback_params);
+
+	core::media::DelayTimer	delay_timer;
+
+	recorder.Open("default");
+	playback.Open(device_playback_list[3].display_format());
+
+	largo::codec::audio::AccAudioTranscoder	aac_encoder(true, largo::codec::audio::aac_profile_id_t::aac_profile_ld, 16000);
+	largo::codec::audio::AccAudioTranscoder	aac_decoder(false, largo::codec::audio::aac_profile_id_t::aac_profile_ld, 16000);
+
+	aac_encoder.Open();
+	aac_decoder.Open();
+
+	std::uint8_t	buffer[recorder_frame_size];
+	std::uint8_t	codec_buffer[recorder_frame_size];
+
+	while(true)
+	{
+		auto result = recorder.Read(buffer, recorder_frame_size);
+
+		if (result > 0)
+		{
+			auto enc_result = aac_encoder(buffer, result, codec_buffer, recorder_frame_size);
+
+			if (enc_result > 0)
+			{
+				auto dec_result = aac_decoder(codec_buffer, enc_result, buffer, recorder_frame_size);
+
+				if (dec_result > 0)
+				{
+					playback.Write(buffer, result);
+				}
+			}
+
+		}
+
+		delay_timer(duration_ms);
+	}
+}
+
+
 int main()
 {
 	// test_queue();
@@ -1079,6 +1138,8 @@ int main()
 	// test_libav_wrapper();
 
 	test_libav_codec_system();
+
+	test_aac_codec();
 
 	return 0;
 }

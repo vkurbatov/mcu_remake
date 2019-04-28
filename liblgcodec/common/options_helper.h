@@ -20,11 +20,7 @@ public:
 	static void SetOption(IOptions& options, const option_key_t& key, const T& value);
 
 public:
-	OptionsHelper(IOptions& options) :
-		m_options(options)
-	{
-
-	}
+	OptionsHelper(IOptions& options);
 
 	template<typename T>
 	T GetOption(const option_key_t& key, const T& default_value = {}) const;

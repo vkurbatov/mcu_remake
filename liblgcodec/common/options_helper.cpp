@@ -1,0 +1,33 @@
+#include "options_helper.h"
+#include <cstring>
+
+namespace largo
+{
+
+// std::string template specialization
+
+template<>
+std::string OptionsHelper::GetOption(const IOptions& options, const option_key_t& key, const std::string& default_value)
+{
+	std::string result = default_value;
+
+	auto meta = options[key];
+
+	result = static_cast<const char*>(static_cast<const void*>(meta.meta_data.data()));
+
+	return std::move(result);
+}
+
+template<>
+void OptionsHelper::SetOption(IOptions& options, const option_key_t& key, const std::string& value)
+{
+	options.SetOption(key, value.data(), value.length() + 1);
+}
+
+OptionsHelper::OptionsHelper(IOptions &options)
+	: m_options(options)
+{
+
+}
+
+} // largo

@@ -9,6 +9,7 @@ project(${TARGET})
 set(SOURCES
     main.cpp
     common/options.cpp
+    common/options_helper.cpp
     codec/audio/audio_codec_utils.cpp
     codec/audio/audio_codec_options.cpp
     codec/audio/audio_codec.cpp

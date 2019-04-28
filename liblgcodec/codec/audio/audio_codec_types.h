@@ -26,7 +26,7 @@ enum class audio_codec_id_t
 {
 	audio_codec_unknown,
 	audio_codec_g723_1,
-	audio_codec_aac_ld
+	audio_codec_aac
 };
 
 

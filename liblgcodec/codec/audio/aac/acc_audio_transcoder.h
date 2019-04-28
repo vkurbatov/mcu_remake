@@ -21,7 +21,8 @@ enum class aac_profile_id_t
 class AccAudioTranscoder : public LibavAudioTranscoder
 {
 public:
-	AccAudioTranscoder(const aac_profile_id_t& aac_profile, bool is_encoder, std::uint32_t sample_rate);
+	static AudioCodecOptions CreateAacOptions(const aac_profile_id_t& aac_profile, std::uint32_t sample_rate);
+	AccAudioTranscoder(bool is_encoder, const aac_profile_id_t& aac_profile, std::uint32_t sample_rate);
 };
 
 } // audio
