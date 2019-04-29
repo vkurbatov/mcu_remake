@@ -15,8 +15,8 @@ namespace audio
 
 class AudioCodec : virtual public IAudioCodec
 {
-	std::string				m_codec_family;
 	AudioCodecOptions		m_audio_codec_options;
+	std::string				m_codec_family;
 
 	bool					m_is_open;
 	bool					m_is_encoder;
@@ -34,6 +34,8 @@ public:
 public:
 	bool SetOptions(const IOptions& options) override;
 	const IOptions& GetOptions() const override;
+	const IOptions& NormalizeOptions(IOptions& options) const override;
+	const IOptions& NormalizeOptions() override;
 
 	// ICodecModule interface
 public:
@@ -52,6 +54,11 @@ protected:
 	virtual bool internal_close() = 0;
 	virtual bool internal_reconfigure(AudioCodecOptions& audio_codec_options) = 0;
 	virtual std::int32_t internal_transcode(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) = 0;
+
+protected:
+	virtual AudioCodecOptions& get_audio_codec_options();
+
+
 };
 
 } // audio

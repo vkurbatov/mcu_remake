@@ -44,12 +44,21 @@ LibavAudioTranscoder::LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_en
 	, m_codec_id(codec_id)
 	, m_av_codec(create_libav_wrapper(codec_id, is_encoder, options))
 {
-
+	NormalizeOptions(get_audio_codec_options());
 }
 
 LibavAudioTranscoder::~LibavAudioTranscoder()
 {
 
+}
+
+const IOptions& LibavAudioTranscoder::NormalizeOptions(IOptions& options) const
+{
+	if (m_av_codec != nullptr)
+	{
+		libav_utils::store_libav_config(m_av_codec->GetConfig(), options);
+	}
+	return options;
 }
 
 bool LibavAudioTranscoder::internal_open()
@@ -73,10 +82,7 @@ bool LibavAudioTranscoder::internal_reconfigure(AudioCodecOptions& audio_codec_o
 
 		libav_utils::load_libav_config(libav_config, audio_codec_options);
 
-		m_av_codec->SetConfig(libav_config);
-
-		libav_utils::store_libav_config(m_av_codec->GetConfig(), audio_codec_options);
-
+		NormalizeOptions(audio_codec_options);
 	}
 
 	return result;

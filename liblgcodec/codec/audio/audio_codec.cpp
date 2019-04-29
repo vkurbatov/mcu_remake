@@ -55,6 +55,16 @@ const IOptions& AudioCodec::GetOptions() const
 	return m_audio_codec_options;
 }
 
+const IOptions& AudioCodec::NormalizeOptions(IOptions& options) const
+{
+	return options;
+}
+
+const IOptions& AudioCodec::NormalizeOptions()
+{
+	return NormalizeOptions(m_audio_codec_options);
+}
+
 bool AudioCodec::Open()
 {
 	if (m_is_open)
@@ -97,6 +107,11 @@ const std::string& AudioCodec::GetCodecName() const
 codec_media_type_t AudioCodec::GetCodecMediaType() const
 {
 	return codec_media_type_t::audio_codec;
+}
+
+AudioCodecOptions& AudioCodec::get_audio_codec_options()
+{
+	return m_audio_codec_options;
 }
 
 

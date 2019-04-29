@@ -15,8 +15,8 @@ set(SOURCES
     codec/audio/audio_codec.cpp
     codec/audio/libav/libav_wrapper.cpp
     codec/audio/libav/libav_audio_transcoder.cpp
-    codec/audio/aac/acc_audio_transcoder.cpp
-
+    codec/audio/aac/aac_audio_transcoder.cpp
+    codec/audio/aac/aac_audio_codec_options.cpp
 )
 
 set(PRIVATE_HEADERS
@@ -28,7 +28,9 @@ set(PRIVATE_HEADERS
     codec/audio/audio_codec.h
     codec/audio/libav/libav_wrapper.h
     codec/audio/libav/libav_audio_transcoder.h
-    codec/audio/aac/acc_audio_transcoder.h
+    codec/audio/aac/aac_types.h
+    codec/audio/aac/aac_audio_transcoder.h
+    codec/audio/aac/aac_audio_codec_options.h
 )
 
 set(PUBLIC_HEADERS   
@@ -56,7 +58,7 @@ target_link_libraries(${TARGET} PRIVATE
     avcodec
     avutil
     rt
-    fdk-aac
+#    fdk-aac
 
 )
 

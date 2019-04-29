@@ -13,6 +13,7 @@ namespace codec
 namespace audio
 {
 
+
 class LibavAudioTranscoder : public AudioCodec
 {
 	audio_codec_id_t				m_codec_id;
@@ -25,6 +26,10 @@ public:
 public:
 	LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options);
 	virtual ~LibavAudioTranscoder();
+
+	// ICodecControl interface
+public:
+	const IOptions& NormalizeOptions(IOptions& options) const override;
 
 	// AudioCodec interface
 protected:
@@ -39,7 +44,6 @@ public:
 
 private:
 	static LibavWrapper* create_libav_wrapper(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options);
-
 };
 
 } // audio

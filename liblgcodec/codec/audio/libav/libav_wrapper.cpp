@@ -93,14 +93,18 @@ sample_format_t av_format_to_sample_format(AVSampleFormat av_format)
 
 void init_context(libav_context_t& context, const libav_codec_config_t& libav_codec_config)
 {
-	context.codec_context->bit_rate = libav_codec_config.bit_rate;
+	if (libav_codec_config.bit_rate != 0)
+	{
+		context.codec_context->bit_rate = libav_codec_config.bit_rate;
+	}
+
 	context.codec_context->sample_fmt = sample_format_to_av_format(libav_codec_config.sample_format);
 
 	context.codec_context->sample_rate = libav_codec_config.sample_rate;
 	context.codec_context->channel_layout = AV_CH_LAYOUT_MONO;
 	context.codec_context->channels = 1;
 
-	if (context.codec_context->frame_size != 0)
+	if (libav_codec_config.frame_size != 0)
 	{
 		context.codec_context->frame_size = libav_codec_config.frame_size;
 	}
@@ -110,7 +114,7 @@ void init_context(libav_context_t& context, const libav_codec_config_t& libav_co
 		context.codec_context->profile = libav_codec_config.profile;
 	}
 
-	context.codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
+	context.codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_QSCALE;// | AV_CODEC_FLAG_LOW_DELAY;
 
 	context.frame->channels = context.codec_context->channels;
 	context.frame->channel_layout = context.codec_context->channel_layout;

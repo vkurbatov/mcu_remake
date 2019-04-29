@@ -1052,17 +1052,17 @@ void test_libav_codec_system()
 	}
 }
 
-#include <codec/audio/aac/acc_audio_transcoder.h>
+#include <codec/audio/aac/aac_audio_transcoder.h>
 
 void test_aac_codec()
 {
 
 	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(false);
 
-	static const std::uint32_t duration_ms = 30;
-	static const std::uint32_t recorder_sample_rate = 8000;
+	static const std::uint32_t duration_ms = 10;
+	static const std::uint32_t recorder_sample_rate = 48000;
 	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
-	static const std::uint32_t playback_sample_rate = 8000;
+	static const std::uint32_t playback_sample_rate = 48000;
 	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
 	static const std::uint32_t buffers_count = 10;
 
@@ -1077,14 +1077,21 @@ void test_aac_codec()
 	recorder.Open("default");
 	playback.Open(device_playback_list[3].display_format());
 
-	largo::codec::audio::AccAudioTranscoder	aac_encoder(true, largo::codec::audio::aac_profile_id_t::aac_profile_ld, 16000);
-	largo::codec::audio::AccAudioTranscoder	aac_decoder(false, largo::codec::audio::aac_profile_id_t::aac_profile_ld, 16000);
+	largo::codec::audio::aac_profile_id_t profile = largo::codec::audio::aac_profile_id_t::aac_profile_eld;
+
+	largo::codec::audio::AacAudioTranscoder	aac_encoder(true, profile, recorder_sample_rate);
+	largo::codec::audio::AacAudioTranscoder	aac_decoder(false, profile, recorder_sample_rate);
+
+
 
 	aac_encoder.Open();
 	aac_decoder.Open();
 
 	std::uint8_t	buffer[recorder_frame_size];
-	std::uint8_t	codec_buffer[recorder_frame_size];
+	std::uint8_t	codec_buffer[recorder_frame_size * 4];
+	std::uint8_t	resample_buffer[recorder_frame_size * 4];
+
+	core::media::audio::audio_format_t resample_format(recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::float_32, 1);
 
 	while(true)
 	{
@@ -1092,16 +1099,28 @@ void test_aac_codec()
 
 		if (result > 0)
 		{
-			auto enc_result = aac_encoder(buffer, result, codec_buffer, recorder_frame_size);
 
-			if (enc_result > 0)
+			auto resample_result = core::media::audio::AudioResampler::Resampling(recorder_params.audio_format, resample_format, buffer, result, resample_buffer, sizeof(resample_buffer));
+
+			if (resample_result > 0)
 			{
-				auto dec_result = aac_decoder(codec_buffer, enc_result, buffer, recorder_frame_size);
+				auto enc_result = aac_encoder(resample_buffer, resample_result, codec_buffer, sizeof(codec_buffer));
 
-				if (dec_result > 0)
+				if (enc_result > 0)
 				{
-					playback.Write(buffer, result);
+					auto dec_result = aac_decoder(codec_buffer, enc_result, resample_buffer, sizeof(resample_buffer));
+
+					if (dec_result > 0)
+					{
+						resample_result = core::media::audio::AudioResampler::Resampling(resample_format, recorder_params.audio_format, resample_buffer, dec_result, buffer, sizeof(buffer));
+
+						if (resample_result > 0)
+						{
+							playback.Write(buffer, resample_result);
+						}
+					}
 				}
+
 			}
 
 		}
@@ -1137,7 +1156,7 @@ int main()
 
 	// test_libav_wrapper();
 
-	test_libav_codec_system();
+	// test_libav_codec_system();
 
 	test_aac_codec();
 
