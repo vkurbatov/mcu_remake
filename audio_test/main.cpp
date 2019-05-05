@@ -1075,7 +1075,7 @@ void test_aac_codec()
 	core::media::DelayTimer	delay_timer;
 
 	recorder.Open("default");
-	playback.Open(device_playback_list[3].display_format());
+	playback.Open(device_playback_list[0].display_format());
 
 	largo::codec::audio::aac_profile_id_t profile = largo::codec::audio::aac_profile_id_t::aac_profile_eld;
 

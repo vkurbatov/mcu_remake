@@ -30,16 +30,21 @@ public:
 
 	// IPacketizer interface
 public:
-	virtual std::int32_t Push(const void* data, std::size_t size) override;
-	virtual std::int32_t Pop(void* data, std::size_t size) override;
+	virtual std::size_t Push(const void* data, std::size_t size) override;
+	virtual std::size_t Pop(void* data, std::size_t size) override;
 	virtual void Reset() override;
 	virtual std::size_t Count() const override;
 	packetizer_direction_t GetDirection() const override;
 
 protected:
 
-	virtual std::int32_t internal_get_packet_size(const void* data, std::size_t size) const = 0;
-	virtual std::int32_t internal_packetize(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) = 0;
+	virtual std::size_t internal_push(const void* data, std::size_t size);
+	virtual std::size_t internal_pop(void* data, std::size_t size);
+
+protected:
+
+	virtual std::size_t internal_get_packet_size(const void* data, std::size_t size) const = 0;
+	virtual std::size_t internal_packetize(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size) = 0;
 
 };
 

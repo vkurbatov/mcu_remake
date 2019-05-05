@@ -17,6 +17,7 @@ set(SOURCES
     codec/audio/libav/libav_wrapper.cpp
     codec/audio/libav/libav_audio_transcoder.cpp
     codec/audio/aac/aac_audio_transcoder.cpp
+    codec/audio/aac/aac_audio_packetizer.cpp
     codec/audio/aac/aac_audio_codec_options.cpp
 )
 
@@ -32,6 +33,7 @@ set(PRIVATE_HEADERS
     codec/audio/libav/libav_audio_transcoder.h
     codec/audio/aac/aac_types.h
     codec/audio/aac/aac_audio_transcoder.h
+    codec/audio/aac/aac_audio_packetizer.h
     codec/audio/aac/aac_audio_codec_options.h
 )
 
