@@ -19,12 +19,18 @@ enum class aac_profile_id_t
 	aac_profile_eld
 };
 
-struct aac_packetize_options_t
+const std::uint32_t default_au_size_length = 13;
+const std::uint32_t default_au_index_length = 3;
+const std::uint32_t default_au_index_delta_length = default_au_index_length;
+
+struct au_header_options_t
 {
-	std::uint32_t au_size;
-	std::uint32_t au_index;
-	std::uint32_t au_index_delta;
+	std::uint32_t au_size_length;
+	std::uint32_t au_index_length;
+	std::uint32_t au_index_delta_length;
 };
+
+const au_header_options_t default_au_header_options= { default_au_size_length, default_au_index_length, default_au_index_delta_length };
 
 } // audio
 

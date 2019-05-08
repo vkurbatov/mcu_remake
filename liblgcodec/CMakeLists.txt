@@ -10,6 +10,7 @@ set(SOURCES
     main.cpp
     common/options.cpp
     common/options_helper.cpp
+    common/bit_stream.cpp
     codec/audio/audio_codec_utils.cpp
     codec/audio/audio_codec_options.cpp
     codec/audio/audio_codec.cpp
@@ -25,6 +26,7 @@ set(PRIVATE_HEADERS
     common/options.h
     common/options_helper.h
     common/options_helper.tpp
+    common/bit_stream.h
     codec/audio/audio_codec_utils.h
     codec/audio/audio_codec_options.h
     codec/audio/audio_codec.h

@@ -18,7 +18,21 @@ AudioPacketizer::AudioPacketizer(bool is_packetizer)
 
 std::size_t AudioPacketizer::Push(const void* data, std::size_t size)
 {
-	return internal_push(data, size);
+	std::size_t result = 0;
+	std::size_t process_size = 0;
+
+	do
+	{
+		size -= process_size;
+		data = static_cast<const std::uint8_t*>(data) + process_size;
+
+		process_size = internal_push(data, size);
+
+		result += process_size;
+	}
+	while(process_size > 0 && process_size < size);
+
+	return result;
 }
 
 std::size_t AudioPacketizer::Pop(void* data, std::size_t size)
@@ -50,15 +64,18 @@ std::size_t AudioPacketizer::internal_push(const void* data, std::size_t size)
 
 	if (data != nullptr && size > 0)
 	{
-		result = internal_get_packet_size(data, size);
+		auto packet_size = internal_get_packet_size(data, size);
 
-		if (result > 0)
+		if (packet_size > 0)
 		{
-			m_packet_queue.emplace(result);
+			packet_t packet(packet_size);
 
-			auto& packet = m_packet_queue.front();
+			result = internal_packetize(data, size, packet.data(), packet_size);
 
-			result = internal_packetize(data, size, packet.data(), result);
+			if (result > 0)
+			{
+				m_packet_queue.emplace(std::move(packet));
+			}
 		}
 	}
 
