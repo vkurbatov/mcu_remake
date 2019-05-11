@@ -88,17 +88,19 @@ std::size_t AudioPacketizer::internal_pop(void* data, std::size_t size)
 
 	if (!m_packet_queue.empty())
 	{
-		result =  m_packet_queue.front().size();
+		auto& packet = m_packet_queue.front();
+		result =  packet.size();
 
 		if (data != nullptr)
 		{
 			result = std::min(result, size);
-			auto& packet = m_packet_queue.front();
 
 			if (result > 0)
 			{
 				std::memcpy(data, packet.data(), result);
 			}
+
+			m_packet_queue.pop();
 		}
 	}
 

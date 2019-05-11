@@ -7,7 +7,7 @@ namespace largo
 // std::string template specialization
 
 template<>
-std::string OptionsHelper::GetOption(const IOptions& options, const option_key_t& key, const std::string& default_value)
+std::string OptionsReader::GetOption(const IOptions& options, const option_key_t& key, const std::string& default_value)
 {
 	std::string result = default_value;
 
@@ -18,13 +18,21 @@ std::string OptionsHelper::GetOption(const IOptions& options, const option_key_t
 	return std::move(result);
 }
 
+OptionsReader::OptionsReader(const IOptions &options)
+	: m_options(options)
+{
+
+}
+
+//-------------------------------------------------------------------------------------------
+
 template<>
-void OptionsHelper::SetOption(IOptions& options, const option_key_t& key, const std::string& value)
+void OptionsWriter::SetOption(IOptions& options, const option_key_t& key, const std::string& value)
 {
 	options.SetOption(key, value.data(), value.length() + 1);
 }
 
-OptionsHelper::OptionsHelper(IOptions &options)
+OptionsWriter::OptionsWriter(IOptions &options)
 	: m_options(options)
 {
 

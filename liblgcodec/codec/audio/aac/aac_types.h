@@ -28,6 +28,8 @@ struct au_header_options_t
 	std::uint32_t au_size_length;
 	std::uint32_t au_index_length;
 	std::uint32_t au_index_delta_length;
+	std::uint32_t au_cts_delta_length;
+	std::uint32_t au_dts_delta_length;
 };
 
 const au_header_options_t default_au_header_options= { default_au_size_length, default_au_index_length, default_au_index_delta_length };

@@ -20,6 +20,7 @@ set(SOURCES
     codec/audio/aac/aac_audio_transcoder.cpp
     codec/audio/aac/aac_audio_packetizer.cpp
     codec/audio/aac/aac_audio_codec_options.cpp
+    codec/audio/aac/au_packet.cpp
 )
 
 set(PRIVATE_HEADERS
@@ -27,6 +28,7 @@ set(PRIVATE_HEADERS
     common/options_helper.h
     common/options_helper.tpp
     common/bit_stream.h
+    common/bit_stream.tpp
     codec/audio/audio_codec_utils.h
     codec/audio/audio_codec_options.h
     codec/audio/audio_codec.h
@@ -37,6 +39,7 @@ set(PRIVATE_HEADERS
     codec/audio/aac/aac_audio_transcoder.h
     codec/audio/aac/aac_audio_packetizer.h
     codec/audio/aac/aac_audio_codec_options.h
+    codec/audio/aac/au_packet.h
 )
 
 set(PUBLIC_HEADERS   

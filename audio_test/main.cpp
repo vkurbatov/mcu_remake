@@ -857,7 +857,8 @@ void test_device_list()
 void test_options()
 {
 	largo::codec::audio::AudioCodecOptions	options( 8000, 6300, 1, largo::codec::audio::sample_format_t::pcm_16 );
-	largo::OptionsHelper opt(options);
+	largo::OptionsReader opt_r(options);
+	largo::OptionsWriter opt_w(options);
 
 	struct struct_1_t
 	{
@@ -874,15 +875,15 @@ void test_options()
 	struct_1.db_val = -1234.5678;
 	struct_1.fl_val = 1234.1234;
 
-	opt.SetOption<std::int32_t>("opt1", -1);
-	opt.SetOption<std::string>("opt2", "string");
-	opt.SetOption<double>("opt3", -12345.567f);
-	opt.SetOption("opt4", struct_1);
+	opt_w.SetOption<std::int32_t>("opt1", -1);
+	opt_w.SetOption<std::string>("opt2", "string");
+	opt_w.SetOption<double>("opt3", -12345.567f);
+	opt_w.SetOption("opt4", struct_1);
 
-	auto opt1 = opt.GetOption<std::uint32_t>("opt1");
-	auto opt2 = opt.GetOption<std::string>("opt2");
-	auto opt3 = opt.GetOption<double>("opt3");
-	auto opt4 = opt.GetOption<struct_1_t>("opt4");
+	auto opt1 = opt_r.GetOption<std::uint32_t>("opt1");
+	auto opt2 = opt_r.GetOption<std::string>("opt2");
+	auto opt3 = opt_r.GetOption<double>("opt3");
+	auto opt4 = opt_r.GetOption<struct_1_t>("opt4");
 	std::cout << "opt1 = " << opt1
 			  << ", opt2 = " << opt2
 			  << ", opt3 = " << opt3

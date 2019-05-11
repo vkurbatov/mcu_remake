@@ -6,31 +6,33 @@
 namespace largo
 {
 
-class OptionsHelper
+class OptionsReader
 {
-
-	IOptions&	m_options;
-
+	const IOptions&	m_options;
 public:
 	template<typename T>
 	static T GetOption(const IOptions& options, const option_key_t& key, const T& default_value = {});
-
-
-	template<typename T>
-	static void SetOption(IOptions& options, const option_key_t& key, const T& value);
-
 public:
-	OptionsHelper(IOptions& options);
+	OptionsReader(const IOptions& options);
 
 	template<typename T>
 	T GetOption(const option_key_t& key, const T& default_value = {}) const;
-
-	template<typename T>
-	void SetOption(const option_key_t& key, const T& value);
-
 };
 
-} // helper
+class OptionsWriter
+{
+	 IOptions&	m_options;
+ public:
+	 template<typename T>
+	 static void SetOption(IOptions& options, const option_key_t& key, const T& value);
+ public:
+	 OptionsWriter(IOptions& options);
+
+	 template<typename T>
+	 void SetOption(const option_key_t& key, const T& value);
+};
+
+} // largo
 
 #include "options_helper.tpp"
 
