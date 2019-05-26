@@ -23,16 +23,21 @@ struct au_header
 	std::uint32_t	rap_flag;
 };
 
-struct au_packet
+struct au_header_config
 {
 	std::uint32_t	au_size_length;
 	std::uint32_t	au_index_length;
 	std::uint32_t	au_index_delta_length;
 	std::uint32_t	au_cts_delta_length;
 	std::uint32_t	au_dts_delta_length;
+};
+
+
+class AuPacket
+{
 
 public:
-	au_packet();
+	AuPacket();
 };
 
 } // audio
