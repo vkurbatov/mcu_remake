@@ -1,7 +1,8 @@
 #ifndef AU_PACKET_H
 #define AU_PACKET_H
 
-#include <cstdint>
+#include "codec/audio/aac/au_types.h"
+
 #include <queue>
 #include <vector>
 
@@ -13,26 +14,6 @@ namespace codec
 
 namespace audio
 {
-
-struct au_header_t
-{
-	std::uint32_t	size;
-	std::uint32_t	index;
-	bool			cts_flag;
-	std::uint32_t	cts_delta;
-	bool			dts_flag;
-	std::uint32_t	dts_delta;
-	std::uint32_t	rap_flag;
-};
-
-struct au_header_config_t
-{
-	std::uint32_t	au_size_length;
-	std::uint32_t	au_index_length;
-	std::uint32_t	au_index_delta_length;
-	std::uint32_t	au_cts_delta_length;
-	std::uint32_t	au_dts_delta_length;
-};
 
 class AuPacketizer
 {
@@ -46,9 +27,9 @@ class AuPacketizer
 public:
 	AuPacketizer(const au_header_config_t& au_header_config);
 
-	std::size_t PushData(const void* data, std::size_t size);
-	std::size_t PopData(void* data = nullptr, std::size_t size = 0);
-	bool DropData();
+	std::size_t PushFrame(const void* frame, std::size_t size);
+	std::size_t PopFrame(void* frame = nullptr, std::size_t size = 0);
+	bool DropFrame();
 
 	std::size_t PushPacket(void* packet, std::size_t size);
 	std::size_t PopPacket(void* packet, std::size_t size);

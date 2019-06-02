@@ -11,26 +11,29 @@ namespace codec
 namespace audio
 {
 
+
+//---------------------------------------------------
+
 AuPacketizer::AuPacketizer(const au_header_config_t &au_header_config)
  : m_au_header_config(au_header_config)
 {
 
 }
 
-std::size_t AuPacketizer::PushData(const void *data, std::size_t size)
+std::size_t AuPacketizer::PushFrame(const void *frame, std::size_t size)
 {
 
 	std::size_t result = 0;
 
-	if (data != nullptr && size > 0)
+	if (frame != nullptr && size > 0)
 	{
-		m_packet_queue.emplace(static_cast<const std::uint8_t*>(data)
-						   , static_cast<const std::uint8_t*>(data) + size);
+		m_packet_queue.emplace(static_cast<const std::uint8_t*>(frame)
+						   , static_cast<const std::uint8_t*>(frame) + size);
 		result = size;
 	}
 }
 
-std::size_t AuPacketizer::PopData(void *data, std::size_t size)
+std::size_t AuPacketizer::PopFrame(void *frame, std::size_t size)
 {
 	std::size_t result = 0;
 
@@ -39,10 +42,10 @@ std::size_t AuPacketizer::PopData(void *data, std::size_t size)
 		const auto& packet = m_packet_queue.front();
 		result = packet.size();
 
-		if (data != nullptr)
+		if (frame != nullptr)
 		{
 			result = std::min(result, size);
-			std::memcpy(data, packet.data(), result);
+			std::memcpy(frame, packet.data(), result);
 			m_packet_queue.pop();
 		}
 	}
@@ -50,7 +53,7 @@ std::size_t AuPacketizer::PopData(void *data, std::size_t size)
 	return result;
 }
 
-bool AuPacketizer::DropData()
+bool AuPacketizer::DropFrame()
 {
 	bool result = !m_packet_queue.empty();
 
@@ -91,16 +94,20 @@ std::size_t AuPacketizer::Clear()
 {
 	auto result = Count();
 
-	while (DropData());
+	while (DropFrame());
 
 	return result;
 }
 
+
 std::size_t AuPacketizer::get_need_packet_size(std::size_t available_size) const
 {
+	std::size_t result = 0;
 
+
+
+	return result;
 }
-
 
 } // audio
 
