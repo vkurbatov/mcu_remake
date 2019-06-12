@@ -1,5 +1,5 @@
-#ifndef AU_PACKET_H
-#define AU_PACKET_H
+#ifndef AU_PACKETIZER_H
+#define AU_PACKETIZER_H
 
 #include "codec/audio/aac/au_types.h"
 
@@ -18,14 +18,16 @@ namespace audio
 class AuPacketizer
 {
 
-	using packet_t = std::vector<std::uint8_t>;
-	using queue_t = std::queue<packet_t>;
+public:
+	using frame_t = std::vector<std::uint8_t>;
+	using queue_t = std::queue<frame_t>;
 
-	au_header_config_t	m_au_header_config;
-	queue_t				m_packet_queue;
+private:
+	au_header_rules_t	m_au_header_rules;
+	queue_t				m_frame_queue;
 
 public:
-	AuPacketizer(const au_header_config_t& au_header_config);
+	AuPacketizer(const au_header_rules_t& au_header_config);
 
 	std::size_t PushFrame(const void* frame, std::size_t size);
 	std::size_t PopFrame(void* frame = nullptr, std::size_t size = 0);
@@ -35,8 +37,8 @@ public:
 	std::size_t PopPacket(void* packet, std::size_t size);
 
 	std::size_t Count() const;
-	void SetConfig(const au_header_config_t& au_header_config);
-	const au_header_config_t& GetConfig() const;
+	void SetRules(const au_header_rules_t& au_header_config);
+	const au_header_rules_t& GetRules() const;
 	std::size_t Clear();
 
 private:
