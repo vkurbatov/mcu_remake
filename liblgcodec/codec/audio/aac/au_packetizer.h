@@ -27,13 +27,13 @@ private:
 	queue_t				m_frame_queue;
 
 public:
-	AuPacketizer(const au_header_rules_t& au_header_config);
+	AuPacketizer(const au_header_rules_t& au_header_rules = default_au_header_rules);
 
 	std::size_t PushFrame(const void* frame, std::size_t size);
 	std::size_t PopFrame(void* frame = nullptr, std::size_t size = 0);
 	bool DropFrame();
 
-	std::size_t PushPacket(void* packet, std::size_t size);
+	std::size_t PushPacket(const void* packet, std::size_t size);
 	std::size_t PopPacket(void* packet, std::size_t size);
 
 	std::size_t Count() const;

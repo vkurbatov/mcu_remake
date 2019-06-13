@@ -1130,6 +1130,33 @@ void test_aac_codec()
 	}
 }
 
+#include "codec/audio/aac/au_packetizer.h"
+
+void test_au_packetizer()
+{
+	largo::codec::audio::AuPacketizer au_packetizer;
+	largo::codec::audio::AuPacketizer au_depacketizer;
+
+	char buffer[100];
+
+	au_packetizer.PushFrame("ABCD", 5);
+	auto packet_size = au_packetizer.PopPacket(buffer, sizeof(buffer));
+
+	if (packet_size > 0)
+	{
+		auto frame_count = au_depacketizer.PushPacket(buffer, packet_size);
+
+		if (frame_count > 0)
+		{
+			char frame[5] = {};
+
+			au_depacketizer.PopFrame(frame, 5);
+
+			std::cout << frame << std::endl;
+		}
+	}
+
+}
 
 int main()
 {
@@ -1159,7 +1186,9 @@ int main()
 
 	// test_libav_codec_system();
 
-	test_aac_codec();
+	// test_aac_codec();
+
+	test_au_packetizer();
 
 	return 0;
 }

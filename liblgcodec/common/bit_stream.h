@@ -6,7 +6,15 @@
 namespace largo
 {
 
-class BitStreamReader
+class IBitStream
+{
+public:
+	virtual ~IBitStream(){}
+	virtual std::int32_t GetBitIndex() const = 0;
+	virtual void Reset(std::int32_t bit_index = 0) = 0;
+};
+
+class BitStreamReader : virtual public IBitStream
 {
 	const void*			m_bit_stream;
 	std::int32_t		m_bit_index;
@@ -24,14 +32,14 @@ public:
 	template<typename T>
 	T Read(std::size_t bit_count = sizeof(T) * 8);
 
-	std::int32_t GetBitIndex() const;
-	void Reset(std::int32_t bit_index = 0);
+	std::int32_t GetBitIndex() const override;
+	void Reset(std::int32_t bit_index = 0) override;
 
 };
 
 //------------------------------------------------------------------
 
-class BitStreamWriter
+class BitStreamWriter : virtual public IBitStream
 {
 	void*			m_bit_stream;
 	std::int32_t	m_bit_index;
@@ -49,8 +57,8 @@ public:
 	template<typename T>
 	void Write(const T& value, std::size_t bit_count = sizeof(T) * 8);
 
-	std::int32_t GetBitIndex() const;
-	void Reset(std::int32_t bit_index = 0);
+	std::int32_t GetBitIndex() const override;
+	void Reset(std::int32_t bit_index = 0) override;
 };
 
 } // largo

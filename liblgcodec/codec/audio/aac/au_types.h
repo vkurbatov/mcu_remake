@@ -23,7 +23,7 @@ struct au_header_t
 	std::uint32_t	rap_flag;
 	std::uint32_t	stream_state;
 
-	bool is_valid() const { return size > 0 && index > 0; }
+	bool is_valid() const { return size > 0; }
 };
 
 const std::uint32_t au_header_section_size_length = 16;

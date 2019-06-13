@@ -26,7 +26,7 @@ std::size_t get_au_header_size(const au_header_rules_t& au_rules, bool is_delta 
 			+ au_rules.stream_state_length;
 }
 
-bool fetch_au_header(BitStreamReader& bit_stream, const au_header_rules_t& au_rules, au_header_t& au_header, bool is_delta = false)
+std::size_t fetch_au_header(BitStreamReader& bit_stream, const au_header_rules_t& au_rules, au_header_t& au_header, bool is_delta = false)
 {
 	std::memset(&au_header, 0, sizeof(au_header_t));
 
@@ -48,12 +48,11 @@ bool fetch_au_header(BitStreamReader& bit_stream, const au_header_rules_t& au_ru
 	bit_stream.Read(&au_header.rap_flag, au_rules.rap_length);
 	bit_stream.Read(&au_header.stream_state, au_rules.stream_state_length);
 
-	return au_header.is_valid();
+	return get_au_header_size(au_rules, is_delta);
 }
 
-bool put_au_header(BitStreamWriter& bit_stream, const au_header_rules_t& au_rules, const au_header_t& au_header, bool is_delta = false)
+std::size_t push_au_header(BitStreamWriter& bit_stream, const au_header_rules_t& au_rules, const au_header_t& au_header, bool is_delta = false)
 {
-
 	bit_stream.Write(&au_header.size, au_rules.size_length);
 	bit_stream.Write(&au_header.index, is_delta ? au_rules.index_delta_length : au_rules.index_length);
 
@@ -72,7 +71,7 @@ bool put_au_header(BitStreamWriter& bit_stream, const au_header_rules_t& au_rule
 	bit_stream.Write(&au_header.rap_flag, au_rules.rap_length);
 	bit_stream.Write(&au_header.stream_state, au_rules.stream_state_length);
 
-	return au_header.is_valid();
+	return get_au_header_size(au_rules, is_delta);
 }
 
 std::size_t au_depacketize(const au_header_rules_t& au_rules, const void* packet, std::size_t size, AuPacketizer::queue_t& frame_queue)
@@ -104,7 +103,9 @@ std::size_t au_depacketize(const au_header_rules_t& au_rules, const void* packet
 					au_header_t au_header = {};
 					is_complete = true;
 
-					if (fetch_au_header(bit_reader, au_rules, au_header, result > 0))
+					fetch_au_header(bit_reader, au_rules, au_header, result > 0);
+
+					if (au_header.is_valid())
 					{
 						if (au_header.size <= au_data_size)
 						{
@@ -120,7 +121,7 @@ std::size_t au_depacketize(const au_header_rules_t& au_rules, const void* packet
 						}
 					}
 				}
-				while(is_complete == false);
+				while(is_complete == false);				
 			}
 		}
 	}
@@ -135,21 +136,65 @@ std::size_t au_packetizer(const au_header_rules_t& au_rules, void* packet, std::
 
 	if (bit_size > au_header_section_size_length && !frame_queue.empty())
 	{
-		std::uint16_t frame_number = 0;
 		std::size_t au_data_size = 0;
-		std::size_t au_header_section_size = 0;
+		std::size_t au_header_section_size = au_header_section_size_length;
+
 		AuPacketizer::queue_t au_data_queue;
 
 		BitStreamWriter bit_writer(packet);
 		bit_writer.Reset(au_header_section_size_length);
 
-		bool is_complete;
+		bool is_complete = true;
 
 		do
 		{
-			is_complete = true;
+			auto& frame = frame_queue.front();
+			auto au_header_size = get_au_header_size(au_rules, au_data_size > 0);
+
+			auto need_size = (au_header_section_size
+					+ au_header_size + 7) / 8
+					+ au_data_size + frame.size();
+
+			if (need_size <= size)
+			{
+				if (!frame.empty())
+				{
+					au_header_t au_header = { static_cast<uint32_t>(frame.size()), 0, false, 0, false, 0, 0, 0 };
+
+					au_header_section_size += push_au_header(bit_writer, au_rules, au_header, au_data_size > 0);
+					au_data_size += frame.size();
+
+					au_data_queue.emplace(std::move(frame));
+				}
+
+				frame_queue.pop();
+			}
+
+			is_complete = frame_queue.empty() || need_size >= size;
+
 		}
+
 		while(is_complete == false);
+
+		if (!au_data_queue.empty())
+		{
+			bit_writer.Reset();
+			bit_writer.Write(au_header_section_size - au_header_section_size_length);
+
+			auto au_data_ptr = static_cast<std::uint8_t*>(packet) + (result = ((au_header_section_size + 7) / 8));
+
+			result += au_data_size;
+
+			while(!au_data_queue.empty())
+			{
+				auto& frame = au_data_queue.front();
+
+				std::memcpy(au_data_ptr, frame.data(), frame.size());
+				au_data_ptr += frame.size();
+
+				au_data_queue.pop();
+			}
+		}
 	}
 
 	return result;
@@ -159,8 +204,8 @@ std::size_t au_packetizer(const au_header_rules_t& au_rules, void* packet, std::
 
 //---------------------------------------------------
 
-AuPacketizer::AuPacketizer(const au_header_rules_t &au_header_config)
- : m_au_header_rules(au_header_config)
+AuPacketizer::AuPacketizer(const au_header_rules_t &au_header_rules)
+ : m_au_header_rules(au_header_rules)
 {
 
 }
@@ -210,14 +255,14 @@ bool AuPacketizer::DropFrame()
 	return result;
 }
 
-std::size_t AuPacketizer::PushPacket(void *packet, std::size_t size)
+std::size_t AuPacketizer::PushPacket(const void *packet, std::size_t size)
 {
 	return au_packetizer_utils::au_depacketize(m_au_header_rules, packet, size, m_frame_queue);
 }
 
 std::size_t AuPacketizer::PopPacket(void *packet, std::size_t size)
 {
-
+	return au_packetizer_utils::au_packetizer(m_au_header_rules, packet, size, m_frame_queue);
 }
 
 std::size_t AuPacketizer::Count() const
