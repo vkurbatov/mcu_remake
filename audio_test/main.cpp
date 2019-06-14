@@ -1130,6 +1130,34 @@ void test_aac_codec()
 	}
 }
 
+#include "common/bit_stream.tpp"
+
+void test_bit_stream()
+{
+	std::uint8_t buffer[100] = {};
+
+	largo::BitStreamReader	reader(buffer);
+	largo::BitStreamWriter	writer(buffer);
+
+	std::size_t w_num1 = 6;
+	std::size_t w_num2 = 2;
+	std::size_t w_num3 = 4;
+
+	writer.Write(&w_num1, 13);
+	writer.Write(&w_num2, 3);
+	writer.Write(&w_num3, 3);
+
+	std::size_t r_num1 = 0;
+	std::size_t r_num2 = 0;
+	std::size_t r_num3 = 0;
+
+	reader.Read(&r_num1, 13);
+	reader.Read(&r_num2, 3);
+	reader.Read(&r_num3, 3);
+
+	return;
+}
+
 #include "codec/audio/aac/au_packetizer.h"
 
 void test_au_packetizer()
@@ -1137,13 +1165,14 @@ void test_au_packetizer()
 	largo::codec::audio::AuPacketizer au_packetizer;
 	largo::codec::audio::AuPacketizer au_depacketizer;
 
-	char buffer[100];
+	char buffer[100] = {};
 
 	au_packetizer.PushFrame("ABCD", 5);
 	auto packet_size = au_packetizer.PopPacket(buffer, sizeof(buffer));
 
 	if (packet_size > 0)
 	{
+		print_buffer(buffer, packet_size);
 		auto frame_count = au_depacketizer.PushPacket(buffer, packet_size);
 
 		if (frame_count > 0)
@@ -1187,6 +1216,8 @@ int main()
 	// test_libav_codec_system();
 
 	// test_aac_codec();
+
+	// test_bit_stream();
 
 	test_au_packetizer();
 

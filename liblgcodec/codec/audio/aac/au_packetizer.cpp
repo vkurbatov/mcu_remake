@@ -84,7 +84,7 @@ std::size_t au_depacketize(const au_header_rules_t& au_rules, const void* packet
 	{
 		BitStreamReader bit_reader(packet);
 
-		std::size_t au_header_section_size = bit_reader.Read<std::size_t>(au_header_section_size_length);
+		std::size_t au_header_section_size = bit_reader.ReadValue<std::size_t>(au_header_section_size_length);
 
 		if (au_header_section_size > 0)
 		{
@@ -179,7 +179,7 @@ std::size_t au_packetizer(const au_header_rules_t& au_rules, void* packet, std::
 		if (!au_data_queue.empty())
 		{
 			bit_writer.Reset();
-			bit_writer.Write(au_header_section_size - au_header_section_size_length);
+			bit_writer.WriteValue(au_header_section_size - au_header_section_size_length, au_header_section_size_length);
 
 			auto au_data_ptr = static_cast<std::uint8_t*>(packet) + (result = ((au_header_section_size + 7) / 8));
 

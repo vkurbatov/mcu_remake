@@ -7,7 +7,7 @@ namespace largo
 {
 
 template<typename T>
-T BitStreamReader::Read(void* bit_stream, std::int32_t bit_index, std::size_t bit_count)
+T BitStreamReader::ReadValue(void* bit_stream, std::int32_t bit_index, std::size_t bit_count)
 {
 	T result = {};
 
@@ -17,7 +17,7 @@ T BitStreamReader::Read(void* bit_stream, std::int32_t bit_index, std::size_t bi
 }
 
 template<typename T>
-T BitStreamReader::Read(std::size_t bit_count)
+T BitStreamReader::ReadValue(std::size_t bit_count)
 {
 	T result = {};
 
@@ -28,13 +28,13 @@ T BitStreamReader::Read(std::size_t bit_count)
 
 //----------------------------------------------------------------
 template<typename T>
-void BitStreamWriter::Write(void* bit_stream, std::int32_t bit_index, const T& value, std::size_t bit_count)
+void BitStreamWriter::WriteValue(void* bit_stream, std::int32_t bit_index, const T& value, std::size_t bit_count)
 {
 	 Write(bit_stream, bit_index, static_cast<const void*>(&value), bit_count);
 }
 
 template<typename T>
-void BitStreamWriter::Write(const T& value, std::size_t bit_count)
+void BitStreamWriter::WriteValue(const T& value, std::size_t bit_count)
 {
 	BitStreamWriter::Write(static_cast<const void*>(&value), bit_count);
 }
