@@ -1167,21 +1167,29 @@ void test_au_packetizer()
 
 	char buffer[100] = {};
 
-	au_packetizer.PushFrame("ABCD", 5);
+	au_packetizer.PushFrame("Vasily", 7);
+	au_packetizer.PushFrame("Vladimirovich", 14);
+	au_packetizer.PushFrame("Kurbatov", 9);
+
 	auto packet_size = au_packetizer.PopPacket(buffer, sizeof(buffer));
 
 	if (packet_size > 0)
 	{
-		print_buffer(buffer, packet_size);
+		// print_buffer(buffer, packet_size);
 		auto frame_count = au_depacketizer.PushPacket(buffer, packet_size);
 
 		if (frame_count > 0)
 		{
-			char frame[5] = {};
 
-			au_depacketizer.PopFrame(frame, 5);
+			char frame[100] = {};
 
-			std::cout << frame << std::endl;
+			size_t sz = 0;
+
+			while ((sz = au_depacketizer.PopFrame(frame, sizeof(frame))) > 0)
+			{
+				std::cout << frame << std::endl;
+			}
+
 		}
 	}
 
