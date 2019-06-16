@@ -15,20 +15,25 @@ const option_key_t AudioCodecOptions::audio_codec_option_bit_rate = "codec.audio
 const option_key_t AudioCodecOptions::audio_codec_option_num_channels = "codec.audio.num_channels";
 const option_key_t AudioCodecOptions::audio_codec_option_format = "codec.audio.format";
 
+#define GET_AUDIO_OPTION(param) GET_OPTION(audio_codec_option_, options, audio_codec_options, param)
+#define SET_AUDIO_OPTION(param) SET_OPTION(audio_codec_option_, options, audio_codec_options, param)
+
+
 bool AudioCodecOptions::GetAudioCodecOptions(const IOptions& options, audio_codec_options_t& audio_codec_options)
 {
-	return options.GetOption(audio_codec_option_sample_rate, &audio_codec_options.sample_rate, sizeof(audio_codec_options.sample_rate)) &
-		options.GetOption(audio_codec_option_bit_rate, &audio_codec_options.bit_rate, sizeof(audio_codec_options.bit_rate)) &
-		options.GetOption(audio_codec_option_num_channels, &audio_codec_options.format, sizeof(audio_codec_options.format)) &
-		options.GetOption(audio_codec_option_format, &audio_codec_options.num_channels, sizeof(audio_codec_options.num_channels));
+	return
+	GET_AUDIO_OPTION(sample_rate) &
+	GET_AUDIO_OPTION(bit_rate) &
+	GET_AUDIO_OPTION(format) &
+	GET_AUDIO_OPTION(num_channels);
 }
 
 void AudioCodecOptions::SetAudioCodecOptions(IOptions& options, const audio_codec_options_t& audio_codec_options)
 {
-	options.SetOption(audio_codec_option_sample_rate, &audio_codec_options.sample_rate, sizeof(audio_codec_options.sample_rate));
-	options.SetOption(audio_codec_option_bit_rate, &audio_codec_options.bit_rate, sizeof(audio_codec_options.bit_rate));
-	options.SetOption(audio_codec_option_num_channels, &audio_codec_options.num_channels, sizeof(audio_codec_options.num_channels));
-	options.SetOption(audio_codec_option_format, &audio_codec_options.format, sizeof(audio_codec_options.format));
+	SET_AUDIO_OPTION(sample_rate);
+	SET_AUDIO_OPTION(bit_rate);
+	SET_AUDIO_OPTION(format);
+	SET_AUDIO_OPTION(num_channels);
 }
 
 AudioCodecOptions::AudioCodecOptions(const audio_codec_options_t& audio_codec_options)

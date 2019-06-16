@@ -11,10 +11,10 @@ set(SOURCES
     common/options.cpp
     common/options_helper.cpp
     common/bit_stream.cpp
+    codec/common/media_packetizer.cpp
     codec/audio/audio_codec_utils.cpp
     codec/audio/audio_codec_options.cpp
     codec/audio/audio_codec.cpp
-    codec/audio/audio_packetizer.cpp
     codec/audio/libav/libav_wrapper.cpp
     codec/audio/libav/libav_audio_transcoder.cpp
     codec/audio/aac/aac_audio_transcoder.cpp
@@ -29,10 +29,10 @@ set(PRIVATE_HEADERS
     common/options_helper.tpp
     common/bit_stream.h
     common/bit_stream.tpp
+    codec/common/media_packetizer.h
     codec/audio/audio_codec_utils.h
     codec/audio/audio_codec_options.h
     codec/audio/audio_codec.h
-    codec/audio/audio_packetizer.h
     codec/audio/libav/libav_wrapper.h
     codec/audio/libav/libav_audio_transcoder.h
     codec/audio/aac/aac_types.h

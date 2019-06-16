@@ -10,27 +10,45 @@ namespace codec
 namespace audio
 {
 
-AacAudioPacketizer::AacAudioPacketizer(bool is_packetizer)
-	: AudioPacketizer(is_packetizer)
+AacAudioPacketizer::AacAudioPacketizer(bool is_packetizer, const aac_header_rules_t& aac_header_rules)
+	: MediaPacketizer(is_packetizer)
+	, m_au_packetizer(aac_header_rules)
 {
 
 }
 
-std::size_t AacAudioPacketizer::internal_get_packet_size(const void *data, std::size_t size) const
+const aac_header_rules_t &AacAudioPacketizer::GetAacHeaderRules()
 {
-	std::size_t result = 0;
-
-
-
-	return result;
+	m_au_packetizer.GetRules();
 }
 
-std::size_t AacAudioPacketizer::internal_packetize(const void *input_data, std::size_t input_size, void *output_data, std::size_t output_size)
+void AacAudioPacketizer::SetAacHeaderRules(const aac_header_rules_t &aac_header_rules)
 {
-	std::size_t result = 0;
+	m_au_packetizer.SetRules(aac_header_rules);
+}
 
+std::size_t AacAudioPacketizer::internal_push(const void *data, std::size_t size)
+{
+	auto push_method = m_is_packetizer ? &AuPacketizer::PushFrame : &AuPacketizer::PushPacket;
 
-	return result;
+	return (m_au_packetizer.*push_method)(data, size);
+}
+
+std::size_t AacAudioPacketizer::internal_pop(void *data, std::size_t size)
+{
+	auto pop_method = m_is_packetizer ? &AuPacketizer::PopPacket : &AuPacketizer::PopFrame;
+
+	return (m_au_packetizer.*pop_method)(data, size);
+}
+
+void AacAudioPacketizer::internal_reset()
+{
+	m_au_packetizer.Clear();
+}
+
+std::size_t AacAudioPacketizer::internal_count() const
+{
+	return m_au_packetizer.Count();
 }
 
 } // audio

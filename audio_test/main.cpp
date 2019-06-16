@@ -1159,11 +1159,51 @@ void test_bit_stream()
 }
 
 #include "codec/audio/aac/au_packetizer.h"
+#include "codec/audio/aac/aac_audio_packetizer.h"
 
 void test_au_packetizer()
 {
-	largo::codec::audio::AuPacketizer au_packetizer;
-	largo::codec::audio::AuPacketizer au_depacketizer;
+	largo::codec::audio::aac_header_rules_t rules = largo::codec::audio::default_aac_header_rules;
+
+	rules.size_length = 12;
+	rules.cts_delta_length = 3;
+	rules.stream_state_length = 2;
+
+	largo::codec::audio::AacAudioPacketizer aac_packetizer(true, rules);
+	largo::codec::audio::AacAudioPacketizer aac_depacketizer(false, rules);
+
+	char buffer[100] = {};
+
+	aac_packetizer.Push("Vasily", 7);
+	aac_packetizer.Push("Vladimirovich", 14);
+	aac_packetizer.Push("Kurbatov", 9);
+
+	auto packet_size = aac_packetizer.Pop(buffer, sizeof(buffer));
+
+	if (packet_size > 0)
+	{
+		// print_buffer(buffer, packet_size);
+		auto frame_count = aac_depacketizer.Push(buffer, packet_size);
+
+		if (frame_count > 0)
+		{
+
+			char frame[100] = {};
+
+			size_t sz = 0;
+
+			while ((sz = aac_depacketizer.Pop(frame, sizeof(frame))) > 0)
+			{
+				std::cout << frame << std::endl;
+			}
+
+		}
+	}
+
+
+/*
+	largo::codec::audio::AuPacketizer au_packetizer(rules);
+	largo::codec::audio::AuPacketizer au_depacketizer(rules);
 
 	char buffer[100] = {};
 
@@ -1192,7 +1232,7 @@ void test_au_packetizer()
 
 		}
 	}
-
+*/
 }
 
 int main()

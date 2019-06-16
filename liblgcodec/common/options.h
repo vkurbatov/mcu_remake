@@ -4,6 +4,9 @@
 #include "i_options.h"
 #include <unordered_map>
 
+#define GET_OPTION(prefix_key, options, param_base, param) options.GetOption(prefix_key##param, &param_base.param, sizeof(param_base.param))
+#define SET_OPTION(prefix_key, options, param_base, param) options.SetOption(prefix_key##param, &param_base.param, sizeof(param_base.param));
+
 namespace largo
 {
 

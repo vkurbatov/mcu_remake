@@ -31,10 +31,14 @@ public:
 
 	std::size_t PushFrame(const void* frame, std::size_t size);
 	std::size_t PopFrame(void* frame = nullptr, std::size_t size = 0);
+
 	bool DropFrame();
 
 	std::size_t PushPacket(const void* packet, std::size_t size);
 	std::size_t PopPacket(void* packet, std::size_t size);
+
+	std::size_t GetNeedPacketSize(std::size_t frame_size, std::size_t frame_count = 1) const;
+	std::size_t GetNeedFrameSize(std::size_t packet_size, std::size_t frame_count = 1) const;
 
 	std::size_t Count() const;
 	void SetRules(const au_header_rules_t& au_header_config);
@@ -43,7 +47,7 @@ public:
 
 private:
 
-	std::size_t get_need_packet_size(std::size_t available_size) const;
+	std::size_t get_need_size(std::size_t size, bool is_packet ,std::size_t frames = 1) const;
 
 };
 

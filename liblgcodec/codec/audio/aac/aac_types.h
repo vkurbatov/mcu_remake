@@ -1,7 +1,7 @@
 #ifndef AAC_TYPES_H
 #define AAC_TYPES_H
 
-#include <cstdint>
+#include "codec/audio/aac/au_types.h"
 
 namespace largo
 {
@@ -19,20 +19,9 @@ enum class aac_profile_id_t
 	aac_profile_eld
 };
 
-const std::uint32_t default_au_size_length = 13;
-const std::uint32_t default_au_index_length = 3;
-const std::uint32_t default_au_index_delta_length = default_au_index_length;
+using aac_header_rules_t = au_header_rules_t;
 
-struct au_header_options_t
-{
-	std::uint32_t au_size_length;
-	std::uint32_t au_index_length;
-	std::uint32_t au_index_delta_length;
-	std::uint32_t au_cts_delta_length;
-	std::uint32_t au_dts_delta_length;
-};
-
-const au_header_options_t default_au_header_options= { default_au_size_length, default_au_index_length, default_au_index_delta_length };
+const aac_header_rules_t default_aac_header_rules = default_au_header_rules;
 
 } // audio
 
