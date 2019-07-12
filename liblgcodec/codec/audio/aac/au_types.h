@@ -45,7 +45,7 @@ struct au_header_rules_t
 	std::uint32_t	rap_length;
 	std::uint32_t	stream_state_length;
 
-	std::uint32_t max_data_size() const { return (1 << size_length); }
+	std::uint32_t max_data_size() const { return 1u << size_length; }
 	bool is_valid_size(std::uint32_t size) const { return size > 0 && size < max_data_size(); }
 };
 

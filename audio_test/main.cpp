@@ -1058,7 +1058,9 @@ void test_libav_codec_system()
 void test_aac_codec()
 {
 
+	auto device_recorder_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(true);
 	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(false);
+
 
 	static const std::uint32_t duration_ms = 10;
 	static const std::uint32_t recorder_sample_rate = 48000;
@@ -1076,13 +1078,12 @@ void test_aac_codec()
 	core::media::DelayTimer	delay_timer;
 
 	recorder.Open("default");
-	playback.Open(device_playback_list[0].display_format());
+	playback.Open(device_playback_list[3].display_format());
 
-	largo::codec::audio::aac_profile_id_t profile = largo::codec::audio::aac_profile_id_t::aac_profile_eld;
+	largo::codec::audio::aac_profile_id_t profile = largo::codec::audio::aac_profile_id_t::aac_profile_ld;
 
 	largo::codec::audio::AacAudioTranscoder	aac_encoder(true, profile, recorder_sample_rate);
-	largo::codec::audio::AacAudioTranscoder	aac_decoder(false, profile, recorder_sample_rate);
-
+	largo::codec::audio::AacAudioTranscoder	aac_decoder(false, profile, playback_sample_rate);
 
 
 	aac_encoder.Open();
@@ -1263,11 +1264,11 @@ int main()
 
 	// test_libav_codec_system();
 
-	// test_aac_codec();
+	test_aac_codec();
 
 	// test_bit_stream();
 
-	test_au_packetizer();
+	// test_au_packetizer();
 
 	return 0;
 }

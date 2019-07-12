@@ -40,7 +40,7 @@ const option_key_t LibavAudioTranscoder::libav_audio_codec_option_frame_size = "
 const option_key_t LibavAudioTranscoder::libav_audio_codec_option_profile = "codec.audio.libav.profile";
 
 LibavAudioTranscoder::LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options)
-	: AudioCodec(true, get_codec_name_from_id(codec_id), options)
+	: AudioCodec(is_encoder, get_codec_name_from_id(codec_id), options)
 	, m_codec_id(codec_id)
 	, m_av_codec(create_libav_wrapper(codec_id, is_encoder, options))
 {

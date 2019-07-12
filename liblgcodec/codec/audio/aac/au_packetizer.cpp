@@ -221,7 +221,6 @@ AuPacketizer::AuPacketizer(const au_header_rules_t &au_header_rules)
 
 std::size_t AuPacketizer::PushFrame(const void *frame, std::size_t size)
 {
-
 	std::size_t result = 0;
 
 	if (frame != nullptr && m_au_header_rules.is_valid_size(size))
@@ -230,6 +229,8 @@ std::size_t AuPacketizer::PushFrame(const void *frame, std::size_t size)
 						   , static_cast<const std::uint8_t*>(frame) + size);
 		result = size;
 	}
+
+	return result;
 }
 
 std::size_t AuPacketizer::PopFrame(void *frame, std::size_t size)
