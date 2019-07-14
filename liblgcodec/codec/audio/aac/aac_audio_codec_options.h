@@ -34,8 +34,11 @@ public:
 	aac_profile_id_t GetAacProfileId(const aac_profile_id_t& default_aac_profile_id = aac_profile_id_t::aac_profile_ld) const;
 	void SetAacProfileId(const aac_profile_id_t& aac_profile_id);
 
-	aac_header_rules_t GetAacHeaderRules() const;
-	void SetAacHeaderRules(const aac_header_rules_t& aac_header_rules_t) const;
+	bool GetAacHeaderRules(aac_header_rules_t& aac_header_rules) const;
+	void SetAacHeaderRules(const aac_header_rules_t& aac_header_rules);
+
+	std::uint64_t GetConfig() const;
+
 };
 
 } // audio

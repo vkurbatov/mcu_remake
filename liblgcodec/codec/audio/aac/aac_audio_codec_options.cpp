@@ -6,6 +6,7 @@ extern "C"
 }
 
 #include "codec/audio/libav/libav_audio_transcoder.h"
+#include "common/bit_stream.h"
 
 namespace largo
 {
@@ -15,6 +16,23 @@ namespace codec
 
 namespace audio
 {
+
+const std::uint32_t frequence_table[] =
+{
+	96000,
+	88200,
+	64000,
+	48000,
+	44100,
+	32000,
+	24000,
+	22050,
+	16000,
+	12000,
+	11025,
+	8000,
+	7350
+};
 
 const option_key_t AacAudioCodecOptions::audio_codec_aac_option_header_size_length = "codec.audio.aac.header.size_lenght";
 const option_key_t AacAudioCodecOptions::audio_codec_aac_option_header_index_length = "codec.audio.aac.header.index_delta_lenght";
@@ -95,13 +113,26 @@ void AacAudioCodecOptions::SetAacProfileId(const aac_profile_id_t& aac_profile_i
 	SetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &av_profile, sizeof(av_profile));
 }
 
-aac_header_rules_t AacAudioCodecOptions::GetAacHeaderRules() const
+bool AacAudioCodecOptions::GetAacHeaderRules(aac_header_rules_t& aac_header_rules) const
 {
-
+	return GetAacHeaderRules(*this, aac_header_rules);
 }
 
-void AacAudioCodecOptions::SetAacHeaderRules(const aac_header_rules_t &aac_header_rules_t) const
+void AacAudioCodecOptions::SetAacHeaderRules(const aac_header_rules_t &aac_header_rules)
 {
+	SetAacHeaderRules(*this, aac_header_rules);
+}
+
+std::uint64_t AacAudioCodecOptions::GetConfig() const
+{
+	std::uint64_t result = 0;
+	BitStreamWriter writer(&result);
+
+	writer.WriteValue(0, 5);
+
+
+
+
 
 }
 
