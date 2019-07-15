@@ -17,11 +17,11 @@ T BitStreamReader::ReadValue(void* bit_stream, std::int32_t bit_index, std::size
 }
 
 template<typename T>
-T BitStreamReader::ReadValue(std::size_t bit_count)
+T BitStreamReader::ReadValue(std::size_t bit_count, std::size_t reverse_order_bits)
 {
 	T result = {};
 
-	BitStreamReader::Read(&result, bit_count);
+	BitStreamReader::Read(&result, bit_count, reverse_order_bits);
 
 	return result;
 }
@@ -34,9 +34,9 @@ void BitStreamWriter::WriteValue(void* bit_stream, std::int32_t bit_index, const
 }
 
 template<typename T>
-void BitStreamWriter::WriteValue(const T& value, std::size_t bit_count)
+void BitStreamWriter::WriteValue(const T& value, std::size_t bit_count, std::size_t reverse_order_bits)
 {
-	BitStreamWriter::Write(static_cast<const void*>(&value), bit_count);
+	BitStreamWriter::Write(static_cast<const void*>(&value), bit_count, reverse_order_bits);
 }
 
 } // helper

@@ -19,7 +19,7 @@ AacAudioPacketizer::AacAudioPacketizer(bool is_packetizer, const aac_header_rule
 
 const aac_header_rules_t &AacAudioPacketizer::GetAacHeaderRules()
 {
-	m_au_packetizer.GetRules();
+	return m_au_packetizer.GetRules();
 }
 
 void AacAudioPacketizer::SetAacHeaderRules(const aac_header_rules_t &aac_header_rules)

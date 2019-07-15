@@ -1236,6 +1236,25 @@ void test_au_packetizer()
 */
 }
 
+#include "codec/audio/aac/aac_audio_codec_options.h"
+
+void test_aac_config()
+{
+	largo::codec::audio::AacAudioCodecOptions aac_ld_options(largo::codec::audio::aac_profile_id_t::aac_profile_ld, 48000, 1);
+
+	auto config = aac_ld_options.GetAacConfig();
+
+	std::cout << std::hex << config << std::endl;
+
+	largo::codec::audio::AacAudioCodecOptions aac_eld_options(0xF8E82000);
+
+	auto profile = aac_eld_options.GetAacProfileId();
+	auto sample_rate = aac_eld_options.GetSampleRate();
+	auto channel = aac_eld_options.GetChannels();
+
+	return;
+}
+
 int main()
 {
 	// test_queue();
@@ -1264,11 +1283,13 @@ int main()
 
 	// test_libav_codec_system();
 
-	test_aac_codec();
+	// test_aac_codec();
 
 	// test_bit_stream();
 
 	// test_au_packetizer();
+
+	test_aac_config();
 
 	return 0;
 }

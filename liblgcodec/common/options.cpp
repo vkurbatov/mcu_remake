@@ -41,13 +41,11 @@ bool Options::GetOption(const option_key_t& key, void* option_data, std::size_t 
 
 void Options::SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id)
 {
-
-	option_meta_info_t& meta_info = m_options_table[key];
+	auto& meta_info = m_options_table[key];
 
 	meta_info.type_id = type_id;
 	meta_info.meta_data.resize(option_data_size);
 	std::memcpy(meta_info.meta_data.data(), option_data, option_data_size);
-
 }
 
 bool Options::RemoveOption(const option_key_t& key, option_type_id_t type_id)

@@ -29,15 +29,18 @@ public:
 	static void SetAacHeaderRules(IOptions& options, const aac_header_rules_t& aac_header_rules);
 
 public:
-	AacAudioCodecOptions(const aac_profile_id_t& aac_profile_id, std::uint32_t sample_rate = default_sample_rate);
+	AacAudioCodecOptions(const aac_profile_id_t& aac_profile_id, std::uint32_t sample_rate = default_sample_rate, std::uint32_t channels = default_num_channels);
+	AacAudioCodecOptions(std::uint64_t config);
 
-	aac_profile_id_t GetAacProfileId(const aac_profile_id_t& default_aac_profile_id = aac_profile_id_t::aac_profile_ld) const;
+
+	aac_profile_id_t GetAacProfileId(const aac_profile_id_t& default_aac_profile_id = aac_profile_id_t::aac_profile_unknown) const;
 	void SetAacProfileId(const aac_profile_id_t& aac_profile_id);
 
 	bool GetAacHeaderRules(aac_header_rules_t& aac_header_rules) const;
 	void SetAacHeaderRules(const aac_header_rules_t& aac_header_rules);
 
-	std::uint64_t GetConfig() const;
+	std::uint64_t GetAacConfig() const;
+	bool SetAacConfig(std::uint64_t config);
 
 };
 
