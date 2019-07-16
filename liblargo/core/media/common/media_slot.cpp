@@ -8,7 +8,7 @@ namespace media
 {
 
 MediaSlot::MediaSlot(media_slot_id_t media_slot_id,
-					 IMultipointDataQueue& multipoint_data_queue)
+                     IMultipointDataQueue& multipoint_data_queue)
 	: m_media_slot_id(media_slot_id)
 	, m_multipoint_data_queue(multipoint_data_queue)
 	, m_read_cursor(multipoint_data_queue.GetWriteCursor())
@@ -50,7 +50,7 @@ std::size_t MediaSlot::Size() const
 	auto write_cursor = m_multipoint_data_queue.GetWriteCursor();
 	auto size = m_read_cursor < write_cursor ? (write_cursor - m_read_cursor) : 0;
 
-	return size >= Capacity() ? Capacity() - 1 : size;
+	return size >= Capacity() ? Capacity() : size;
 	// return m_read_cursor < write_cursor ? (write_cursor + Capacity() - m_read_cursor) % Capacity() : 0;
 }
 
@@ -67,15 +67,15 @@ media_slot_id_t MediaSlot::GetSlotId() const
 std::size_t MediaSlot::ReadJitter() const
 {
 	return m_read_cursor < m_multipoint_data_queue.GetWriteCursor()
-			? m_multipoint_data_queue.GetWriteCursor() - m_read_cursor
-			: 0;
+	       ? m_multipoint_data_queue.GetWriteCursor() - m_read_cursor
+	       : 0;
 }
 
 std::size_t MediaSlot::WriteJitter() const
 {
 	return m_write_cursor < m_multipoint_data_queue.GetWriteCursor()
-			? m_multipoint_data_queue.GetWriteCursor() - m_write_cursor
-			: 0;
+	       ? m_multipoint_data_queue.GetWriteCursor() - m_write_cursor
+	       : 0;
 }
 
 std::size_t MediaSlot::internal_pop(void* data, std::size_t size)

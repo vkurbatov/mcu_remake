@@ -22,7 +22,7 @@ public:
 
 
 	VolumeController(std::uint32_t volume = max_volume);
-    virtual ~VolumeController() override{}
+	virtual ~VolumeController() override {}
 
 	static std::uint32_t VolumeChange(audio_format_t::sample_format_t sample_format, std::uint32_t volume, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size = 0);
 	static std::uint32_t VolumeChange(audio_format_t::sample_format_t sample_format, std::uint32_t volume, void* data, std::size_t size);

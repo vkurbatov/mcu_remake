@@ -22,7 +22,7 @@ class IAudioStream : virtual public IMediaStream, virtual public IAudioPoint, pu
 {
 
 protected:
-	virtual ~IAudioStream(){}
+	virtual ~IAudioStream() {}
 
 public:
 	virtual const session_id_t& GetSessionId() const = 0;

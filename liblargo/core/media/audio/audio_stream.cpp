@@ -15,10 +15,10 @@ namespace audio
 {
 
 AudioStream::AudioStream(media_stream_id_t stream_id
-						 , const session_id_t &session_id
-						 , const audio_format_t &audio_format
-						 , IAudioPoint &audio_point
-						 , bool is_writer)
+                         , const session_id_t &session_id
+                         , const audio_format_t &audio_format
+                         , IAudioPoint &audio_point
+                         , bool is_writer)
 	: m_stream_id(stream_id)
 	, m_session_id(session_id)
 	, m_audio_format(audio_format)
@@ -26,10 +26,10 @@ AudioStream::AudioStream(media_stream_id_t stream_id
 	, m_is_writer(is_writer)
 {
 	LOG(debug) << "Create audio stream [id = " << stream_id
-			   << ", session = \'" << session_id
-			   << "\', format = " << audio_format
-			   << "\', " << (is_writer ? "writer" : "reader")
-			   << "]" LOG_END;
+	           << ", session = \'" << session_id
+	           << "\', format = " << audio_format
+	           << "\', " << (is_writer ? "writer" : "reader")
+	           << "]" LOG_END;
 }
 
 media_stream_id_t AudioStream::GetStreamId() const

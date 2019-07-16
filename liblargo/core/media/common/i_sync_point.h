@@ -10,7 +10,7 @@ namespace media
 class ISyncPoint
 {
 public:
-    virtual ~ISyncPoint() {}
+	virtual ~ISyncPoint() {}
 
 	virtual void Lock() const = 0;
 	virtual void Unlock() const = 0;

@@ -23,7 +23,8 @@ class AudioComposer : public IAudioComposer
 {
 
 	static const std::uint32_t max_queue_duration = 10;
-	static const std::uint32_t default_jitter_ms = 40;
+	static const std::uint32_t default_compose_window_ms = 100;
+	static const std::uint32_t default_read_delay_ms = 40;
 	static const std::uint32_t default_dead_zone_ms = 40;
 
 	using audio_slot_t = std::shared_ptr<IAudioSlot>;
@@ -31,7 +32,7 @@ class AudioComposer : public IAudioComposer
 
 	audio_format_t				m_audio_format;
 	audio_slot_map_t			m_audio_slots;
-	std::uint32_t				m_jitter_ms;
+	std::uint32_t				m_compose_window_ms;
 	std::uint32_t				m_read_delay_ms;
 	std::uint32_t				m_dead_zone_ms;
 
@@ -54,12 +55,12 @@ private:
 
 public:
 	AudioComposer(const audio_format_t& audio_format
-				  , IMediaQueue& media_queue
-				  , std::uint32_t jitter_ms = default_jitter_ms
-				  , std::uint32_t read_delay_ms = default_jitter_ms
-				  , std::uint32_t  dead_zone_ms = default_dead_zone_ms
-				  , bool thread_safe = true);
-	~AudioComposer() override{}
+	              , IMediaQueue& media_queue
+	              , std::uint32_t compose_window_ms = default_compose_window_ms
+	                      , std::uint32_t read_delay_ms = default_read_delay_ms
+	                              , std::uint32_t  dead_zone_ms = default_dead_zone_ms
+	                                      , bool thread_safe = true);
+	~AudioComposer() override {}
 
 	// IDataQueueControl interface
 public:

@@ -24,7 +24,7 @@ class MediaQueue : public IMediaQueue
 
 public:
 	MediaQueue(std::size_t capacity, bool is_strong = false);
-	~MediaQueue() override{}
+	~MediaQueue() override {}
 
 	// IMediaQueue interface
 public:

@@ -50,8 +50,8 @@ bool DelayTimer::IsWait() const
 std::int32_t DelayTimer::Elapsed() const
 {
 	return m_started
-			? std::chrono::duration_cast<std::chrono::milliseconds>(m_target_point - clock::now()).count()
-			: 0;
+	       ? std::chrono::duration_cast<std::chrono::milliseconds>(m_target_point - clock::now()).count()
+	       : 0;
 }
 
 void DelayTimer::Delay(std::int32_t delay_ms, bool is_wait)

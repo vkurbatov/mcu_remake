@@ -18,7 +18,7 @@ const media_stream_id_t media_stream_id_min = 1;
 class IMediaStream : virtual public IMediaPoint
 {
 public:
-	virtual ~IMediaStream(){}
+	virtual ~IMediaStream() {}
 
 	virtual media_stream_id_t GetStreamId() const = 0;
 

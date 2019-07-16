@@ -44,19 +44,22 @@ audio_format_t::sample_format_t audio_format_t::format_from_bits(uint32_t bit_pe
 {
 	sample_format_t result = sample_format_t::unknown;
 
-	switch(bit_per_sample)
+	switch (bit_per_sample)
 	{
-		case 8:
-			result = sample_format_t::pcm_8;
-			break;
-		case 16:
-			result = sample_format_t::pcm_16;
-			break;
-		case 32:
-			result = integer_proirity ? sample_format_t::pcm_32 : sample_format_t::float_32;
-			break;
-		case 64:
-			result = sample_format_t::float_64;
+	case 8:
+		result = sample_format_t::pcm_8;
+		break;
+
+	case 16:
+		result = sample_format_t::pcm_16;
+		break;
+
+	case 32:
+		result = integer_proirity ? sample_format_t::pcm_32 : sample_format_t::float_32;
+		break;
+
+	case 64:
+		result = sample_format_t::float_64;
 	}
 
 	return result;
@@ -96,8 +99,8 @@ uint32_t audio_format_t::bit_per_sample() const
 bool audio_format_t::operator == (const audio_format_t& af) const
 {
 	return sample_rate == af.sample_rate
-			&& sample_format == af.sample_format
-			&& channels == af.channels;
+	       && sample_format == af.sample_format
+	       && channels == af.channels;
 }
 
 bool audio_format_t::operator != (const audio_format_t& af) const

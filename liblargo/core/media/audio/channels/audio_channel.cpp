@@ -43,7 +43,7 @@ const audio_format_t &AudioChannel::GetAudioFormat() const
 }
 
 bool AudioChannel::SetAudioFormat(const audio_format_t &audio_format)
-{	
+{
 	auto audio_params = GetAudioParams();
 
 	audio_params.audio_format = audio_format;

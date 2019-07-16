@@ -37,9 +37,9 @@ class AudioQueue : public IAudioPoint, public IAudioFormatter, public IDataQueue
 
 public:
 	AudioQueue(const audio_format_t& audio_format
-			, std::uint32_t queue_duration_ms = default_audio_queue_duration_ms
-			, std::uint32_t jitter_ms = default_audio_queue_jitter_ms
-			, bool thread_safe = false);
+	           , std::uint32_t queue_duration_ms = default_audio_queue_duration_ms
+	                   , std::uint32_t jitter_ms = default_audio_queue_jitter_ms
+	                           , bool thread_safe = false);
 
 private:
 	bool check_jitter();

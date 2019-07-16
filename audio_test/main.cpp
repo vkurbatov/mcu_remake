@@ -348,8 +348,8 @@ void test_audio_file()
 	auto w_param = r_file.GetAudioParams();
 
 	w_param.audio_format.sample_rate = 48000;
-	w_param.buffer_duration_ms = 20;
-	w_param.nonblock_mode = 1;
+	w_param.buffer_time_ms = 20;
+	w_param.wait_timeout_ms = 100;
 
 	w_param.direction = core::media::audio::channels::channel_direction_t::playback;
 
@@ -369,14 +369,14 @@ void test_audio_file()
 
 	if (w_channel.IsOpen())
 	{
-		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.buffer_duration_ms);
+		auto part_size = r_file.GetAudioParams().audio_format.size_from_duration(w_param.buffer_time_ms);
 
 		char buffer[10000];
 
 		while (auto ret = r_file.Read(buffer, part_size))
 		{
 			w_point.Write(r_file.GetAudioParams().audio_format, buffer, ret);
-			timer(w_param.buffer_duration_ms);
+			timer(w_param.buffer_time_ms);
 		}
 	}
 }
@@ -724,15 +724,15 @@ void test_audio_processor()
 	audio_processor_config.composer_config.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
 	audio_processor_config.composer_config.audio_format.channels = 1;
 
-	audio_processor_config.composer_config.jitter_ms = 60;
+	audio_processor_config.composer_config.compose_window_ms = 60;
 	audio_processor_config.composer_config.queue_duration_ms = 2000;
 
 	audio_processor_config.event_server_config.jittr_ms = jitter_ms;
 	audio_processor_config.event_server_config.duration_ms = 2000;
 
 	audio_processor_config.recorder_config.channel_params.direction = core::media::audio::channels::channel_direction_t::recorder;
-	audio_processor_config.recorder_config.channel_params.buffer_duration_ms = duration_ms * 2;
-	audio_processor_config.recorder_config.channel_params.nonblock_mode = true;
+	audio_processor_config.recorder_config.channel_params.buffer_time_ms = duration_ms * 2;
+	audio_processor_config.recorder_config.channel_params.wait_timeout_ms = 100;
 
 	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 8000;
 	audio_processor_config.recorder_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
@@ -743,8 +743,8 @@ void test_audio_processor()
 
 
 	audio_processor_config.playback_config.channel_params.direction = core::media::audio::channels::channel_direction_t::playback;
-	audio_processor_config.playback_config.channel_params.buffer_duration_ms = duration_ms * 2;
-	audio_processor_config.playback_config.channel_params.nonblock_mode = true;
+	audio_processor_config.playback_config.channel_params.buffer_time_ms = duration_ms * 2;
+	audio_processor_config.playback_config.channel_params.wait_timeout_ms = 100;
 
 	audio_processor_config.playback_config.channel_params.audio_format.sample_rate = 48000;
 	audio_processor_config.playback_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
@@ -755,8 +755,8 @@ void test_audio_processor()
 
 
 	audio_processor_config.aux_playback_config.channel_params.direction = core::media::audio::channels::channel_direction_t::playback;
-	audio_processor_config.aux_playback_config.channel_params.buffer_duration_ms = duration_ms * 8;
-	audio_processor_config.aux_playback_config.channel_params.nonblock_mode = true;
+	audio_processor_config.aux_playback_config.channel_params.buffer_time_ms = duration_ms * 8;
+	audio_processor_config.aux_playback_config.channel_params.wait_timeout_ms = 100;
 
 	audio_processor_config.aux_playback_config.channel_params.audio_format.sample_rate = 16000;
 	audio_processor_config.aux_playback_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
@@ -770,8 +770,8 @@ void test_audio_processor()
 	core::media::audio::channels::audio_channel_params_t recorder_params;
 
 	recorder_params.direction = core::media::audio::channels::channel_direction_t::recorder;
-	recorder_params.buffer_duration_ms = duration_ms * 8;
-	recorder_params.nonblock_mode = true;
+	recorder_params.buffer_time_ms = duration_ms * 8;
+	recorder_params.wait_timeout_ms = 100;
 
 	recorder_params.audio_format.sample_rate = 16000;
 	recorder_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
@@ -779,8 +779,8 @@ void test_audio_processor()
 
 
 	player_params.direction = core::media::audio::channels::channel_direction_t::playback;
-	player_params.buffer_duration_ms = duration_ms * 8;
-	player_params.nonblock_mode = true;
+	player_params.buffer_time_ms = duration_ms * 8;
+	player_params.wait_timeout_ms = 100;
 
 	player_params.audio_format.sample_rate = 8000;
 	player_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;

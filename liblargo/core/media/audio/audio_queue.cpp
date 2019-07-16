@@ -11,9 +11,9 @@ namespace audio
 {
 
 AudioQueue::AudioQueue(const audio_format_t& audio_format
-					   , uint32_t queue_duration_ms
-					   , uint32_t jitter_ms
-					   , bool thread_safe)
+                       , uint32_t queue_duration_ms
+                       , uint32_t jitter_ms
+                       , bool thread_safe)
 	: m_resampler(audio_format)
 	, m_queue_duration_ms(queue_duration_ms)
 	, m_jitter_ms(jitter_ms)
@@ -82,8 +82,8 @@ std::int32_t AudioQueue::Read(const audio_format_t& audio_format, void* data, st
 			}
 
 			input_size = read_only
-					? m_data_queue.Read(m_input_resampler_buffer.data(), input_size)
-					: m_data_queue.Pop(m_input_resampler_buffer.data(), input_size);
+			             ? m_data_queue.Read(m_input_resampler_buffer.data(), input_size)
+			             : m_data_queue.Pop(m_input_resampler_buffer.data(), input_size);
 
 			result = m_resampler(audio_format, m_input_resampler_buffer.data(), input_size, data, size, true);
 		}
@@ -91,6 +91,7 @@ std::int32_t AudioQueue::Read(const audio_format_t& audio_format, void* data, st
 		m_can_read &= (m_data_queue.Size() > 0);
 
 	}
+
 	return result;
 }
 

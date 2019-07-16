@@ -39,7 +39,7 @@ class FileChannel : public AudioChannel
 
 public:
 	FileChannel(const audio_channel_params_t& audio_params = null_audio_params,
-				std::uint32_t repetitions = 0);
+	            std::uint32_t repetitions = 0);
 	~FileChannel() override;
 
 	// MediaPoint interface

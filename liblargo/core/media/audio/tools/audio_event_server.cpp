@@ -26,8 +26,8 @@ namespace tools
 const channels::audio_channel_params_t event_channels_params = { channels::channel_direction_t::recorder, default_audio_format, 0, false };
 
 AudioEventServer::AudioEvent::AudioEvent(const std::string &file_name
-										 , uint32_t times
-										 , uint32_t interval)
+        , uint32_t times
+        , uint32_t interval)
 	: m_file_name(file_name)
 	, m_times(times)
 	, m_inteval(interval)
@@ -35,7 +35,7 @@ AudioEventServer::AudioEvent::AudioEvent(const std::string &file_name
 	, m_step(0)
 	, m_ref_count(0)
 {
-    LOG(debug) << "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
+	LOG(debug) << "Create audio event [\'" << file_name << "\'/" << times << "/" << interval LOG_END;
 }
 
 void AudioEventServer::AudioEvent::Reset(const std::string& file_name, uint32_t times, uint32_t interval)
@@ -83,7 +83,7 @@ std::int32_t AudioEventServer::AudioEvent::Read(const audio_format_t &audio_form
 	{
 		if (!m_delay_timer.IsWait())
 		{
-			if ( (m_file.IsOpen() || m_file.Open(m_file_name)) )
+			if ((m_file.IsOpen() || m_file.Open(m_file_name)))
 			{
 				result = m_file.Read(audio_format, data, size, options);
 			}
@@ -117,7 +117,7 @@ AudioEventServer::AudioEventServer(IAudioWriter& audio_writer, const audio_forma
 	, m_running(false)
 	, m_process_state(ProcessState::init)
 {
-        LOG(debug) << "Create audio event server [" << audio_format << "/" << m_duration_ms << "]" LOG_END;
+	LOG(debug) << "Create audio event server [" << audio_format << "/" << m_duration_ms << "]" LOG_END;
 }
 
 AudioEventServer::~AudioEventServer()
@@ -145,9 +145,9 @@ bool AudioEventServer::AddEvent(const std::string &event_name, const std::string
 	{
 		// C++11 method for emplace complex object (see C++11 documentation)
 
-        m_events.emplace(std::piecewise_construct
-                         , std::forward_as_tuple(event_name)
-                         , std::forward_as_tuple(file_name, times, interval));
+		m_events.emplace(std::piecewise_construct
+		                 , std::forward_as_tuple(event_name)
+		                 , std::forward_as_tuple(file_name, times, interval));
 
 		LOG(info) << "Register new audio event \'" << event_name << "\' [" << file_name << "/" << times << "/" << interval << "]" LOG_END;
 	}
@@ -193,7 +193,7 @@ bool AudioEventServer::PlayEvent(const std::string &event_name)
 
 		bool flag = false;
 
-		if ( m_running.compare_exchange_strong(flag, true) )
+		if (m_running.compare_exchange_strong(flag, true))
 		{
 			if (m_event_thread.joinable())
 			{
@@ -279,7 +279,7 @@ void AudioEventServer::event_proc()
 		{
 			GuardLock lock(m_sync_point);
 
-			for (const auto& e: m_events)
+			for (const auto& e : m_events)
 			{
 				event_count += static_cast<size_t>(e.second.IsPlay());
 			}
@@ -290,7 +290,7 @@ void AudioEventServer::event_proc()
 
 				std::int32_t max_size = 0;
 
-				for (auto& e: m_events)
+				for (auto& e : m_events)
 				{
 					if (e.second.IsPlay())
 					{
@@ -299,13 +299,14 @@ void AudioEventServer::event_proc()
 						if (read_size > 0)
 						{
 							read_size = AudioMixer::Mixed(m_audio_format, event_count
-												, m_audio_buffer.data(), read_size
-												, m_mix_buffer.data(), size);
+							                              , m_audio_buffer.data(), read_size
+							                              , m_mix_buffer.data(), size);
 
 							max_size = std::max(max_size, read_size);
 						}
 					}
 				}
+
 				if (max_size > 0)
 				{
 					m_volume_controller(m_audio_format.sample_format, m_mix_buffer.data(), max_size);
@@ -337,6 +338,7 @@ void AudioEventServer::set_state(const ProcessState& process_state)
 		{
 			m_state_notifier->StateChangeNotify(process_state, m_process_state, this);
 		}
+
 		m_process_state = process_state;
 	}
 }

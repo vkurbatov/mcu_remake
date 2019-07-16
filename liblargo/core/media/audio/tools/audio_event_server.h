@@ -42,8 +42,8 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 
 	public:
 		AudioEvent(const std::string& file_name
-								 , std::uint32_t times
-								 , std::uint32_t interval);
+		           , std::uint32_t times
+		           , std::uint32_t interval);
 
 		void Reset(const std::string& file_name, std::uint32_t times, std::uint32_t interval);
 		void Reset();
@@ -58,7 +58,7 @@ class AudioEventServer: public IDataCollection, public IVolumeController
 
 	};
 
-    using event_map_t = std::unordered_map<std::string, AudioEvent>;
+	using event_map_t = std::unordered_map<std::string, AudioEvent>;
 
 	SyncPoint					m_sync_point;
 	audio_format_t				m_audio_format;

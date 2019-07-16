@@ -22,7 +22,7 @@ class DataQueue : public IDataQueue
 public:
 
 	DataQueue(std::size_t capacity, bool is_strong = false);
-    virtual ~DataQueue() override {}
+	virtual ~DataQueue() override {}
 
 	// IDataQueue interface
 public:

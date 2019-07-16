@@ -55,7 +55,7 @@ std::size_t DataQueue::Size() const
 
 std::size_t DataQueue::Capacity() const
 {
-	return m_buffer.size();
+	return m_buffer.size() - 1;
 }
 
 std::size_t DataQueue::internal_pop(void *data, std::size_t size)
@@ -95,6 +95,7 @@ std::size_t DataQueue::internal_read(void *data, std::size_t size, bool from_tai
 		std::memcpy(data_ptr, m_buffer.data() + position, size);
 
 	}
+
 	return result;
 }
 
@@ -115,7 +116,7 @@ std::size_t DataQueue::internal_push(const void *data, std::size_t size)
 
 	auto buffer_size = m_buffer.size();
 
-	if ( size >= buffer_size)
+	if (size >= buffer_size)
 	{
 		data_ptr += (size - buffer_size + 1);
 		size = buffer_size - 1;
@@ -143,7 +144,7 @@ std::size_t DataQueue::internal_push(const void *data, std::size_t size)
 		m_size += size;
 
 		// cut old data
-		if (m_size >= buffer_size )
+		if (m_size >= buffer_size)
 		{
 			m_size = buffer_size - 1;
 		}

@@ -23,7 +23,7 @@ class AudioChannel : public IAudoChannel, public AudioPoint
 public:
 
 	AudioChannel();
-	virtual ~AudioChannel() override{}
+	virtual ~AudioChannel() override {}
 
 	// IAudoChannel interface
 public:

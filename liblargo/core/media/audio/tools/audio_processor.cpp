@@ -47,33 +47,34 @@ const std::vector<std::string>& AudioProcessor::GetDeviceList(bool is_recorder, 
 }
 
 AudioProcessor::AudioProcessor(const audio_processor_config_t& config
-							  , IAudioProcessing* external_audio_processing)
+                               , IAudioProcessing* external_audio_processing)
 	: SyncPoint(false)
 	, m_config(config)
 	, m_is_running(false)
 	, m_composer_queue(config.composer_config.audio_format.size_from_duration(config.composer_config.queue_duration_ms), false)
 	, m_event_queue(config.playback_config.channel_params.audio_format
-					, config.event_server_config.duration_ms
-					, config.event_server_config.jittr_ms)
+	                , config.event_server_config.duration_ms
+	                , config.event_server_config.jittr_ms)
 	, m_recorder_channel(config.recorder_config.channel_params)
 	, m_playback_channel(config.playback_config.channel_params)
 	, m_aux_playback_channel(config.aux_playback_config.channel_params)
 	, m_audio_divider(m_playback_channel, m_aux_playback_channel)
 	, m_audio_mux(m_audio_divider, m_event_queue)
 	, m_audio_processing_point(m_recorder_channel
-							   , m_audio_mux
-							   , external_audio_processing)
+	                           , m_audio_mux
+	                           , external_audio_processing)
 
 	, m_audio_composer(config.composer_config.audio_format
-						, m_composer_queue
-						, config.composer_config.jitter_ms
-						, config.composer_config.read_delay_ms
-						, false)
+	                   , m_composer_queue
+	                   , config.composer_config.compose_window_ms
+	                   , config.composer_config.read_delay_ms
+	                   , config.composer_config.dead_zone_ms
+	                   , false)
 
 	, m_audio_event_server(m_event_queue
-							, config.playback_config.channel_params.audio_format
-							, config.playback_config.duration_ms
-							, this)
+	                       , config.playback_config.channel_params.audio_format
+	                       , config.playback_config.duration_ms
+	                       , this)
 	, m_audio_server(m_audio_composer)
 
 	, m_recorder_stream(*m_audio_server.AddStream(local_session_id, m_recorder_channel.GetAudioFormat(), true))
@@ -83,13 +84,13 @@ AudioProcessor::AudioProcessor(const audio_processor_config_t& config
 	, m_playback_stream_proxy(m_playback_stream, *this)
 
 	, m_playback_audio_dispatcher(m_playback_stream_proxy
-								, m_audio_processing_point
-								, m_playback_channel.GetAudioFormat()
-								, true)
+	                              , m_audio_processing_point
+	                              , m_playback_channel.GetAudioFormat()
+	                              , true)
 	, m_recorder_audio_dispatcher(m_audio_processing_point
-								, m_recorder_stream_proxy
-								, m_recorder_channel.GetAudioFormat()
-								, true)
+	                              , m_recorder_stream_proxy
+	                              , m_recorder_channel.GetAudioFormat()
+	                              , true)
 {
 	// control_audio_system(true);
 }
@@ -253,41 +254,14 @@ bool AudioProcessor::SetRecorderDeviceName(const std::string &device_name)
 {
 	LOG(info) << "Set recorder device name \'" << device_name << "\'" LOG_END;
 
-	if (m_config.recorder_config.device_name != device_name)
-	{
-		m_recorder_audio_dispatcher.Stop();
-
-		GuardLock lock(*this);
-
-		m_recorder_channel.Close();
-
-		m_config.recorder_config.device_name = device_name;
-	}
-
-	check_and_conrtol_audio_system();
-
-	return true;
+    return rename_audio_device(device_name, true);
 }
 
 bool AudioProcessor::SetPlaybackDeviceName(const std::string &device_name)
 {
 	LOG(info) << "Set playback device name \'" << device_name << "\'" LOG_END;
 
-	if (m_config.playback_config.device_name != device_name)
-	{
-
-		m_playback_audio_dispatcher.Stop();
-
-		GuardLock lock(*this);
-
-		m_playback_channel.Close();
-
-		m_config.playback_config.device_name = device_name;
-	}
-
-	check_and_conrtol_audio_system();
-
-	return true;
+    return rename_audio_device(device_name, false);
 }
 
 void AudioProcessor::Reset()
@@ -352,6 +326,7 @@ bool AudioProcessor::control_audio_system(bool is_start)
 				m_playback_audio_dispatcher.Start(m_config.playback_config.duration_ms);
 			}
 		}
+
 		m_audio_processing_point.Reset();
 	}
 	else
@@ -373,17 +348,44 @@ bool AudioProcessor::control_audio_system(bool is_start)
 		LOG(info) << "Audio processor stopped" LOG_END;
 	}
 
-	return m_is_running;
+    return m_is_running;
+}
+
+bool AudioProcessor::rename_audio_device(const std::string &device_name, bool is_recorder)
+{
+
+    auto& config = is_recorder ? m_config.recorder_config : m_config.playback_config;
+    auto& dispatcher = is_recorder ? m_recorder_audio_dispatcher : m_playback_audio_dispatcher;
+    auto& channel = is_recorder ? m_recorder_channel : m_playback_channel;
+
+    if (config.device_name != device_name)
+    {
+
+        dispatcher.Stop();
+
+        GuardLock lock(*this);
+
+        channel.Close();
+
+        config.device_name = device_name;
+
+        if (m_is_running)
+        {
+            control_audio_system(true);
+        }
+    }
+
+    return true;
 }
 
 void AudioProcessor::StateChangeNotify(const ProcessState &new_state, const ProcessState &old_state, void *context)
 {
-	switch(new_state)
+	switch (new_state)
 	{
-		case ProcessState::start:
-		case ProcessState::stop:
-		case ProcessState::pause:
-			check_and_conrtol_audio_system();
+	case ProcessState::start:
+	case ProcessState::stop:
+	case ProcessState::pause:
+		check_and_conrtol_audio_system();
 		break;
 	}
 }
@@ -429,8 +431,8 @@ int32_t AudioProcessor::SyncAudioWriterProxy::Write(const audio_format_t& audio_
 }
 
 AudioProcessor::AudioProcessingPoint::AudioProcessingPoint(IAudioReader& audio_reader
-														   , IAudioWriter& audio_writer
-														   , IAudioProcessing* audio_processing)
+        , IAudioWriter& audio_writer
+        , IAudioProcessing* audio_processing)
 	: m_audio_reader(audio_reader)
 	, m_audio_writer(audio_writer)
 	, m_audio_processing(audio_processing)

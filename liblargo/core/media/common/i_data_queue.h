@@ -12,7 +12,7 @@ namespace media
 class IDataQueueControl
 {
 public:
-    virtual ~IDataQueueControl() {}
+	virtual ~IDataQueueControl() {}
 
 	virtual void Reset() = 0;
 	virtual std::size_t Size() const = 0;
@@ -22,7 +22,7 @@ public:
 class IDataQueueReader
 {
 public:
-    virtual ~IDataQueueReader() {}
+	virtual ~IDataQueueReader() {}
 
 	virtual std::size_t Pop(void* data, std::size_t size) = 0;
 	virtual std::size_t Read(void* data, std::size_t size, bool from_tail = false) const = 0;
@@ -32,7 +32,7 @@ public:
 class IDataQueueWriter
 {
 public:
-    virtual ~IDataQueueWriter() {}
+	virtual ~IDataQueueWriter() {}
 
 	virtual std::size_t Push(const void* data, std::size_t size) = 0;
 };
@@ -40,7 +40,7 @@ public:
 class IDataQueueIO : virtual public IDataQueueReader, virtual public IDataQueueWriter
 {
 public:
-    virtual ~IDataQueueIO() override {}
+	virtual ~IDataQueueIO() override {}
 };
 
 class IDataQueue : virtual public IDataQueueControl, virtual public IDataQueueIO
@@ -48,7 +48,7 @@ class IDataQueue : virtual public IDataQueueControl, virtual public IDataQueueIO
 
 public:
 
-    virtual ~IDataQueue() override {}
+	virtual ~IDataQueue() override {}
 
 };
 

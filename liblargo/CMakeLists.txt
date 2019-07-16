@@ -81,6 +81,7 @@ set(PUBLIC_HEADERS
     "core/media/common/i_media_stream.h"
     "core/media/common/i_data_collection.h"
     "core/media/common/i_sync_point.h"
+    "core/media/common/i_process_state_notifier.h"
     "core/media/audio/i_audio_formatter.h"
     "core/media/audio/i_audio_point.h"
     "core/media/audio/i_volume_controller.h"

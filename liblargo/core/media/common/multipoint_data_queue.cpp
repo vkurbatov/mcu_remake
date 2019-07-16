@@ -41,10 +41,9 @@ std::size_t MultipointDataQueue::GetDataSize(cursor_t cursor, bool is_before) co
 	return get_data_size(cursor, is_before);
 }
 
-
 std::size_t MultipointDataQueue::Capacity() const
 {
-	return m_buffer.size();
+	return m_buffer.size() - 1;
 }
 
 cursor_t MultipointDataQueue::GetWriteCursor() const
@@ -116,7 +115,7 @@ std::size_t MultipointDataQueue::internal_write(cursor_t cursor, const void* dat
 
 		auto real_position = get_position(cursor);
 
-		if ( size >= buffer_size)
+		if (size >= buffer_size)
 		{
 			data_ptr += (size - buffer_size + 1);
 			real_position += (size - buffer_size + 1);
@@ -147,7 +146,7 @@ std::size_t MultipointDataQueue::internal_write(cursor_t cursor, const void* dat
 			}
 
 			// cut old data
-			if (m_size >= buffer_size )
+			if (m_size >= buffer_size)
 			{
 				m_size = buffer_size - 1;
 			}
@@ -183,11 +182,11 @@ bool MultipointDataQueue::is_valid_cursor(cursor_t cursor) const
 std::size_t MultipointDataQueue::get_data_size(cursor_t cursor, bool is_before) const
 {
 	return is_valid_cursor(cursor)
-			? (is_before
-				? (m_size - (m_cursor - cursor))
-				: (m_cursor - cursor)
-				)
-			: 0;
+	       ? (is_before
+	          ? (m_size - (m_cursor - cursor))
+	          : (m_cursor - cursor)
+	         )
+	       : 0;
 }
 
 std::uint32_t MultipointDataQueue::get_position(cursor_t cursor) const

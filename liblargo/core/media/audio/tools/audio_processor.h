@@ -38,23 +38,23 @@ struct audio_processor_config_t
 	{
 		audio_format_t	audio_format;
 		std::size_t		queue_duration_ms;
-		std::uint32_t	jitter_ms;
+		std::uint32_t	compose_window_ms;
 		std::uint32_t	read_delay_ms;
 		std::uint32_t	dead_zone_ms;
-	}composer_config;
+	} composer_config;
 
 	struct audio_device_config_t
 	{
 		channels::audio_channel_params_t channel_params;
 		std::uint32_t					 duration_ms;
 		std::string						 device_name;
-	}recorder_config, playback_config, aux_playback_config;
+	} recorder_config, playback_config, aux_playback_config;
 
 	struct event_server_config_t
 	{
 		std::uint32_t	duration_ms;
 		std::uint32_t	jittr_ms;
-	}event_server_config;
+	} event_server_config;
 };
 
 class AudioProcessor : public SyncPoint, private IProcessStateNotifier
@@ -170,8 +170,8 @@ public:
 	~AudioProcessor() override;
 
 	media_stream_id_t RegisterStream(const session_id_t& session_id
-									 , const audio_format_t& audio_format
-									 , bool is_writer);
+	                                 , const audio_format_t& audio_format
+	                                 , bool is_writer);
 
 	bool UnregisterStream(media_stream_id_t audio_stream_id);
 
@@ -204,8 +204,9 @@ public:
 	void Reset();
 
 private:
-	bool check_and_conrtol_audio_system();
+    bool check_and_conrtol_audio_system();
 	bool control_audio_system(bool is_start);
+    bool rename_audio_device(const std::string& device_name, bool is_recorder);
 
 	// IProcessStateNotifier interface
 public:

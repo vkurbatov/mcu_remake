@@ -20,40 +20,40 @@ namespace audio
 
 namespace audio_slot_utils
 {
-	template<typename T>
-	std::size_t prepare_buffer(std::vector<T>& buffer, std::size_t new_size)
+template<typename T>
+inline std::size_t prepare_buffer(std::vector<T>& buffer, std::size_t new_size)
+{
+
+	if (new_size > buffer.size())
 	{
-
-		if (new_size > buffer.size())
-		{
-			buffer.resize(new_size);
-		}
-
-		return new_size;
+		buffer.resize(new_size);
 	}
+
+	return new_size;
+}
 }
 
 AudioSlot::AudioSlot(const audio_format_t& audio_format
-					 , IMediaSlot& media_slot
-					 , const IDataCollection& slot_collection
-					 , const ISyncPoint& sync_point
-					 , const std::uint32_t& jitter_ms
-					 , const std::uint32_t& read_delay_ms
-					 , const std::uint32_t& dead_zone_ms)
+                     , IMediaSlot& media_slot
+                     , const IDataCollection& slot_collection
+                     , const ISyncPoint& sync_point
+                     , const std::uint32_t& compose_window_ms
+                     , const std::uint32_t& read_delay_ms
+                     , const std::uint32_t& dead_zone_ms)
 	: m_audio_format(audio_format)
 	, m_media_slot(media_slot)
 	, m_palyback_queue(media_slot.Capacity(), false)
 	, m_slots_collection(slot_collection)
 	, m_sync_point(sync_point)
-	, m_jitter_ms(jitter_ms)
+	, m_compose_window_ms(compose_window_ms)
 	, m_read_delay_ms(read_delay_ms)
 	, m_dead_zone_ms(dead_zone_ms)
 	, m_ref_count(1)
-	, m_drop_bytes(audio_format.size_from_duration(jitter_ms + read_delay_ms))
+	, m_drop_bytes(audio_format.size_from_duration(compose_window_ms + dead_zone_ms + read_delay_ms))
 {
 	LOG(debug) << "Create audio slot [id = " << m_media_slot.GetSlotId()
-			   << "\', format = " << audio_format
-			   << "]" LOG_END;
+	           << "\', format = " << audio_format
+	           << "]" LOG_END;
 }
 
 AudioSlot::~AudioSlot()
@@ -88,7 +88,7 @@ void AudioSlot::Reset()
 	m_input_resampler_buffer.clear();
 	m_output_resampler_buffer.clear();
 	m_palyback_queue.Reset();
-	m_drop_bytes = m_audio_format.size_from_duration(m_jitter_ms + m_read_delay_ms);
+	m_drop_bytes = m_audio_format.size_from_duration(m_compose_window_ms + m_dead_zone_ms + m_read_delay_ms);
 }
 
 bool AudioSlot::CanWrite() const
@@ -122,15 +122,12 @@ bool AudioSlot::prepare_write(std::size_t write_size)
 
 	// TODO: джиттер для записи и чтения нужно разделять
 
-	bool is_syncronize = write_jitter > m_jitter_ms;
+	bool is_syncronize = write_jitter > m_compose_window_ms;
 
 	if (is_syncronize)
 	{
 		LOG(warning) << "SLOT #" << GetSlotId() << ": write jitter exceeded by " << write_jitter << " ms. Do syncronize stream" LOG_END;
-
-		m_palyback_queue.Reset();
-		m_media_slot.Reset();
-		m_drop_bytes = m_audio_format.size_from_duration(m_jitter_ms + m_read_delay_ms);
+		syncronize();
 	}
 
 	return is_syncronize;
@@ -138,25 +135,35 @@ bool AudioSlot::prepare_write(std::size_t write_size)
 
 bool AudioSlot::prepare_read(std::size_t read_size)
 {
+	auto r_jitter = m_media_slot.ReadJitter();
+	auto capacity = m_media_slot.Capacity();
 
-	if (is_drop())
+	if (r_jitter >= capacity)
 	{
-		m_drop_bytes -= std::min(read_size, m_drop_bytes);
+		auto lagged_ms = m_audio_format.duration_ms(r_jitter - capacity);
+		LOG(warning) << "SLOT #" << GetSlotId() << ": read jitter lagged behind by " << lagged_ms << ". Do syncronize stream." LOG_END;
+		syncronize();
 	}
 	else
 	{
-
-		auto read_jitter = m_audio_format.duration_ms(m_media_slot.ReadJitter());
-
-		bool is_syncronize = read_jitter <= (m_jitter_ms + m_dead_zone_ms);
-
-		if (is_syncronize)
+		if (is_drop())
 		{
-			auto delay = (m_jitter_ms + m_jitter_ms + m_dead_zone_ms) - read_jitter;
-			LOG(warning) << "SLOT #" << GetSlotId() << ": read delay exceeded by " << delay << " ms. Do syncronize stream" LOG_END;
-			m_drop_bytes = m_audio_format.size_from_duration(delay);
+			m_drop_bytes -= std::min(read_size, m_drop_bytes);
 		}
+		else
+		{
+			auto read_jitter_ms = m_audio_format.duration_ms(m_media_slot.ReadJitter());
 
+			bool is_syncronize = read_jitter_ms <= (m_compose_window_ms + m_dead_zone_ms);
+
+			if (is_syncronize)
+			{
+				auto delay = (m_compose_window_ms + m_dead_zone_ms) - (read_jitter_ms);
+				LOG(warning) << "SLOT #" << GetSlotId() << ": read delay exceeded by " << delay << " ms. Do syncronize read stream" LOG_END;
+				m_drop_bytes = m_audio_format.size_from_duration(delay + m_read_delay_ms);
+			}
+
+		}
 	}
 
 	return is_drop();
@@ -253,6 +260,13 @@ std::int32_t AudioSlot::internal_read(void* data, std::size_t size, const audio_
 	}
 
 	return size;
+}
+
+void core::media::audio::AudioSlot::syncronize()
+{
+	m_palyback_queue.Reset();
+	m_media_slot.Reset();
+	m_drop_bytes = m_audio_format.size_from_duration(m_compose_window_ms + m_dead_zone_ms + m_read_delay_ms);
 }
 
 } // audio

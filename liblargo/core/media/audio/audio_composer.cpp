@@ -18,20 +18,22 @@ namespace audio
 {
 
 AudioComposer::AudioComposer(const audio_format_t& audio_format
-							 , IMediaQueue& media_queue
-							 , std::uint32_t jitter_ms
-							 , std::uint32_t read_delay_ms
-							 , std::uint32_t dead_zone_ms
-							 , bool thread_safe)
+                             , IMediaQueue& media_queue
+                             , std::uint32_t compose_window_ms
+                             , std::uint32_t read_delay_ms
+                             , std::uint32_t dead_zone_ms
+                             , bool thread_safe)
 	: m_audio_format(audio_format)
 	, m_media_queue(media_queue)
 	, m_slot_collection(m_audio_slots)
-	, m_jitter_ms(jitter_ms)
+	, m_compose_window_ms(compose_window_ms)
 	, m_read_delay_ms(read_delay_ms)
 	, m_dead_zone_ms(dead_zone_ms)
 	, m_sync_point(!thread_safe)
 {
-	LOG(debug) << "Create audio composer with format [" << audio_format << "], jitter = " << jitter_ms << "ms" LOG_END;
+	LOG(debug) << "Create audio composer with format [" << audio_format << "], compose_window = " << m_compose_window_ms
+	           << "ms, read_delay_ms = " << read_delay_ms
+	           << "ms, dead_zone_ms = " << dead_zone_ms << "ms" LOG_END;
 }
 
 void AudioComposer::Reset()
@@ -80,8 +82,11 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 		if (media_slot != nullptr)
 		{
 			audio_slot_t audio_slot(
-						new AudioSlot(m_audio_format, *media_slot, m_slot_collection, m_sync_point, m_jitter_ms, m_read_delay_ms, m_dead_zone_ms)
-						, [](IAudioSlot* slot) { delete static_cast<AudioSlot*>(slot); }
+			    new AudioSlot(m_audio_format, *media_slot, m_slot_collection, m_sync_point, m_compose_window_ms, m_read_delay_ms, m_dead_zone_ms)
+			    , [](IAudioSlot * slot)
+			{
+				delete static_cast<AudioSlot*>(slot);
+			}
 			);
 
 			result = static_cast<AudioSlot*>(audio_slot.get());
@@ -122,7 +127,7 @@ std::size_t AudioComposer::ReleaseAudioSlot(audio_slot_id_t audio_slot_id)
 
 		slot.m_ref_count -= static_cast<std::size_t>(slot.m_ref_count > 0);
 
-		if ( (result = slot.m_ref_count) == 0)
+		if ((result = slot.m_ref_count) == 0)
 		{
 			m_audio_slots.erase(it);
 			m_media_queue.ReleaseSlot(audio_slot_id);
@@ -177,8 +182,11 @@ AudioComposer::SlotCollectionWrapper::SlotCollectionWrapper(AudioComposer::audio
 std::size_t AudioComposer::SlotCollectionWrapper::Count() const
 {
 	return std::count_if(m_audio_slots.begin(), m_audio_slots.end(),
-						 [](const std::pair<audio_slot_id_t, audio_slot_t>& it) { return it.second->IsSkip() == false; }
-	);
+	                     [](const std::pair<audio_slot_id_t, audio_slot_t>& it)
+	{
+		return it.second->IsSkip() == false;
+	}
+	                    );
 }
 
 } // audio

@@ -21,7 +21,7 @@ class MultipointDataQueue : public IMultipointDataQueue
 public:
 
 	MultipointDataQueue(std::size_t capacity, bool is_strong = false);
-	virtual ~MultipointDataQueue() override{}
+	virtual ~MultipointDataQueue() override {}
 
 	// IMultipointDataQueue interface
 public:

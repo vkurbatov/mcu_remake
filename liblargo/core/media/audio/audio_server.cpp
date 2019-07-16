@@ -27,7 +27,7 @@ IAudioSlot* AudioServer::GetAudioSlot(media_stream_id_t stream_id)
 {
 	auto stream = operator[](stream_id);
 
-	return stream != nullptr ? get_slot(stream->GetSessionId()): nullptr;
+	return stream != nullptr ? get_slot(stream->GetSessionId()) : nullptr;
 }
 
 IAudioStream* AudioServer::operator [](media_stream_id_t stream_id)
@@ -57,14 +57,17 @@ IAudioStream* AudioServer::AddStream(const session_id_t& session_id, const audio
 		auto stream_id = get_stream_id();
 
 		audio_stream_t audio_stream(
-					new AudioStream(stream_id, session_id, audio_format, *audio_slot, is_writer)
-					, [](IAudioStream* audio_stream) { delete static_cast<AudioStream*>(audio_stream); } );
+		    new AudioStream(stream_id, session_id, audio_format, *audio_slot, is_writer)
+		    , [](IAudioStream * audio_stream)
+		{
+			delete static_cast<AudioStream*>(audio_stream);
+		});
 
 		result = audio_stream.get();
 
 		if (result != nullptr)
 		{
-			m_streams.emplace( std::make_pair( stream_id, std::move(audio_stream) ) );
+			m_streams.emplace(std::make_pair(stream_id, std::move(audio_stream)));
 			LOG(info) << "Audio stream create success for session \'" << session_id << "\' [id = " << stream_id << ":" << is_writer << "]" LOG_END;
 		}
 		else
@@ -151,7 +154,7 @@ IAudioSlot *AudioServer::request_slot(const session_id_t &session_id)
 		{
 			ref_count ++;
 			LOG(info) << "Get exists audio slot by session \'" << session_id << "\' [slot_id = "
-					  << result->GetSlotId() << ", refs = " << ref_count << "]" LOG_END;
+			          << result->GetSlotId() << ", refs = " << ref_count << "]" LOG_END;
 		}
 		else
 		{
@@ -164,7 +167,7 @@ IAudioSlot *AudioServer::request_slot(const session_id_t &session_id)
 
 		if (result != nullptr)
 		{
-			m_sessions.emplace( std::make_pair( session_id, std::make_pair(m_slot_id, 1) ) );
+			m_sessions.emplace(std::make_pair(session_id, std::make_pair(m_slot_id, 1)));
 			m_slot_id++;
 		}
 		else

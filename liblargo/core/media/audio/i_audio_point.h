@@ -20,14 +20,14 @@ struct audio_format_t;
 class IAudioReader : virtual public IMediaReadStatus
 {
 public:
-	virtual ~IAudioReader(){}
+	virtual ~IAudioReader() {}
 	virtual std::int32_t Read(const audio_format_t& audio_format, void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
 class IAudioWriter : virtual public IMediaWriteStatus
 {
 public:
-	virtual ~IAudioWriter(){}
+	virtual ~IAudioWriter() {}
 	virtual std::int32_t Write(const audio_format_t& audio_format, const void* data, std::size_t size, std::uint32_t options = 0) = 0;
 };
 
@@ -35,7 +35,7 @@ class IAudioPoint : virtual public IAudioReader, virtual public IAudioWriter
 {
 public:
 
-	virtual ~IAudioPoint(){}
+	virtual ~IAudioPoint() {}
 
 };
 

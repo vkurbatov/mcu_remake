@@ -22,7 +22,7 @@ class IAudioComposer : virtual public IAudioFormatter, virtual public IDataQueue
 {
 
 public:
-	virtual ~IAudioComposer() override{}
+	virtual ~IAudioComposer() override {}
 
 	virtual IAudioSlot* operator[](audio_slot_id_t audio_slot_id) = 0;
 	virtual const IAudioSlot* operator[](audio_slot_id_t audio_slot_id) const = 0;

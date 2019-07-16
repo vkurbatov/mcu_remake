@@ -60,16 +60,16 @@ static const std::uint16_t wav_format_adpcm = 259;
 bool validate_wav_header(const wav_header_t& wav_header, bool strong = false)
 {
 	bool names_valid = std::strncmp(wav_header.chunk_id, wav_chunk_id, sizeof(wav_header.chunk_id)) == 0
-		&& std::strncmp(wav_header.format_id, wav_format_id, sizeof(wav_header.format_id)) == 0
-		&& std::strncmp(wav_header.sub_chunk_id, wav_sub_chunk_id, sizeof(wav_header.sub_chunk_id)) == 0
-		&& (strong == false || std::strncmp(wav_header.chunk_2_id, wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0);
+	                   && std::strncmp(wav_header.format_id, wav_format_id, sizeof(wav_header.format_id)) == 0
+	                   && std::strncmp(wav_header.sub_chunk_id, wav_sub_chunk_id, sizeof(wav_header.sub_chunk_id)) == 0
+	                   && (strong == false || std::strncmp(wav_header.chunk_2_id, wav_chunk_2_id, sizeof(wav_header.chunk_2_id)) == 0);
 
 	bool sizes_valid = wav_header.sub_chunk_size == 16;
 
 	bool params_valid = (wav_header.audio_format == wav_format_pcm)
-			&& (wav_header.channels > 0)
-			&& (wav_header.byte_rate == wav_header.sample_rate * wav_header.channels * wav_header.bit_per_sample / 8)
-			&& (wav_header.block_align == wav_header.channels * wav_header.bit_per_sample / 8);
+	                    && (wav_header.channels > 0)
+	                    && (wav_header.byte_rate == wav_header.sample_rate * wav_header.channels * wav_header.bit_per_sample / 8)
+	                    && (wav_header.block_align == wav_header.channels * wav_header.bit_per_sample / 8);
 
 	return names_valid && sizes_valid && params_valid;
 }
@@ -176,7 +176,7 @@ bool wav_header_from_audio_format(const audio_format_t& audio_format, wav_header
 
 
 FileChannel::FileChannel(const audio_channel_params_t &audio_params
-						 , std::uint32_t repetitions)
+                         , std::uint32_t repetitions)
 	: m_audio_params(audio_params)
 	, m_file_name("")
 	, m_total_bytes(0)
@@ -191,7 +191,7 @@ FileChannel::FileChannel(const audio_channel_params_t &audio_params
 FileChannel::~FileChannel()
 {
 	Close();
-    LOG(debug) << "Destory file channel \'" << m_file_name << "\' with params " << m_audio_params LOG_END;
+	LOG(debug) << "Destory file channel \'" << m_file_name << "\' with params " << m_audio_params LOG_END;
 }
 
 bool FileChannel::Open(const std::string& device_name)
@@ -201,14 +201,14 @@ bool FileChannel::Open(const std::string& device_name)
 	Close();
 
 	auto mode = std::ios_base::binary
-			| (m_audio_params.is_playback_only()
-				? std::ios_base::out
-				: std::ios_base::in);
+	            | (m_audio_params.is_playback_only()
+	               ? std::ios_base::out
+	               : std::ios_base::in);
 
-	if ( (m_audio_params.is_playback_only()
-		 && m_audio_params.is_valid()
-		 && m_audio_params.audio_format.is_integer_format())
-		 || m_audio_params.is_recorder_only() )
+	if ((m_audio_params.is_playback_only()
+	        && m_audio_params.is_valid()
+	        && m_audio_params.audio_format.is_integer_format())
+	        || m_audio_params.is_recorder_only())
 	{
 		m_file.open(device_name, mode);
 

@@ -32,17 +32,17 @@ private:
 
 private:
 	explicit AudioStream(media_stream_id_t stream_id
-				, const session_id_t& session_id
-				, const audio_format_t& audio_format
-				, IAudioPoint& audio_point
-				, bool is_writer = false);
+	                     , const session_id_t& session_id
+	                     , const audio_format_t& audio_format
+	                     , IAudioPoint& audio_point
+	                     , bool is_writer = false);
 
 	AudioStream(const AudioStream&) = delete;
 	AudioStream(AudioStream&&) = delete;
 	AudioStream& operator=(const AudioStream&) = delete;
 	AudioStream& operator=(AudioStream&&) = delete;
 
-	virtual ~AudioStream() override{}
+	virtual ~AudioStream() override {}
 
 	// IMediaStream interface
 public:

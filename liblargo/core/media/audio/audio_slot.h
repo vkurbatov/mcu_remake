@@ -40,7 +40,7 @@ class AudioSlot : public IAudioSlot
 	// Dependencies
 private:
 
-	const std::uint32_t&		m_jitter_ms;
+	const std::uint32_t&		m_compose_window_ms;
 	const std::uint32_t&		m_read_delay_ms;
 	const std::uint32_t&		m_dead_zone_ms;
 	const audio_format_t&		m_audio_format;
@@ -49,12 +49,12 @@ private:
 	const ISyncPoint&			m_sync_point;
 
 	explicit AudioSlot(const audio_format_t& audio_format
-					   , IMediaSlot& media_slot
-					   , const IDataCollection& slot_collection
-					   , const ISyncPoint& sync_point
-					   , const std::uint32_t& jitter_ms
-					   , const std::uint32_t& read_delay_ms
-					   , const std::uint32_t& dead_zone_ms);
+	                   , IMediaSlot& media_slot
+	                   , const IDataCollection& slot_collection
+	                   , const ISyncPoint& sync_point
+	                   , const std::uint32_t& compose_window_ms
+	                   , const std::uint32_t& read_delay_ms
+	                   , const std::uint32_t& dead_zone_ms);
 	~AudioSlot() override;
 
 	AudioSlot(const AudioSlot&) = delete;
@@ -93,6 +93,7 @@ private:
 
 	std::int32_t internal_write(const void* data, std::size_t size, const audio_format_t& audio_format, std::uint32_t options);
 	std::int32_t internal_read(void* data, std::size_t size, const audio_format_t& audio_format, uint32_t options);
+	void syncronize();
 };
 
 } // audio

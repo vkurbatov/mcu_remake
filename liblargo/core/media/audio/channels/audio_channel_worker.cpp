@@ -144,9 +144,9 @@ void AudioChannelWorker::audio_dispatcher_proc(const std::string device_name)
 
 	DelayTimer timer;
 
-	media_buffer_t buffer( m_audio_channel.GetAudioParams().buffer_size() );
+	media_buffer_t buffer(m_audio_channel.GetAudioParams().buffer_size());
 
-	auto delay_ms = m_audio_channel.GetAudioParams().buffer_duration_ms;
+	auto delay_ms = m_audio_channel.GetAudioParams().buffer_time_ms;
 
 	LOG(info) << "Started audio worker for device \'" << device_name << "\', duration = " << delay_ms << "ms" LOG_END;
 

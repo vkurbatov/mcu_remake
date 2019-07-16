@@ -31,25 +31,30 @@ void change_volume(const void *sound_data, std::size_t size, void *output_data, 
 bool change_volume(audio_format_t::sample_format_t sample_format, const void *sound_data, std::size_t size, void* output_data, std::uint32_t volume)
 {
 
-	switch(sample_format)
+	switch (sample_format)
 	{
-		case audio_format_t::sample_format_t::pcm_8:
-			change_volume<std::int8_t>(sound_data, size, output_data, volume);
-			break;
-		case audio_format_t::sample_format_t::pcm_16:
-			change_volume<std::int16_t>(sound_data, size, output_data, volume);
-			break;
-		case audio_format_t::sample_format_t::pcm_32:
-			change_volume<std::int32_t>(sound_data, size, output_data, volume);
-			break;
-		case audio_format_t::sample_format_t::float_32:
-			change_volume<float>(sound_data, size, output_data, volume);
-			break;
-		case audio_format_t::sample_format_t::float_64:
-			change_volume<double>(sound_data, size, output_data, volume);
-			break;
-		default:
-			return false;
+	case audio_format_t::sample_format_t::pcm_8:
+		change_volume<std::int8_t>(sound_data, size, output_data, volume);
+		break;
+
+	case audio_format_t::sample_format_t::pcm_16:
+		change_volume<std::int16_t>(sound_data, size, output_data, volume);
+		break;
+
+	case audio_format_t::sample_format_t::pcm_32:
+		change_volume<std::int32_t>(sound_data, size, output_data, volume);
+		break;
+
+	case audio_format_t::sample_format_t::float_32:
+		change_volume<float>(sound_data, size, output_data, volume);
+		break;
+
+	case audio_format_t::sample_format_t::float_64:
+		change_volume<double>(sound_data, size, output_data, volume);
+		break;
+
+	default:
+		return false;
 	}
 
 	return true;
@@ -71,27 +76,29 @@ std::uint32_t VolumeController::VolumeChange(audio_format_t::sample_format_t sam
 
 	volume = std::min(max_volume, std::max(min_volume, volume));
 
-	switch(volume)
+	switch (volume)
 	{
-		case max_volume:
+	case max_volume:
 
-			if (input_data != output_data)
-			{
-				std::memcpy(output_data, input_data, result);
-			}
+		if (input_data != output_data)
+		{
+			std::memcpy(output_data, input_data, result);
+		}
 
-			break;
-		case min_volume:
+		break;
 
-			std::memset(output_data, 0, result);
+	case min_volume:
 
-			break;
-		default:
+		std::memset(output_data, 0, result);
 
-			if (volume_utils::change_volume(sample_format, input_data, result, output_data, volume) == false)
-			{
-				result = 0;
-			}
+		break;
+
+	default:
+
+		if (volume_utils::change_volume(sample_format, input_data, result, output_data, volume) == false)
+		{
+			result = 0;
+		}
 	}
 
 	return result;

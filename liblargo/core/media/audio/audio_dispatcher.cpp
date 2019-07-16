@@ -18,9 +18,9 @@ namespace audio
 {
 
 AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader,
-								 IAudioWriter& audio_writer,
-								 const audio_format_t& audio_format,
-								 bool is_strong_sizes)
+                                 IAudioWriter& audio_writer,
+                                 const audio_format_t& audio_format,
+                                 bool is_strong_sizes)
 	: m_audio_reader(audio_reader)
 	, m_audio_writer(audio_writer)
 	, m_audio_format(audio_format)
@@ -29,7 +29,7 @@ AudioDispatcher::AudioDispatcher(IAudioReader& audio_reader,
 	, m_is_strong_sizes(is_strong_sizes)
 {
 	LOG(debug) << "Create audio dispatcher with format [" << audio_format << "] with "
-			   << (is_strong_sizes ? "strong" : "weak") << " size control" LOG_END;
+	           << (is_strong_sizes ? "strong" : "weak") << " size control" LOG_END;
 }
 
 AudioDispatcher::~AudioDispatcher()
@@ -96,8 +96,8 @@ void AudioDispatcher::dispatching_proc(std::uint32_t duration_ms)
 
 	LOG(info) << "Started audio dispatcher [format = " << m_audio_format << ", duration " << duration_ms << "ms]" LOG_END;
 
-	while(m_is_running)
-	{	
+	while (m_is_running)
+	{
 		auto size = m_audio_format.size_from_duration(duration_ms);
 
 		if (buffer.size() < size)

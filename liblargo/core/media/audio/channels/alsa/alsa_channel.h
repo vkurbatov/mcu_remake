@@ -33,10 +33,10 @@ struct alsa_channel_info
 	std::string		device_name;
 
 	alsa_channel_info(bool is_rec
-					  , std::int32_t c_num
-					  , std::int32_t d_num
-					  , const std::string& c_name
-					  , const std::string& d_name)
+	                  , std::int32_t c_num
+	                  , std::int32_t d_num
+	                  , const std::string& c_name
+	                  , const std::string& d_name)
 		: is_recorder(is_rec), card_number(c_num), device_number(d_num)
 		, card_name(c_name), device_name(d_name)
 	{ }
@@ -44,11 +44,11 @@ struct alsa_channel_info
 	const std::string native_format(const std::string& hw_profile = "plughw") const
 	{
 		return card_number < 0
-				? "default"
-				: hw_profile + ":" + std::to_string(card_number) +
-				  (device_number >= 0
-				   ? "," + std::to_string(device_number)
-				   : "");
+		       ? "default"
+		       : hw_profile + ":" + std::to_string(card_number) +
+		       (device_number >= 0
+		        ? "," + std::to_string(device_number)
+		        : "");
 	}
 
 	const std::string display_format() const
@@ -85,8 +85,6 @@ private:
 
 	std::uint32_t					m_write_transaction_id;
 	std::uint32_t					m_read_transaction_id;
-
-	std::size_t						m_frame_size;
 
 	sample_buffer_t					m_silense_buffer;
 	bool							m_resume_support;
@@ -127,7 +125,10 @@ private:
 private:
 	std::int32_t set_hardware_params(const audio_channel_params_t& audio_params);
 	std::int32_t io_error_process(std::int32_t error, bool is_write, std::uint32_t timeout_ms = 0);
-	void prepare_frame_size(std::size_t size);
+	std::size_t get_frame_size(std::size_t size) const;
+	std::size_t get_buffer_size() const;
+	std::size_t get_period_size() const;
+
 	std::int32_t prepare_playback();
 };
 

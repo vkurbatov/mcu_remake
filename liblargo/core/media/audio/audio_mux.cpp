@@ -11,7 +11,7 @@ namespace audio
 {
 
 AudioMux::AudioMux(IAudioWriter& audio_writer
-				   , IAudioReader& audio_reader)
+                   , IAudioReader& audio_reader)
 	: m_audio_writer(audio_writer)
 	, m_audio_reader(audio_reader)
 {

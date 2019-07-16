@@ -38,7 +38,7 @@ private:
 
 public:
 	AudioServer(IAudioComposer& audio_composer);
-	virtual ~AudioServer() override{}
+	virtual ~AudioServer() override {}
 
 	IAudioSlot*	GetAudioSlot(media_stream_id_t stream_id);
 
