@@ -7,7 +7,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 project(${TARGET})
 
 set(SOURCES
-    main.cpp
     common/options.cpp
     common/options_helper.cpp
     common/bit_stream.cpp
