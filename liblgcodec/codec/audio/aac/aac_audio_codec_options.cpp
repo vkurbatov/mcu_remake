@@ -88,6 +88,46 @@ const option_key_t AacAudioCodecOptions::audio_codec_aac_option_header_stream_st
 #define GET_AAC_RULES_OPTION(param) GET_OPTION(audio_codec_aac_option_header_, options, aac_header_rules, param)
 #define SET_AAC_RULES_OPTION(param) SET_OPTION(audio_codec_aac_option_header_, options, aac_header_rules, param)
 
+aac_profile_id_t AacAudioCodecOptions::GetAacProfileId(const IOptions &options, const aac_profile_id_t& default_aac_profile_id)
+{
+	aac_profile_id_t result = default_aac_profile_id;
+
+	std::int32_t av_profile = FF_PROFILE_UNKNOWN;
+
+	if (options.GetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &av_profile, sizeof(av_profile)))
+	{
+		switch(av_profile)
+		{
+			case FF_PROFILE_AAC_LD:
+				result = aac_profile_id_t::aac_profile_ld;
+			break;
+
+			case FF_PROFILE_AAC_ELD:
+				result = aac_profile_id_t::aac_profile_eld;
+			break;
+		}
+	}
+
+	return result;
+}
+
+void AacAudioCodecOptions::SetAacProfileId(IOptions &options, const aac_profile_id_t &aac_profile_id)
+{
+	std::int32_t av_profile = FF_PROFILE_UNKNOWN;
+
+	switch(aac_profile_id)
+	{
+		case aac_profile_id_t::aac_profile_ld:
+			av_profile = FF_PROFILE_AAC_LD;
+		break;
+		case aac_profile_id_t::aac_profile_eld:
+			av_profile = FF_PROFILE_AAC_ELD;
+		break;
+	}
+
+	options.SetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &av_profile, sizeof(av_profile));
+}
+
 bool AacAudioCodecOptions::GetAacHeaderRules(const IOptions &options, aac_header_rules_t& aac_header_rules)
 {
 	return
@@ -111,10 +151,123 @@ void AacAudioCodecOptions::SetAacHeaderRules(IOptions &options, const aac_header
 	SET_AAC_RULES_OPTION(stream_state_length);
 }
 
+std::uint64_t AacAudioCodecOptions::GetAacConfig(const IOptions &options)
+{
+	std::uint64_t config = 0;
+
+	auto profile = GetAacProfileId(options);
+	auto sample_rate = GetSampleRate(options);
+	auto channels = GetChannels(options);
+
+	if (profile != aac_profile_id_t::aac_profile_unknown && sample_rate != 0 && channels != 0)
+	{
+		return EncodeConfig(profile, sample_rate, channels);
+	}
+
+	return config;
+}
+
+bool AacAudioCodecOptions::SetAacConfig(IOptions &options, uint64_t config)
+{
+	bool result = false;
+
+	aac_profile_id_t profile_id = aac_profile_id_t::aac_profile_unknown;
+	std::uint32_t sample_rate = 0;
+	std::uint32_t channels = 0;
+
+	if (DecodeConfig(config, profile_id, sample_rate, channels))
+	{
+		SetAacProfileId(options, profile_id);
+		SetSampleRate(options, sample_rate);
+		SetChannels(options, channels);
+		options.SetOption(LibavAudioTranscoder::libav_audio_codec_option_extra_data, &config, 4);
+
+		result = true;
+	}
+
+	return result;
+}
+
+uint64_t AacAudioCodecOptions::EncodeConfig(const aac_profile_id_t &aac_profile_id, uint32_t sample_rate, uint32_t channels)
+{
+
+	std::uint64_t config = 0;
+
+	if (aac_profile_id != aac_profile_id_t::aac_profile_unknown && sample_rate != 0 && channels != 0)
+	{
+		BitStreamWriter writer(&config, true);
+
+		if (aac_profile_id == aac_profile_id_t::aac_profile_ld)
+		{
+			writer.WriteValue(FF_PROFILE_AAC_LD + 1, 5);
+		}
+		else
+		{
+			writer.WriteValue(31, 5);
+			writer.WriteValue(7, 6);
+		}
+
+		auto sample_rate_index = aac_config_utils::get_sample_rate_index(sample_rate);
+		writer.WriteValue(sample_rate_index, 4);
+
+		if (sample_rate_index == 0x0F)
+		{
+			writer.WriteValue(sample_rate, 24);
+		}
+		writer.WriteValue(channels, 4);
+		writer.WriteValue(0i, 3);
+	}
+
+	return config;
+}
+
+bool AacAudioCodecOptions::DecodeConfig(uint64_t config, aac_profile_id_t &aac_profile_id, uint32_t &sample_rate, uint32_t &channels)
+{
+	bool result = false;
+
+	BitStreamReader reader(&config, true);
+
+	auto profile = reader.ReadValue<std::int32_t>(5);
+
+	if (profile == 31)
+	{
+		profile += reader.ReadValue<std::int32_t>(6) + 1;
+	}
+
+	if (profile == FF_PROFILE_AAC_LD + 1 || profile == FF_PROFILE_AAC_ELD + 1)
+	{
+		aac_profile_id = profile == FF_PROFILE_AAC_LD + 1 ? aac_profile_id_t::aac_profile_ld : aac_profile_id_t::aac_profile_eld;
+
+		auto sample_rate_index = reader.ReadValue<std::int32_t>(4);
+
+		if (sample_rate_index != 0x0F)
+		{
+			sample_rate = aac_config_utils::get_sample_rate(sample_rate_index);
+		}
+		else
+		{
+			sample_rate = reader.ReadValue<std::int32_t>(24);
+		}
+
+		if (sample_rate != 0)
+		{
+			channels = reader.ReadValue<std::uint32_t>(4);
+
+			if (channels != 0)
+			{
+				result = true;
+			}
+		}
+	}
+
+	return result;
+}
+
 AacAudioCodecOptions::AacAudioCodecOptions(const aac_profile_id_t& aac_profile_id, std::uint32_t sample_rate, std::uint32_t channels)
-	: AudioCodecOptions(sample_rate, 0, channels, sample_format_t::float_32)
+	: AudioCodecOptions(sample_rate, 0, channels, sample_format_t::pcm_16)
 {
 	SetAacProfileId(aac_profile_id);
+	SetAacConfig(EncodeConfig(aac_profile_id, sample_rate, channels));
 }
 
 AacAudioCodecOptions::AacAudioCodecOptions(uint64_t config)
@@ -123,43 +276,33 @@ AacAudioCodecOptions::AacAudioCodecOptions(uint64_t config)
 	SetAacConfig(config);
 }
 
-aac_profile_id_t AacAudioCodecOptions::GetAacProfileId(const aac_profile_id_t& default_aac_profile_id) const
+AacAudioCodecOptions::AacAudioCodecOptions(const IOptions &options)
+	: AudioCodecOptions(options)
 {
-	aac_profile_id_t result = default_aac_profile_id;
+	auto config = GetAacConfig(options);
 
-	std::int32_t av_profile = FF_PROFILE_UNKNOWN;
-
-	GetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &av_profile, sizeof(av_profile));
-
-	switch(av_profile)
+	if (config != 0)
 	{
-		case FF_PROFILE_AAC_LD:
-			result = aac_profile_id_t::aac_profile_ld;
-		break;
-
-		case FF_PROFILE_AAC_ELD:
-			result = aac_profile_id_t::aac_profile_eld;
-		break;
+		SetAacConfig(config);
 	}
 
-	return result;
+	aac_header_rules_t rules = { };
+
+	if (GetAacHeaderRules(options, rules))
+	{
+		SetAacHeaderRules(rules);
+	}
+
+}
+
+aac_profile_id_t AacAudioCodecOptions::GetAacProfileId(const aac_profile_id_t& default_aac_profile_id) const
+{
+	return GetAacProfileId(*this, default_aac_profile_id);
 }
 
 void AacAudioCodecOptions::SetAacProfileId(const aac_profile_id_t& aac_profile_id)
 {
-	std::int32_t av_profile = FF_PROFILE_UNKNOWN;
-
-	switch(aac_profile_id)
-	{
-		case aac_profile_id_t::aac_profile_ld:
-			av_profile = FF_PROFILE_AAC_LD;
-		break;
-		case aac_profile_id_t::aac_profile_eld:
-			av_profile = FF_PROFILE_AAC_ELD;
-		break;
-	}
-
-	SetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &av_profile, sizeof(av_profile));
+	SetAacProfileId(*this, aac_profile_id);
 }
 
 bool AacAudioCodecOptions::GetAacHeaderRules(aac_header_rules_t& aac_header_rules) const
@@ -174,94 +317,12 @@ void AacAudioCodecOptions::SetAacHeaderRules(const aac_header_rules_t &aac_heade
 
 std::uint64_t AacAudioCodecOptions::GetAacConfig() const
 {
-	const std::size_t config_bit_length = 32;
-
-	std::uint64_t config = 0;
-
-	auto profile = GetAacProfileId();
-	auto sample_rate = GetSampleRate();
-	auto channels = GetChannels();
-
-
-	if (profile != aac_profile_id_t::aac_profile_unknown && sample_rate != 0 && channels != 0)
-	{
-		BitStreamWriter writer(&config);
-
-		if (profile == aac_profile_id_t::aac_profile_ld)
-		{
-			writer.WriteValue(FF_PROFILE_AAC_LD + 1, 5, config_bit_length);
-		}
-		else
-		{
-			writer.WriteValue(31, 5, config_bit_length);
-			writer.WriteValue(7, 6, config_bit_length);
-		}
-
-		auto sample_rate_index = aac_config_utils::get_sample_rate_index(sample_rate);
-		writer.WriteValue(sample_rate_index, 4, config_bit_length);
-
-		if (sample_rate_index == 0x0F)
-		{
-			writer.WriteValue(sample_rate, 24, config_bit_length);
-		}
-		writer.WriteValue(channels, 4, config_bit_length);
-		writer.WriteValue(0i, 3, config_bit_length);
-	}
-
-	return config;
+	return GetAacConfig(*this);
 }
 
 bool AacAudioCodecOptions::SetAacConfig(std::uint64_t config)
 {
-	bool result = false;
-
-	auto config_len = aac_config_utils::get_config_lenght(config) * 8;
-
-	if (config_len >= 32)
-	{
-		BitStreamReader reader(&config);
-
-		auto profile = reader.ReadValue<std::int32_t>(5, config_len);
-
-		if (profile == 31)
-		{
-			profile += reader.ReadValue<std::int32_t>(6, config_len) + 1;
-		}
-
-		if (profile == FF_PROFILE_AAC_LD + 1 || profile == FF_PROFILE_AAC_ELD + 1)
-		{
-			aac_profile_id_t profile_id = profile == FF_PROFILE_AAC_LD + 1 ? aac_profile_id_t::aac_profile_ld : aac_profile_id_t::aac_profile_eld;
-
-			auto sample_rate_index = reader.ReadValue<std::int32_t>(4, config_len);
-			std::uint32_t sample_rate = 0;
-
-			if (sample_rate_index != 0x0F)
-			{
-				sample_rate = aac_config_utils::get_sample_rate(sample_rate_index);
-			}
-			else
-			{
-				sample_rate_index = reader.ReadValue<std::int32_t>(24, config_len);
-			}
-
-			if (sample_rate != 0)
-			{
-				auto channel = reader.ReadValue<std::uint32_t>(4, config_len);
-
-				if (channel != 0)
-				{
-					SetAacProfileId(profile_id);
-					SetSampleRate(sample_rate);
-					SetChannels(channel);
-
-					result = true;
-				}
-			}
-		}
-
-	}
-
-	return result;
+	return SetAacConfig(*this, config);
 }
 
 } // audio

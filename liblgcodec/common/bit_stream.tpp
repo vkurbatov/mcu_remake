@@ -7,36 +7,36 @@ namespace largo
 {
 
 template<typename T>
-T BitStreamReader::ReadValue(void* bit_stream, std::int32_t bit_index, std::size_t bit_count)
+T BitStreamReader::ReadValue(void* bit_stream, std::int32_t bit_index, std::size_t bit_count, bool big_endian)
 {
 	T result = {};
 
-	Read(bit_stream, bit_index, static_cast<void*>(&result), bit_count);
+	Read(bit_stream, bit_index, static_cast<void*>(&result), bit_count, big_endian);
 
 	return result;
 }
 
 template<typename T>
-T BitStreamReader::ReadValue(std::size_t bit_count, std::size_t reverse_order_bits)
+T BitStreamReader::ReadValue(std::size_t bit_count)
 {
 	T result = {};
 
-	BitStreamReader::Read(&result, bit_count, reverse_order_bits);
+	BitStreamReader::Read(&result, bit_count);
 
 	return result;
 }
 
 //----------------------------------------------------------------
 template<typename T>
-void BitStreamWriter::WriteValue(void* bit_stream, std::int32_t bit_index, const T& value, std::size_t bit_count)
+void BitStreamWriter::WriteValue(void* bit_stream, std::int32_t bit_index, const T& value, std::size_t bit_count, bool big_endian)
 {
-	 Write(bit_stream, bit_index, static_cast<const void*>(&value), bit_count);
+	 Write(bit_stream, bit_index, static_cast<const void*>(&value), bit_count, big_endian);
 }
 
 template<typename T>
-void BitStreamWriter::WriteValue(const T& value, std::size_t bit_count, std::size_t reverse_order_bits)
+void BitStreamWriter::WriteValue(const T& value, std::size_t bit_count)
 {
-	BitStreamWriter::Write(static_cast<const void*>(&value), bit_count, reverse_order_bits);
+	BitStreamWriter::Write(static_cast<const void*>(&value), bit_count);
 }
 
 } // helper

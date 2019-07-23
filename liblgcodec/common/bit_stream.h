@@ -18,14 +18,14 @@ class IBitstreamReader : virtual public IBitStream
 {
 public:
 	virtual ~IBitstreamReader(){}
-	virtual std::size_t Read(void* bit_data, std::size_t bit_count, std::size_t reverse_order_bits = 0) = 0;
+	virtual std::size_t Read(void* bit_data, std::size_t bit_count) = 0;
 };
 
 class IBitstreamWriter : virtual public IBitStream
 {
 public:
 	virtual ~IBitstreamWriter(){}
-	virtual std::size_t Write(const void* bit_data, std::size_t bit_count, std::size_t reverse_order_bits = 0) = 0;
+	virtual std::size_t Write(const void* bit_data, std::size_t bit_count) = 0;
 };
 
 class IBitConverter
@@ -40,20 +40,21 @@ class BitStreamReader : virtual public IBitstreamReader
 {
 	const void*			m_bit_stream;
 	std::int32_t		m_bit_index;
+	bool				m_big_endian_bits;
 
 
 public:
-	static std::size_t Read(const void* bit_stream, std::int32_t bit_index, void* bit_data, std::size_t bit_count);
+	static std::size_t Read(const void* bit_stream, std::int32_t bit_index, void* bit_data, std::size_t bit_count, bool big_endian = false);
 
 	template<typename T>
-	static T ReadValue(void* bit_stream, std::int32_t bit_index, std::size_t bit_count = sizeof(T) * 8);
+	static T ReadValue(void* bit_stream, std::int32_t bit_index, std::size_t bit_count = sizeof(T) * 8, bool big_endian = false);
 
 public:
-	BitStreamReader(const void* bit_stream);
-	std::size_t Read(void* bit_data, std::size_t bit_count, std::size_t reverse_order_bits = 0) override;
+	BitStreamReader(const void* bit_stream, bool big_endian_bits = false);
+	std::size_t Read(void* bit_data, std::size_t bit_count) override;
 
 	template<typename T>
-	T ReadValue(std::size_t bit_count = sizeof(T) * 8, std::size_t reverse_order_bits = 0);
+	T ReadValue(std::size_t bit_count = sizeof(T) * 8);
 
 	std::int32_t GetBitIndex() const override;
 	void Reset(std::int32_t bit_index = 0) override;
@@ -66,20 +67,21 @@ class BitStreamWriter : virtual public IBitstreamWriter
 {
 	void*			m_bit_stream;
 	std::int32_t	m_bit_index;
+	bool			m_big_endian_bits;
 
 
 public:
-	static std::size_t Write(void* bit_stream, std::int32_t bit_index, const void* bit_data, std::size_t bit_count);
+	static std::size_t Write(void* bit_stream, std::int32_t bit_index, const void* bit_data, std::size_t bit_count, bool big_endian = false);
 
 	template<typename T>
-	static void WriteValue(void* bit_stream, std::int32_t bit_index, const T& value, std::size_t bit_count = sizeof(T) * 8);
+	static void WriteValue(void* bit_stream, std::int32_t bit_index, const T& value, std::size_t bit_count = sizeof(T) * 8, bool big_endian = false);
 public:
-	BitStreamWriter(void* bit_stream);
+	BitStreamWriter(void* bit_stream, bool big_endian_bits = false);
 
-	std::size_t Write(const void* bit_data, std::size_t bit_count, std::size_t reverse_order_bits = 0) override;
+	std::size_t Write(const void* bit_data, std::size_t bit_count) override;
 
 	template<typename T>
-	void WriteValue(const T& value, std::size_t bit_count = sizeof(T) * 8, std::size_t reverse_order_bits = 0);
+	void WriteValue(const T& value, std::size_t bit_count = sizeof(T) * 8);
 
 	std::int32_t GetBitIndex() const override;
 	void Reset(std::int32_t bit_index = 0) override;

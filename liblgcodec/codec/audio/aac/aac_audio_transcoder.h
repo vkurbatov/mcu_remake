@@ -21,6 +21,7 @@ class AacAudioTranscoder : public LibavAudioTranscoder
 
 public:
 	AacAudioTranscoder(bool is_encoder, const aac_profile_id_t& aac_profile, std::uint32_t sample_rate);
+	AacAudioTranscoder(bool is_encoder, AudioCodecOptions &audio_codec_options);
 
 protected:
 	virtual bool internal_reconfigure(AudioCodecOptions &audio_codec_options) override;

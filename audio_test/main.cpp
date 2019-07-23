@@ -986,7 +986,7 @@ void test_libav_codec_system()
 	core::media::DelayTimer	delay_timer;
 
 	recorder.Open("default");
-	playback.Open(device_playback_list[3].display_format());
+	playback.Open("default");
 
 	largo::codec::audio::audio_codec_options_t encoder_config;
 	largo::codec::audio::audio_codec_options_t decoder_config;
@@ -1061,13 +1061,11 @@ void test_aac_codec()
 	auto device_recorder_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(true);
 	auto device_playback_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(false);
 
-
-	static const std::uint32_t duration_ms = 10;
 	static const std::uint32_t recorder_sample_rate = 48000;
+	static const std::uint32_t duration_ms = 512 * 1000 / (recorder_sample_rate);
+
 	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
-	static const std::uint32_t playback_sample_rate = 48000;
-	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
-	static const std::uint32_t buffers_count = 10;
+	static const std::uint32_t playback_sample_rate = recorder_sample_rate;
 
 	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
 	core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
@@ -1078,9 +1076,9 @@ void test_aac_codec()
 	core::media::DelayTimer	delay_timer;
 
 	recorder.Open("default");
-	playback.Open(device_playback_list[3].display_format());
+	playback.Open("default");
 
-	largo::codec::audio::aac_profile_id_t profile = largo::codec::audio::aac_profile_id_t::aac_profile_ld;
+	largo::codec::audio::aac_profile_id_t profile = largo::codec::audio::aac_profile_id_t::aac_profile_eld;
 
 	largo::codec::audio::AacAudioTranscoder	aac_encoder(true, profile, recorder_sample_rate);
 	largo::codec::audio::AacAudioTranscoder	aac_decoder(false, profile, playback_sample_rate);
@@ -1091,9 +1089,6 @@ void test_aac_codec()
 
 	std::uint8_t	buffer[recorder_frame_size];
 	std::uint8_t	codec_buffer[recorder_frame_size * 4];
-	std::uint8_t	resample_buffer[recorder_frame_size * 4];
-
-	core::media::audio::audio_format_t resample_format(recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::float_32, 1);
 
 	while(true)
 	{
@@ -1101,30 +1096,17 @@ void test_aac_codec()
 
 		if (result > 0)
 		{
+			auto enc_result = aac_encoder(buffer, result, codec_buffer, sizeof(codec_buffer));
 
-			auto resample_result = core::media::audio::AudioResampler::Resampling(recorder_params.audio_format, resample_format, buffer, result, resample_buffer, sizeof(resample_buffer));
-
-			if (resample_result > 0)
+			if (enc_result > 0)
 			{
-				auto enc_result = aac_encoder(resample_buffer, resample_result, codec_buffer, sizeof(codec_buffer));
+				auto dec_result = aac_decoder(codec_buffer, enc_result, buffer, sizeof(buffer));
 
-				if (enc_result > 0)
+				if (dec_result > 0)
 				{
-					auto dec_result = aac_decoder(codec_buffer, enc_result, resample_buffer, sizeof(resample_buffer));
-
-					if (dec_result > 0)
-					{
-						resample_result = core::media::audio::AudioResampler::Resampling(resample_format, recorder_params.audio_format, resample_buffer, dec_result, buffer, sizeof(buffer));
-
-						if (resample_result > 0)
-						{
-							playback.Write(buffer, resample_result);
-						}
-					}
+					playback.Write(buffer, dec_result);
 				}
-
 			}
-
 		}
 
 		delay_timer(duration_ms);
@@ -1255,6 +1237,26 @@ void test_aac_config()
 	return;
 }
 
+extern "C"
+{
+#include <libavcodec/avcodec.h>
+}
+
+
+void test_list_codecs()
+{
+	avcodec_register_all();
+
+	/* Enumerate the codecs*/
+	// AVCodec * codec = av_codec_next(NULL);
+	AVCodec * codec = avcodec_find_encoder_by_name("libfdk_aac");
+	while(codec != NULL)
+	{
+		fprintf(stderr, "Name = %s, id = %d\n", codec->long_name, codec->id);
+		codec = av_codec_next(codec);
+	}
+}
+
 int main()
 {
 	// test_queue();
@@ -1283,13 +1285,15 @@ int main()
 
 	// test_libav_codec_system();
 
-	// test_aac_codec();
+	test_aac_codec();
 
 	// test_bit_stream();
 
 	// test_au_packetizer();
 
-	test_aac_config();
+	// test_aac_config();
+
+	// test_list_codecs();
 
 	return 0;
 }

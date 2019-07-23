@@ -22,7 +22,9 @@ public:
 public:
 	const option_meta_info_t& operator [] (const option_key_t& key) const override;
 	bool GetOption(const option_key_t& key, void* option_data, std::size_t option_data_size = 0, option_type_id_t type_id = option_type_id_any) const override;
+	bool GetOption(const option_key_t& key, std::vector<std::uint8_t>& option_data, option_type_id_t type_id = option_type_id_any) const override;
 	void SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id = option_type_id_any) override;
+	void SetOption(const option_key_t& key, const std::vector<std::uint8_t>& option_data, option_type_id_t type_id = option_type_id_any) override;
 	bool RemoveOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) override;
 	bool HasOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) const override;
 	IOptions& operator << (const IOptions& options) override;

@@ -39,6 +39,19 @@ public:
 	static bool GetAudioCodecOptions(const IOptions& options, audio_codec_options_t& audio_codec_options);
 	static void SetAudioCodecOptions(IOptions& options, const audio_codec_options_t& audio_codec_options);
 
+	static std::uint32_t GetSampleRate(const IOptions& options, std::uint32_t default_sample_rate = 0);
+	static void SetSampleRate(IOptions& options, std::uint32_t sample_rate);
+
+	static std::uint32_t GetBitRate(const IOptions& options, std::uint32_t default_bit_rate = 0);
+	static void SetBitRate(IOptions& options, std::uint32_t bit_rate);
+
+	static std::uint32_t GetChannels(const IOptions& options, std::uint32_t default_channels = 0);
+	static void SetChannels(IOptions& options, std::uint32_t channels);
+
+	static sample_format_t GetSampleFormat(const IOptions& options, sample_format_t default_sample_format = sample_format_t::unknown);
+	static void SetSampleFormat(IOptions& options, sample_format_t sample_format);
+
+
 public:
 	AudioCodecOptions(const audio_codec_options_t& audio_codec_options);
 	AudioCodecOptions(std::uint32_t sample_rate = default_sample_rate

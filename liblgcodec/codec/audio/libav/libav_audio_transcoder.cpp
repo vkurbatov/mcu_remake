@@ -15,13 +15,14 @@ namespace libav_utils
 
 bool load_libav_config(libav_codec_config_t& libav_config, const IOptions& options)
 {
-	return
+	bool result =
 		options.GetOption(AudioCodecOptions::audio_codec_option_sample_rate, &libav_config.sample_rate, sizeof(libav_config.sample_rate)) &
 		options.GetOption(AudioCodecOptions::audio_codec_option_bit_rate, &libav_config.bit_rate, sizeof(libav_config.bit_rate)) &
 		options.GetOption(AudioCodecOptions::audio_codec_option_format, &libav_config.sample_format, sizeof(libav_config.sample_format)) &
 		options.GetOption(AudioCodecOptions::audio_codec_option_num_channels, &libav_config.channels, sizeof(libav_config.channels)) &
 		options.GetOption(LibavAudioTranscoder::libav_audio_codec_option_frame_size, &libav_config.frame_size, sizeof(libav_config.frame_size)) &
 		options.GetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &libav_config.profile, sizeof(libav_config.profile));
+		options.GetOption(LibavAudioTranscoder::libav_audio_codec_option_extra_data, libav_config.extra_data);
 }
 
 void store_libav_config(const libav_codec_config_t& libav_config, IOptions& options)
@@ -32,12 +33,14 @@ void store_libav_config(const libav_codec_config_t& libav_config, IOptions& opti
 	options.SetOption(AudioCodecOptions::audio_codec_option_num_channels, &libav_config.channels, sizeof(libav_config.channels));
 	options.SetOption(LibavAudioTranscoder::libav_audio_codec_option_frame_size, &libav_config.frame_size, sizeof(libav_config.frame_size));
 	options.SetOption(LibavAudioTranscoder::libav_audio_codec_option_profile, &libav_config.profile, sizeof(libav_config.profile));
+	options.SetOption(LibavAudioTranscoder::libav_audio_codec_option_extra_data, libav_config.extra_data);
 }
 
 } // libav_utils
 
 const option_key_t LibavAudioTranscoder::libav_audio_codec_option_frame_size = "codec.audio.libav.frame_size";
 const option_key_t LibavAudioTranscoder::libav_audio_codec_option_profile = "codec.audio.libav.profile";
+const option_key_t LibavAudioTranscoder::libav_audio_codec_option_extra_data = "codec.audio.libav.extra_data";
 
 LibavAudioTranscoder::LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options)
 	: AudioCodec(is_encoder, get_codec_name_from_id(codec_id), options)

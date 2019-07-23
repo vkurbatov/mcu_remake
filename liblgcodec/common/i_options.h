@@ -41,7 +41,9 @@ public:
 	virtual ~IOptions() {}
 	virtual const option_meta_info_t& operator [] (const option_key_t& key) const = 0;
 	virtual bool GetOption(const option_key_t& key, void* option_data, std::size_t option_data_size = 0, option_type_id_t type_id = option_type_id_any) const = 0;
+	virtual bool GetOption(const option_key_t& key, std::vector<std::uint8_t>& option_data, option_type_id_t type_id = option_type_id_any) const = 0;
 	virtual void SetOption(const option_key_t& key, const void* option_data, std::size_t option_data_size, option_type_id_t type_id = option_type_id_any) = 0;
+	virtual void SetOption(const option_key_t& key, const std::vector<std::uint8_t>& option_data, option_type_id_t type_id = option_type_id_any) = 0;
 	virtual bool RemoveOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) = 0;
 	virtual bool HasOption(const option_key_t& key, option_type_id_t type_id = option_type_id_any) const = 0;
 	virtual IOptions& operator << (const IOptions& options) = 0; // merge from

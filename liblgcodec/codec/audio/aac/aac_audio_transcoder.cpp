@@ -28,6 +28,13 @@ AacAudioTranscoder::AacAudioTranscoder(bool is_encoder, const aac_profile_id_t& 
 
 }
 
+AacAudioTranscoder::AacAudioTranscoder(bool is_encoder, AudioCodecOptions &audio_codec_options)
+	: LibavAudioTranscoder(audio_codec_id_t::audio_codec_aac, is_encoder, AacAudioCodecOptions(audio_codec_options))
+	, m_aac_packetizer(is_encoder)
+{
+	SetOptions(audio_codec_options);
+}
+
 bool AacAudioTranscoder::internal_reconfigure(AudioCodecOptions& audio_codec_options)
 {
 	auto result = LibavAudioTranscoder::internal_reconfigure(audio_codec_options);

@@ -22,6 +22,7 @@ class LibavAudioTranscoder : public AudioCodec
 public:
 	static const option_key_t libav_audio_codec_option_frame_size;
 	static const option_key_t libav_audio_codec_option_profile;
+	static const option_key_t libav_audio_codec_option_extra_data;
 
 public:
 	LibavAudioTranscoder(audio_codec_id_t codec_id, bool is_encoder, const IOptions& options);

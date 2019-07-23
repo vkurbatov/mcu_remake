@@ -35,6 +35,7 @@ struct libav_codec_config_t
 	std::uint32_t				bit_rate;
 	std::uint32_t				frame_size;
 	std::int32_t				profile;
+	std::vector<std::uint8_t>	extra_data;
 
 };
 

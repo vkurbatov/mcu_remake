@@ -20,7 +20,7 @@ AudioCodec::AudioCodec(bool is_encoder, const std::string& codec_family, const I
 
 int32_t AudioCodec::operator ()(const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
 {
-	return internal_transcode(input_data, input_size, output_data, output_size);
+	return IsOpen() ? internal_transcode(input_data, input_size, output_data, output_size) : -EINVAL;
 }
 
 transcoder_direction_t AudioCodec::GetTranscodeDirection() const

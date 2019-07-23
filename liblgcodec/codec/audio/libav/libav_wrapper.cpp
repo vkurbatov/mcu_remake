@@ -1,6 +1,9 @@
 #include "libav_wrapper.h"
 #include <cstring>
 
+
+#include <errno.h>
+
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -103,6 +106,21 @@ void init_context(libav_context_t& context, const libav_codec_config_t& libav_co
 	context.codec_context->sample_rate = libav_codec_config.sample_rate;
 	context.codec_context->channel_layout = AV_CH_LAYOUT_MONO;
 	context.codec_context->channels = 1;
+	context.codec_context->codec_type = AVMEDIA_TYPE_AUDIO;
+
+
+	if (libav_codec_config.extra_data.size() > 0)
+	{
+		if (context.codec_context->extradata != nullptr)
+		{
+			av_free(context.codec_context->extradata);
+		}
+
+		context.codec_context->extradata = static_cast<std::uint8_t*>(malloc(libav_codec_config.extra_data.size() + AV_INPUT_BUFFER_PADDING_SIZE));
+		std::memcpy(context.codec_context->extradata, libav_codec_config.extra_data.data(), libav_codec_config.extra_data.size());
+		std::memset(context.codec_context->extradata + libav_codec_config.extra_data.size(), 0, AV_INPUT_BUFFER_PADDING_SIZE);
+		context.codec_context->extradata_size = libav_codec_config.extra_data.size();
+	}
 
 	if (libav_codec_config.frame_size != 0)
 	{
@@ -114,7 +132,7 @@ void init_context(libav_context_t& context, const libav_codec_config_t& libav_co
 		context.codec_context->profile = libav_codec_config.profile;
 	}
 
-	context.codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_QSCALE;// | AV_CODEC_FLAG_LOW_DELAY;
+	context.codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_LOW_DELAY;
 
 	context.frame->channels = context.codec_context->channels;
 	context.frame->channel_layout = context.codec_context->channel_layout;
@@ -139,7 +157,17 @@ libav_context_t* create_context(AVCodecID codec_id, bool is_encoder, const libav
 
 	if (codec_id != AV_CODEC_ID_NONE)
 	{
-		AVCodec* codec = is_encoder ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
+		AVCodec* codec = nullptr;
+
+		if (codec_id == AV_CODEC_ID_AAC)
+		{
+			codec = is_encoder ? avcodec_find_encoder_by_name("libfdk_aac") : avcodec_find_decoder_by_name("libfdk_aac");
+		}
+		else
+		{
+			codec = is_encoder ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
+		}
+
 		if (codec != nullptr)
 		{
 			AVCodecContext * codec_context = avcodec_alloc_context3(codec);
@@ -189,9 +217,14 @@ void destroy_context(libav_context_t* context)
 {
 	if (context != nullptr)
 	{
+		if (context->codec_context->extradata != nullptr)
+		{
+			av_free(context->codec_context->extradata);
+		}
 		avcodec_free_context(&context->codec_context);
 		av_frame_free(&context->frame);
 		av_packet_free(&context->packet);
+
 		delete context;
 	}
 }
@@ -202,12 +235,12 @@ std::int32_t encoder(libav_context_t * context,
 						 void* output_data,
 						 std::size_t output_size)
 {
-	std::int32_t result = -1;
+	std::int32_t result = -EINVAL;
 	std::int32_t got_packet = 0;
 
-	if (context != NULL)
+	if (context != nullptr)
 	{
-		if (input_data != NULL && output_data != NULL)
+		if (input_data != nullptr && output_data != nullptr)
 		{
 			context->frame->nb_samples = input_size / av_get_bytes_per_sample(context->codec_context->sample_fmt);
 
@@ -241,6 +274,10 @@ std::int32_t encoder(libav_context_t * context,
 				}
 
 			}
+			else
+			{
+				result = -errno;
+			}
 		}
 
 	}
@@ -254,25 +291,27 @@ std::int32_t decoder(libav_context_t* context,
 						 void* output_data,
 						 std::size_t output_size)
 {
-	std::int32_t result = -1;
+	static int cnt = 0;
+	std::int32_t result = -EINVAL;
 	std::int32_t got_packet = 0;
 
-	if (context != NULL)
+	if (context != nullptr)
 	{
-		if (input_data != NULL && output_data != NULL)
+		if (input_data != nullptr && output_data != nullptr)
 		{
 			// avcodec_get_frame_defaults(context->frame);
 
 			av_init_packet(context->packet);
 
-			context->packet->data = static_cast<std::uint8_t*>(input_data);
-			context->packet->size = static_cast<std::int32_t>(input_size);
+			const auto input_correction = 0;
+
+			context->packet->data = static_cast<std::uint8_t*>(input_data) + input_correction;
+			context->packet->size = static_cast<std::int32_t>(input_size) - input_correction;
 
 			result = avcodec_decode_audio4(context->codec_context,
 										   context->frame,
 										   &got_packet,
 										   context->packet);
-
 			if (result >= 0)
 			{
 				if (got_packet)

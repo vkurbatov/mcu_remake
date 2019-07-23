@@ -18,6 +18,19 @@ std::string OptionsReader::GetOption(const IOptions& options, const option_key_t
 	return std::move(result);
 }
 
+/*
+template<>
+std::vector<std::uint8_t> OptionsReader::GetOption(const IOptions& options, const option_key_t& key, const std::vector<std::uint8_t>& default_value)
+{
+	std::vector<std::uint8_t> result = default_value;
+
+	auto meta = options[key];
+
+	result = static_cast<const char*>(static_cast<const void*>(meta.meta_data.data()));
+
+	return std::move(result);
+}*/
+
 OptionsReader::OptionsReader(const IOptions &options)
 	: m_options(options)
 {
@@ -31,6 +44,12 @@ void OptionsWriter::SetOption(IOptions& options, const option_key_t& key, const 
 {
 	options.SetOption(key, value.data(), value.length() + 1);
 }
+/*
+template<>
+void OptionsWriter::SetOption(IOptions& options, const option_key_t& key, const std::vector<std::uint8_t> value)
+{
+	options.SetOption(key, value.data(), value.length() + 1);
+}*/
 
 OptionsWriter::OptionsWriter(IOptions &options)
 	: m_options(options)
