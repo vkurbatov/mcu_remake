@@ -20,7 +20,7 @@ video_form::video_form(QWidget *parent) :
     m_surface(this)
 {
     {
-        QImage test_image("/home/user/ivcscodec/mcu_remake/test_image.png");
+        QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
         image_buffer.resize(test_image.width() * test_image.height() * 3);
 
         for (int i = 0; i < test_image.height(); i++)
