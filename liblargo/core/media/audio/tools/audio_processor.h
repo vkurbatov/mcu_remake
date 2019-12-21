@@ -203,6 +203,9 @@ public:
 
 	void Reset();
 
+	//
+	double GetAverageVolume(const std::string &session_id) const;
+
 private:
     bool check_and_conrtol_audio_system();
 	bool control_audio_system(bool is_start);

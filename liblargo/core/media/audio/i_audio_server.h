@@ -29,6 +29,8 @@ public:
 
 	virtual IAudioStream* AddStream(const session_id_t& session_id, const audio_format_t& audio_format, bool is_writer = false) = 0;
 	virtual bool RemoveStream(media_stream_id_t stream_id) = 0;
+
+	virtual media_stream_id_t GetStreamIdBySessionId(const session_id_t& session_id) const = 0;
 };
 
 } // audio

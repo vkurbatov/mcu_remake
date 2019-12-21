@@ -57,8 +57,8 @@ IAudioStream* AudioServer::AddStream(const session_id_t& session_id, const audio
 		auto stream_id = get_stream_id();
 
 		audio_stream_t audio_stream(
-		    new AudioStream(stream_id, session_id, audio_format, *audio_slot, is_writer)
-		    , [](IAudioStream * audio_stream)
+					new AudioStream(stream_id, session_id, audio_format, *audio_slot, is_writer)
+					, [](IAudioStream * audio_stream)
 		{
 			delete static_cast<AudioStream*>(audio_stream);
 		});
@@ -110,6 +110,23 @@ bool AudioServer::RemoveStream(media_stream_id_t stream_id)
 	return result;
 }
 
+media_stream_id_t AudioServer::GetStreamIdBySessionId(const session_id_t& session_id) const
+{
+
+	media_stream_id_t result = media_stream_id_none;
+
+	for (const auto& strm : m_streams)
+	{
+		if (strm.second->GetSessionId() == session_id)
+		{
+			result = strm.first;
+			break;
+		}
+	}
+
+	return result;
+}
+
 std::size_t AudioServer::Count() const
 {
 	return m_streams.size();
@@ -154,7 +171,7 @@ IAudioSlot *AudioServer::request_slot(const session_id_t &session_id)
 		{
 			ref_count ++;
 			LOG(info) << "Get exists audio slot by session \'" << session_id << "\' [slot_id = "
-			          << result->GetSlotId() << ", refs = " << ref_count << "]" LOG_END;
+					  << result->GetSlotId() << ", refs = " << ref_count << "]" LOG_END;
 		}
 		else
 		{

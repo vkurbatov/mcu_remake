@@ -4,6 +4,7 @@
 #include "core/media/audio/i_audio_stream.h"
 #include "core/media/audio/i_audio_point.h"
 #include "core/media/audio/audio_format.h"
+#include "core/media/audio/volume_calculator.h"
 
 #include <unordered_map>
 
@@ -26,16 +27,19 @@ class AudioStream : public IAudioStream
 	audio_format_t			m_audio_format;
 	bool					m_is_writer;
 
+	double                  m_average_volume;
+	VolumeCalculator        m_volume_calculator;
+
 	// Dependencies
 private:
 	IAudioPoint&			m_audio_point;
 
 private:
 	explicit AudioStream(media_stream_id_t stream_id
-	                     , const session_id_t& session_id
-	                     , const audio_format_t& audio_format
-	                     , IAudioPoint& audio_point
-	                     , bool is_writer = false);
+						 , const session_id_t& session_id
+						 , const audio_format_t& audio_format
+						 , IAudioPoint& audio_point
+						 , bool is_writer = false);
 
 	AudioStream(const AudioStream&) = delete;
 	AudioStream(AudioStream&&) = delete;
@@ -73,6 +77,9 @@ public:
 private:
 	std::int32_t internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options = 0);
 	std::int32_t internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options = 0);
+
+
+	virtual double GetAverageVolume() const override;
 };
 
 } // audio

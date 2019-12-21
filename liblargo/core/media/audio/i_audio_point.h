@@ -35,7 +35,7 @@ class IAudioPoint : virtual public IAudioReader, virtual public IAudioWriter
 {
 public:
 
-	virtual ~IAudioPoint() {}
+    virtual ~IAudioPoint() {}
 
 };
 

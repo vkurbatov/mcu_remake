@@ -4,6 +4,8 @@
 #include "core/media/audio/audio_format.h"
 #include "core/media/audio/i_audio_point.h"
 #include "core/media/audio/volume_controller.h"
+#include "core/media/audio/volume_calculator.h"
+#include "core/media/audio/i_volume_average.h"
 #include "core/media/common/media_point.h"
 #include "core/media/audio/audio_resampler.h"
 
@@ -20,7 +22,6 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 {
 
 	using audio_buffer_t = media_buffer_t;
-
 	// AudioResampler		m_resampler;
 
 	audio_buffer_t		m_input_resampler_buffer;
@@ -29,7 +30,6 @@ class AudioPoint : public MediaPoint, public IAudioPoint, public IAudioFormatter
 	audio_buffer_t		m_output_volume_buffer;
 
 	VolumeController	m_volume_controller;
-
 
 public:
 

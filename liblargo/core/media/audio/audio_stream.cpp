@@ -15,21 +15,22 @@ namespace audio
 {
 
 AudioStream::AudioStream(media_stream_id_t stream_id
-                         , const session_id_t &session_id
-                         , const audio_format_t &audio_format
-                         , IAudioPoint &audio_point
-                         , bool is_writer)
+						 , const session_id_t &session_id
+						 , const audio_format_t &audio_format
+						 , IAudioPoint &audio_point
+						 , bool is_writer)
 	: m_stream_id(stream_id)
 	, m_session_id(session_id)
 	, m_audio_format(audio_format)
 	, m_audio_point(audio_point)
 	, m_is_writer(is_writer)
+	, m_average_volume(0.0f)
 {
 	LOG(debug) << "Create audio stream [id = " << stream_id
-	           << ", session = \'" << session_id
-	           << "\', format = " << audio_format
-	           << "\', " << (is_writer ? "writer" : "reader")
-	           << "]" LOG_END;
+			   << ", session = \'" << session_id
+			   << "\', format = " << audio_format
+			   << "\', " << (is_writer ? "writer" : "reader")
+			   << "]" LOG_END;
 }
 
 media_stream_id_t AudioStream::GetStreamId() const
@@ -86,12 +87,25 @@ std::int32_t AudioStream::Read(const audio_format_t &audio_format, void *data, s
 
 std::int32_t AudioStream::internal_write(const audio_format_t &audio_format, const void* data, std::size_t size, std::uint32_t options)
 {
-	return CanWrite() ? m_audio_point.Write(audio_format, data, size, options) : -EACCES;
+	std::int32_t result = -EACCES;
+
+	if (CanWrite())
+	{
+		m_average_volume = m_volume_calculator.CalculateLevel(data, size, audio_format);
+		result = m_audio_point.Write(audio_format, data, size, options);
+	}
+
+	return result;
 }
 
 std::int32_t AudioStream::internal_read(const audio_format_t &audio_format, void* data, std::size_t size, std::uint32_t options)
 {
 	return CanRead() ? m_audio_point.Read(audio_format, data, size, options) :  -EACCES;
+}
+
+double AudioStream::GetAverageVolume() const
+{
+	return m_average_volume;
 }
 
 

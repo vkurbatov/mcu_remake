@@ -109,7 +109,7 @@ IAudioSlot* AudioComposer::QueryAudioSlot(audio_slot_id_t audio_slot_id)
 	else
 	{
 		result->m_ref_count++;
-		LOG(info) << "Query existing audio slot succes (id = " << audio_slot_id << ", ref = " << result->m_ref_count << ")" LOG_END;
+		LOG(info) << "Query existing audio slot success (id = " << audio_slot_id << ", ref = " << result->m_ref_count << ")" LOG_END;
 	}
 
 	return result;

@@ -15,6 +15,10 @@ set(SOURCES
     "core/media/common/delay_timer.cpp"
     "core/media/common/guard_lock.cpp"
     "core/media/common/sync_point.cpp"
+    "core/media/common/ffmpeg/libav_base.cpp"
+    "core/media/common/ffmpeg/libav_decoder.cpp"
+    "core/media/common/ffmpeg/libav_stream_capturer.cpp"
+    "core/media/common/ffmpeg/libav_converter.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_format.cpp"
     "core/media/audio/audio_point.cpp"
@@ -27,6 +31,7 @@ set(SOURCES
     "core/media/audio/audio_mux.cpp"
     "core/media/audio/audio_queue.cpp"
     "core/media/audio/volume_controller.cpp"
+    "core/media/audio/volume_calculator.cpp"
     "core/media/audio/audio_divider.cpp"
     "core/media/audio/channels/audio_channel.cpp"
     "core/media/audio/channels/audio_channel_params.cpp"
@@ -48,9 +53,14 @@ set(PRIVATE_HEADERS
     "core/media/common/delay_timer.h"
     "core/media/common/guard_lock.h"
     "core/media/common/sync_point.h"
+    "core/media/common/ffmpeg/libav_base.h"
+    "core/media/common/ffmpeg/libav_decoder.h"
+    "core/media/common/ffmpeg/libav_stream_capturer.h"
+    "core/media/common/ffmpeg/libav_converter.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_point.h"
     "core/media/audio/volume_controller.h"
+    "core/media/audio/volume_calculator.h"
     "core/media/audio/audio_stream.h"
     "core/media/audio/audio_server.h"
     "core/media/audio/audio_slot.h"
@@ -85,6 +95,8 @@ set(PUBLIC_HEADERS
     "core/media/audio/i_audio_formatter.h"
     "core/media/audio/i_audio_point.h"
     "core/media/audio/i_volume_controller.h"
+    "core/media/audio/i_volume_calculator.h"
+    "core/media/audio/i_volume_average.h"
     "core/media/audio/i_audio_stream.h"
     "core/media/audio/i_audio_server.h"
     "core/media/audio/i_audio_composer.h"
@@ -107,6 +119,10 @@ target_link_libraries(${TARGET} PRIVATE
     pthread
     rt
     asound
+    avcodec
+    avutil
+    avformat
+    swscale
 )
 
 # install(TARGETS ${TARGET} LIBRARY DESTINATION ${INSTALL_LIBRARIES_DIR})

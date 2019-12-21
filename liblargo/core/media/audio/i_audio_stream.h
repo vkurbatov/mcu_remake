@@ -4,6 +4,7 @@
 #include "core/media/common/i_media_stream.h"
 #include "core/media/audio/i_audio_point.h"
 #include "core/media/audio/i_audio_formatter.h"
+#include "core/media/audio/i_volume_average.h"
 
 #include <string>
 
@@ -18,7 +19,7 @@ namespace audio
 
 using session_id_t = std::string;
 
-class IAudioStream : virtual public IMediaStream, virtual public IAudioPoint, public IAudioFormatter
+class IAudioStream : virtual public IMediaStream, virtual public IAudioPoint, public IAudioFormatter, virtual public IAverageVolume
 {
 
 protected:

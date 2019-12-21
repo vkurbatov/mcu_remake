@@ -215,7 +215,7 @@ uint64_t AacAudioCodecOptions::EncodeConfig(const aac_profile_id_t &aac_profile_
 			writer.WriteValue(sample_rate, 24);
 		}
 		writer.WriteValue(channels, 4);
-		writer.WriteValue(0i, 3);
+        writer.WriteValue(int(0), 3);
 	}
 
 	return config;

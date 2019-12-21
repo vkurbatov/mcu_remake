@@ -51,6 +51,8 @@ public:
 	IAudioStream* AddStream(const session_id_t& session_id, const audio_format_t& audio_format, bool is_writer) override;
 	bool RemoveStream(media_stream_id_t stream_id) override;
 
+	media_stream_id_t GetStreamIdBySessionId(const session_id_t& session_id) const;
+
 	// IDataCollection interface
 public:
 	std::size_t Count() const override;
@@ -66,7 +68,6 @@ private:
 	IAudioSlot* get_slot(const session_id_t& session_id);
 	IAudioSlot* request_slot(const session_id_t& session_id);
 	std::size_t release_slot(const session_id_t& session_id);
-
 };
 
 } // audio

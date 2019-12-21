@@ -220,6 +220,8 @@ void destroy_context(libav_context_t* context)
 		if (context->codec_context->extradata != nullptr)
 		{
 			av_free(context->codec_context->extradata);
+			context->codec_context->extradata = nullptr;
+			context->codec_context->extradata_size = 0;
 		}
 		avcodec_free_context(&context->codec_context);
 		av_frame_free(&context->frame);
@@ -291,7 +293,6 @@ std::int32_t decoder(libav_context_t* context,
 						 void* output_data,
 						 std::size_t output_size)
 {
-	static int cnt = 0;
 	std::int32_t result = -EINVAL;
 	std::int32_t got_packet = 0;
 

@@ -6,41 +6,48 @@ project(${TARGET})
 
 set(SOURCES
     "main.cpp"
+    "video_form.cpp"
+    "yuv_video_buffer.cpp"
+    "rgb_video_buffer.cpp"
+    "video_surface.cpp"
     )
 
-set(MOC_HEADERS
-    "mainwindow.h"
-    )
 set(HEADERS
+    "video_form.h"
+    "yuv_video_buffer.h"
+    "rgb_video_buffer.h"
+    "video_surface.h"
     )
 
 set(UIS
-    "mainwondow.ui"
+    "video_form.ui"
     )
 
-set ( RESOURCES
-# main.qrc
-)
 
-# Next lines needed for building all Qt projects
-find_package( Qt4 REQUIRED )
-include( ${QT_USE_FILE} )
-add_definitions( ${QT_DEFINITIONS} )
-include_directories( ${CMAKE_BINARY_DIR} )
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# using Qt meta-system (precompiler)
-QT4_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
-QT4_WRAP_UI( UI_HEADERS ${UIS} )
-QT4_WRAP_CPP( MOC_SRCS ${MOC_HEADERS} )
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Gui REQUIRED)
+find_package(Qt5Widgets REQUIRED)
+find_package(Qt5Multimedia REQUIRED)
+
+QT5_WRAP_UI( UI_HEADERS ${UIS} )
 
 add_executable(${TARGET}
                ${SOURCES}
                ${HEADERS}
-                )
+               ${UI_HEADERS}
+               )
 
 target_link_libraries(${TARGET}
                         pthread
                         largo
+                        ${Qt5Core_LIBRARIES}
+                        ${Qt5Gui_LIBRARIES}
+                        ${Qt5Widgets_LIBRARIES}
+                        ${Qt5Multimedia_LIBRARIES}
                         )
 
 

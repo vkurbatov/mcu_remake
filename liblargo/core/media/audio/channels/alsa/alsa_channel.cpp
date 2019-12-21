@@ -224,11 +224,16 @@ bool AlsaChannel::Close()
 	if (m_handle != nullptr)
 	{
 		// snd_pcm_abort(m_handle);
+
 		snd_pcm_close(m_handle);
+
+		// usleep(1000000);
 
 		m_handle = nullptr;
 
 		LOG(info) << "Device \'" << m_device_name << "\' closed" LOG_END;
+
+		result = true;
 	}
 
 	return result;
@@ -304,6 +309,10 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 
 	do
 	{
+		if (m_handle == nullptr)
+		{
+			break;
+		}
 
 		io_complete = false;
 		retry_read_count++;
@@ -316,10 +325,8 @@ std::int32_t AlsaChannel::internal_read(void *data, std::size_t size, std::uint3
 		{
 			auto wait_timeout = std::max(m_audio_params.wait_timeout_ms, audio_format.duration_ms(part_size));
 			snd_pcm_wait(m_handle, wait_timeout);
-			continue;
 		}
-
-		if (err >= 0)
+		else if (err >= 0)
 		{
 			io_complete = (err == 0);
 
@@ -382,6 +389,10 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 
 	do
 	{
+		if (m_handle == nullptr)
+		{
+			break;
+		}
 
 		io_complete = false;
 		retry_write_count++;
@@ -394,10 +405,8 @@ std::int32_t AlsaChannel::internal_write(const void *data, std::size_t size, std
 		{
 			auto wait_timeout = std::max(m_audio_params.wait_timeout_ms, audio_format.duration_ms(part_size));
 			snd_pcm_wait(m_handle, wait_timeout);
-			continue;
 		}
-
-		if (err >= 0)
+		else if (err >= 0)
 		{
 			io_complete = (err == 0);
 
