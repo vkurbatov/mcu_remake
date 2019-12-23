@@ -21,7 +21,7 @@ QList<QVideoFrame::PixelFormat> video_surface::supportedPixelFormats(QAbstractVi
 {
     if (handleType == QAbstractVideoBuffer::NoHandle)
     {
-        return { QVideoFrame::PixelFormat::Format_RGB24 };
+        return { QVideoFrame::PixelFormat::Format_RGB24, QVideoFrame::PixelFormat::Format_BGR24 };
     }
 
     return {};

@@ -18,6 +18,9 @@ typedef std::int32_t sample_format_t;
 const pixel_format_t unknown_pixel_format = -1;
 const sample_format_t unknown_sample_format = -1;
 
+extern const pixel_format_t pixel_format_bgr24;
+extern const pixel_format_t pixel_format_rgb24;
+
 extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
 

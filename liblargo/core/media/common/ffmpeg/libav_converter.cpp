@@ -60,9 +60,11 @@ struct libav_converter_context_t
     struct SwsContext*  m_sws_context;
     video_info_t        m_input_frame_info;
     video_info_t        m_output_frame_info;
+    scaling_method_t    m_scaling_method;
 
-    libav_converter_context_t()
+    libav_converter_context_t(scaling_method_t scaling_method)
         : m_sws_context(nullptr)
+        , m_scaling_method(scaling_method)
     {
 
     }
@@ -88,7 +90,7 @@ struct libav_converter_context_t
                                                  , output_frame_info.size.width
                                                  , output_frame_info.size.height
                                                  , static_cast<AVPixelFormat>(output_frame_info.pixel_format)
-                                                 , SWS_BILINEAR
+                                                 , static_cast<std::uint32_t>(m_scaling_method)
                                                  , nullptr
                                                  , nullptr
                                                  , nullptr);
@@ -104,7 +106,7 @@ struct libav_converter_context_t
         }
 
         return false;
-    }
+    }   
 
     std::size_t convert(const video_info_t& input_frame_info
                         , const frame_rect_t& input_frame_rect
@@ -140,11 +142,13 @@ struct libav_converter_context_t
             if (sz_input != 0
                     && sz_output != 0)
             {
+                auto h_corr = input_frame_info.size == output_frame_info.size ? 1 : 0;
+
                 auto sws_result = sws_scale(m_sws_context
                                             , src_slice
                                             , src_stride
-                                            , 0
-                                            , input_frame_rect.size.height
+                                            , h_corr
+                                            , input_frame_info.size.height - h_corr
                                             , dst_slice
                                             , dst_stride);
 
@@ -175,8 +179,8 @@ void libav_converter_context_deleter_t::operator()(libav_converter_context_t *li
     delete libav_converter_context_ptr;
 }
 // -----------------------------------------------------------------------------
-libav_converter::libav_converter()
-    : m_converter_context(new libav_converter_context_t())
+libav_converter::libav_converter(scaling_method_t scaling_method)
+    : m_converter_context(new libav_converter_context_t(scaling_method))
 {
 
 }

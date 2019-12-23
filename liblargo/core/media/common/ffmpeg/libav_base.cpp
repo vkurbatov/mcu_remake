@@ -15,8 +15,11 @@ namespace ffmpeg_wrapper
 
 const codec_id_t codec_id_h264 = static_cast<codec_id_t>(AV_CODEC_ID_H264);
 //extern const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
-extern const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
-extern const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SAMPLE_FMT_S16);
+const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
+const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SAMPLE_FMT_S16);
+
+const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR24);
+const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
 
 //const codec_id_t codec_id_yuv420p = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
 
