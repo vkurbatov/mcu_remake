@@ -1,5 +1,5 @@
-#ifndef FFMPEG_WRAPPER_LIBAV_BASE_H
-#define FFMPEG_WRAPPER_LIBAV_BASE_H
+#ifndef ffmpeg_LIBAV_BASE_H
+#define ffmpeg_LIBAV_BASE_H
 
 #include <string>
 #include <vector>
@@ -7,19 +7,20 @@
 #include <memory>
 #include <functional>
 
-namespace ffmpeg_wrapper
+namespace ffmpeg
 {
 
 typedef std::int32_t codec_id_t;
 typedef std::int32_t pixel_format_t;
 typedef std::int32_t sample_format_t;
-
+const std::int32_t default_frame_align = 1;
 
 const pixel_format_t unknown_pixel_format = -1;
 const sample_format_t unknown_sample_format = -1;
 
 extern const pixel_format_t pixel_format_bgr24;
 extern const pixel_format_t pixel_format_rgb24;
+extern const pixel_format_t pixel_format_yuv420p;
 
 extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
@@ -28,6 +29,8 @@ extern const codec_id_t codec_id_h264;
 //extern const codec_id_t codec_id_yuv420p;
 
 typedef std::vector<std::uint8_t> media_data_t;
+
+std::string error_to_string(std::int32_t av_error);
 
 enum class media_type_t
 {
@@ -61,6 +64,41 @@ struct codec_info_t
     media_data_t                extra_data;
 };
 
+typedef std::uint32_t option_type_t;
+
+enum class option_format_t
+{
+    numeric,
+    real,
+    string,
+    unknown
+};
+
+struct device_option_t
+{
+    std::string         name;
+    std::string         help;
+    std::int32_t        offset;
+    option_type_t       type;
+
+    struct
+    {
+        std::int64_t    numeric;
+        double          real;
+        std::string     string;
+    }                   default_value;
+
+    double              min;
+    double              max;
+    std::int32_t        flags;
+    std::string         unit;
+
+    static option_format_t option_format(option_type_t type);
+    option_format_t option_format() const;
+};
+
+typedef std::vector<device_option_t> device_option_list_t;
+
 struct audio_info_t
 {
     std::uint32_t   sample_rate;
@@ -92,6 +130,8 @@ struct frame_point_t
     frame_point_t(std::uint32_t x = 0
                   , std::uint32_t y = 0);
 
+    bool is_null() const;
+
     bool operator ==(const frame_point_t& frame_point) const;
     bool operator !=(const frame_point_t& frame_point) const;
 
@@ -119,10 +159,10 @@ struct frame_size_t
 
 struct frame_rect_t
 {
-    frame_point_t   point;
+    frame_point_t  offset;
     frame_size_t   size;
 
-    frame_rect_t(const frame_point_t& point = { 0, 0 }
+    frame_rect_t(const frame_point_t& offset = { 0, 0 }
             , const frame_size_t& size = { 0, 0 });
 
     frame_rect_t(std::uint32_t x
@@ -149,7 +189,7 @@ struct video_info_t
     static std::uint32_t bpp(pixel_format_t pixel_format);
     static std::size_t frame_size(pixel_format_t pixel_format
                                   , const frame_size_t& size
-                                  , std::int32_t align = 0);
+                                  , std::int32_t align = default_frame_align);
     static std::string format_name(pixel_format_t pixel_format);
 
     video_info_t(std::uint32_t width
@@ -164,29 +204,35 @@ struct video_info_t
     bool operator ==(const video_info_t& video_info) const;
     bool operator !=(const video_info_t& video_info) const;
     std::uint32_t bpp() const;
-    std::size_t frame_size(std::int32_t align = 0) const;
+    std::size_t frame_size(std::int32_t align = default_frame_align) const;
     std::string format_name() const;
 };
 
 struct fragment_info_t
 {
-    frame_point_t   offset;
-    frame_size_t    size;
+    frame_rect_t    frame_rect;
+    frame_size_t    frame_size;
     pixel_format_t  pixel_format;
 
     fragment_info_t(std::uint32_t x
-                          , std::uint32_t y
-                          , std::uint32_t width
-                          , std::uint32_t height
-                          , pixel_format_t pixel_format = default_pixel_format);
+                    , std::uint32_t y
+                    , std::uint32_t width
+                    , std::uint32_t height
+                    , std::uint32_t frame_width
+                    , std::uint32_t frame_height
+                    , pixel_format_t pixel_format = default_pixel_format);
 
-    fragment_info_t(const frame_point_t& offset = { 0, 0 }
-                          , const frame_size_t& size = { 0, 0 }
-                          , pixel_format_t pixel_format = default_pixel_format);
-
+    fragment_info_t(const frame_rect_t& frame_rect = { 0, 0, 0, 0 }
+                    , const frame_size_t& frame_size = { 0, 0 }
+                    , pixel_format_t pixel_format = default_pixel_format);
 
     bool operator ==(const fragment_info_t& fragment_info) const;
     bool operator !=(const fragment_info_t& fragment_info) const;
+
+    std::size_t get_fragment_size(std::int32_t align = default_frame_align) const;
+    std::size_t get_frame_size(std::int32_t align = default_frame_align) const;
+
+    bool is_full() const;
 };
 
 
@@ -223,4 +269,4 @@ typedef std::function<void(const streaming_event_t& streaming_event)> stream_eve
 
 }
 
-#endif // FFMPEG_WRAPPER_LIBAV_BASE_H
+#endif // ffmpeg_LIBAV_BASE_H

@@ -6,13 +6,14 @@ extern "C"
 {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/imgutils.h>
 }
 
 #define WBS_MODULE_NAME "ff:decoder"
 #include <core-tools/logging.h>
 
 
-namespace ffmpeg_wrapper
+namespace ffmpeg
 {
 
 
@@ -204,10 +205,29 @@ struct libav_decoder_context_t
         return audio_data;
     }
 
-    media_data_t get_video_data()
+    media_data_t get_video_data(std::int32_t align = default_frame_align)
     {
-        std::size_t frame_size = 0;
+        std::size_t frame_size = av_image_get_buffer_size(static_cast<AVPixelFormat>(frame->format)
+                                                          , frame->width
+                                                          , frame->height
+                                                          , align);
 
+        media_data_t video_data(frame_size);
+
+        if (frame_size > 0)
+        {
+            av_image_copy_to_buffer(video_data.data()
+                                    , video_data.size()
+                                    , frame->data
+                                    , frame->linesize
+                                    , static_cast<AVPixelFormat>(frame->format)
+                                    , frame->width
+                                    , frame->height
+                                    , align
+                                    );
+        }
+
+        /*
         std::int32_t factor = frame->height;
 
         for (auto i = 0; i < AV_NUM_DATA_POINTERS && frame->linesize[i] > 0; i++)
@@ -223,7 +243,7 @@ struct libav_decoder_context_t
         {
             std::memcpy(data_ptr, frame->data[i], frame->linesize[i] * factor);
             data_ptr += frame->linesize[i] * factor;
-        }
+        }*/
 
         LOG_T << "Decoder #" << decoder_id << ". Fetch YUV420P video frame with size " << video_data.size() << " bytes" LOG_END;
 

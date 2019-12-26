@@ -16,13 +16,20 @@ public:
     explicit video_form(QWidget *parent = 0);
     ~video_form();
 
+    void prepare_image();
 
 private slots:
     void on_pushButton_clicked();
+    void on_update();
+
+    void on_cbScalingMethod_currentIndexChanged(int index);
+
+    void on_cbScaling_currentIndexChanged(int index);
 
 private:
     Ui::video_form *ui;
     video_surface m_surface;
+
 
     // QWidget interface
 protected:

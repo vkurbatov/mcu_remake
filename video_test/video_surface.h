@@ -6,7 +6,7 @@
 class video_surface : public QAbstractVideoSurface
 {
     QWidget*        m_widget;
-    QVideoFrame     m_last_frame;
+    QImage          m_last_image;
 
 public:
     video_surface(QWidget *widget, QObject *parent = 0);
@@ -17,7 +17,7 @@ public:
     QList<QVideoFrame::PixelFormat> supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const override;
     bool present(const QVideoFrame &frame) override;
  public:
-    void paint(QPainter *painter);
+    void paint(QPainter *painter, const QVector<QRect>& rects);
 };
 
 #endif // VIDEO_SURFACE_H

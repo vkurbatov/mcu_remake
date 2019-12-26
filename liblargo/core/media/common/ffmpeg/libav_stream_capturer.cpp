@@ -9,16 +9,74 @@
 extern "C"
 {
 #include <libavformat/avformat.h>
+#include <libavdevice/avdevice.h>
+#include <libavutil/opt.h>
 }
 
 #define WBS_MODULE_NAME "ff:capturer"
 #include <core-tools/logging.h>
 
-namespace ffmpeg_wrapper
+namespace ffmpeg
 {
 
 const std::size_t max_queue_size = 1000;
 const std::size_t idle_timeout_ms = 10;
+//------------------------------------------------------------------------------------
+namespace utils
+{
+    device_option_t extract_device_option(const AVOption& av_option)
+    {
+        device_option_t device_option = {};
+
+        if (av_option.name != nullptr)
+        {
+            device_option.name = av_option.name;
+        }
+
+        if (av_option.help != nullptr)
+        {
+            device_option.help = av_option.help;
+        }
+
+        device_option.offset = av_option.offset;
+        device_option.flags = av_option.flags;
+        device_option.min = av_option.min;
+        device_option.max = av_option.max;
+
+        if (av_option.unit != nullptr)
+        {
+            device_option.unit = av_option.unit;
+        }
+
+        device_option.type = static_cast<option_type_t>(av_option.type);
+
+        switch (device_option.option_format())
+        {
+            case option_format_t::numeric:
+                switch (device_option.type)
+                {
+                    case AV_OPT_TYPE_RATIONAL:
+                    case AV_OPT_TYPE_VIDEO_RATE:
+                        device_option.default_value.numeric = av_option.default_val.q.den / av_option.default_val.q.num;
+                    break;
+                    default:
+                        device_option.default_value.numeric = av_option.default_val.i64;
+                }
+            break;
+            case option_format_t::real:
+                device_option.default_value.real = av_option.default_val.dbl;
+            break;
+            case option_format_t::string:
+                if (av_option.default_val.str != nullptr)
+                {
+                    device_option.default_value.string = av_option.default_val.str;
+                }
+            break;
+        }
+
+        return std::move(device_option);
+    }
+}
 //------------------------------------------------------------------------------------
 struct libav_format_context_t
 {
@@ -64,7 +122,12 @@ std::int32_t init(const std::string& uri)
 {
     std::int32_t result = -1;
 
+    auto c_uri = uri.c_str();
+
     bool is_rtsp = uri.find("rtsp:") == 0;
+    bool is_camera = uri.find("v4l2:") == 0;
+
+    AVInputFormat *ifmt = nullptr;
 
     if (!is_init)
     {
@@ -72,12 +135,16 @@ std::int32_t init(const std::string& uri)
         if (is_rtsp)
         {
             av_dict_set_int(&options, "stimeout", 1000000, 0);
-
+        }
+        else if (is_camera)
+        {
+            av_dict_set(&options, "pixel_format", "mjpeg", 0);
+            c_uri += 6;
         }
 
         result = avformat_open_input(&context
-                                     , uri.c_str()
-                                     , nullptr
+                                     , c_uri
+                                     , ifmt
                                      , &options);
 
         if (result == 0)

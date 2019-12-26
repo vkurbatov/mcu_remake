@@ -1,9 +1,9 @@
-#ifndef FFMPEG_WRAPPER_LIBAV_DECODER_H
-#define FFMPEG_WRAPPER_LIBAV_DECODER_H
+#ifndef ffmpeg_LIBAV_DECODER_H
+#define ffmpeg_LIBAV_DECODER_H
 
 #include "libav_base.h"
 
-namespace ffmpeg_wrapper
+namespace ffmpeg
 {
 
 struct libav_decoder_context_t;
@@ -47,4 +47,4 @@ public:
 
 }
 
-#endif // FFMPEG_WRAPPER_LIBAV_DECODER_H
+#endif // ffmpeg_LIBAV_DECODER_H

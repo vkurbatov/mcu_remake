@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1280</width>
+    <height>790</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,15 +17,126 @@
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>143</x>
       <y>0</y>
-      <width>99</width>
+      <width>85</width>
       <height>27</height>
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string>Start</string>
     </property>
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="cbScalingMethod">
+    <property name="geometry">
+     <rect>
+      <x>227</x>
+      <y>0</y>
+      <width>114</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>default</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>fast_bilinear</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>bilinear</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>bicubic</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>x</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>point</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>area</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>bicublin</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>gauss</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>sinc</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>lanczos</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>spline</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QComboBox" name="cbScaling">
+    <property name="geometry">
+     <rect>
+      <x>340</x>
+      <y>0</y>
+      <width>85</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>1:1</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>1:2</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>1:4</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>1:8</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>1:10</string>
+     </property>
+    </item>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -33,7 +144,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1280</width>
      <height>25</height>
     </rect>
    </property>

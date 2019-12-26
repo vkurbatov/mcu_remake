@@ -1,9 +1,9 @@
-#ifndef FFMPEG_WRAPPER_LIBAV_STREAM_CAPTURER_H
-#define FFMPEG_WRAPPER_LIBAV_STREAM_CAPTURER_H
+#ifndef ffmpeg_LIBAV_STREAM_CAPTURER_H
+#define ffmpeg_LIBAV_STREAM_CAPTURER_H
 
 #include "libav_base.h"
 
-namespace ffmpeg_wrapper
+namespace ffmpeg
 {
 
 struct libav_stream_capturer_context_t;
@@ -32,4 +32,4 @@ public:
 
 }
 
-#endif // FFMPEG_WRAPPER_LIBAV_STREAM_CAPTURER_H
+#endif // ffmpeg_LIBAV_STREAM_CAPTURER_H

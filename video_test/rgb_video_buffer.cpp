@@ -37,18 +37,26 @@ QAbstractVideoBuffer::MapMode rgb_video_buffer::mapMode() const
 void rgb_video_buffer::unmap()
 {
     m_map_mode = MapMode::NotMapped;
+    m_mutex.unlock();
 }
 
 uchar *rgb_video_buffer::map(QAbstractVideoBuffer::MapMode mode
                              , int *numBytes
                              , int *bytesPerLine)
 {
-    m_map_mode = mode;
+    m_mutex.lock();
 
-    *numBytes = m_data.size();
-    *bytesPerLine = m_size.width() * 3;
+    if (m_map_mode == MapMode::NotMapped)
+    {
+        m_map_mode = mode;
 
-    return m_data.data();
+        *numBytes = m_data.size();
+        *bytesPerLine = m_size.width() * 3;
+
+        return m_data.data();
+    }
+
+    return nullptr;
 }
 
 void rgb_video_buffer::fill(uchar r, uchar g, uchar b)

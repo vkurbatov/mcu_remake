@@ -122,6 +122,7 @@ target_link_libraries(${TARGET} PRIVATE
     avcodec
     avutil
     avformat
+    avdevice
     swscale
 )
 

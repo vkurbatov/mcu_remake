@@ -5,6 +5,9 @@
 #include <QPainter>
 
 #include <qvideoframe.h>
+#include <mutex>
+
+std::mutex image_mutex;
 
 video_surface::video_surface(QWidget *widget, QObject *parent)
     : QAbstractVideoSurface(parent)
@@ -14,7 +17,7 @@ video_surface::video_surface(QWidget *widget, QObject *parent)
 
 video_surface::~video_surface()
 {
-    m_last_frame.unmap();
+
 }
 
 QList<QVideoFrame::PixelFormat> video_surface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const
@@ -29,26 +32,32 @@ QList<QVideoFrame::PixelFormat> video_surface::supportedPixelFormats(QAbstractVi
 
 bool video_surface::present(const QVideoFrame &frame)
 {
-    auto s_f = surfaceFormat().pixelFormat();
-    auto f_f = frame.pixelFormat();
+    //static bool first = true;
     // if (surfaceFormat().pixelFormat() == frame.pixelFormat())
     {
-        m_last_frame = frame;
-        m_widget->repaint(0, 0, m_last_frame.width(), m_last_frame.height());
+        QVideoFrame new_frame = frame;
+
+        new_frame.map(QAbstractVideoBuffer::MapMode::ReadOnly);
+        m_last_image = std::move(QImage(frame.bits(),
+                     frame.width(),
+                     frame.height(),
+                     frame.bytesPerLine(),
+                     QVideoFrame::imageFormatFromPixelFormat(frame.pixelFormat())));
+
+        new_frame.unmap();
+        m_widget->repaint(0, 0, frame.width(), frame.height());
+        // m_widget->on
     }
 }
 
-void video_surface::paint(QPainter *painter)
+void video_surface::paint(QPainter *painter, const QVector<QRect>& rects)
 {
-    m_last_frame.map(QAbstractVideoBuffer::ReadOnly);
+    // return;
+    for (const auto& rect : rects)
+    {
+        //QRect d_rect = rect;
+        // d_rect.moveTop(30);        
+        painter->drawImage(rect, m_last_image, rect);
+    }
 
-    QImage image(m_last_frame.bits(),
-                 m_last_frame.width(),
-                 m_last_frame.height(),
-                 m_last_frame.bytesPerLine(),
-                 QVideoFrame::imageFormatFromPixelFormat(m_last_frame.pixelFormat()));
-
-    painter->drawImage(0, 0, image);
-
-    m_last_frame.unmap();
 }

@@ -3,12 +3,14 @@
 
 #include <QtMultimedia/QAbstractPlanarVideoBuffer>
 #include <QSize>
+#include <mutex>
 
 class rgb_video_buffer : public QAbstractVideoBuffer
 {
     MapMode                     m_map_mode;
     QSize                       m_size;
     std::vector<std::uint8_t>   m_data;
+    std::mutex                  m_mutex;
 
 public:
     rgb_video_buffer(const QSize& size, const void* data = nullptr);
