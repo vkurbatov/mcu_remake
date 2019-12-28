@@ -1,5 +1,5 @@
-#ifndef ffmpeg_LIBAV_BASE_H
-#define ffmpeg_LIBAV_BASE_H
+#ifndef FFMPEG_LIBAV_BASE_H
+#define FFMPEG_LIBAV_BASE_H
 
 #include <string>
 #include <vector>
@@ -15,6 +15,7 @@ typedef std::int32_t pixel_format_t;
 typedef std::int32_t sample_format_t;
 const std::int32_t default_frame_align = 1;
 
+const codec_id_t unknown_codec_id = -1;
 const pixel_format_t unknown_pixel_format = -1;
 const sample_format_t unknown_sample_format = -1;
 
@@ -26,7 +27,12 @@ extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
 
 extern const codec_id_t codec_id_h264;
+extern const codec_id_t codec_id_mjpeg;
+extern const codec_id_t codec_id_raw_video;
+extern const codec_id_t codec_id_none;
 //extern const codec_id_t codec_id_yuv420p;
+
+
 
 typedef std::vector<std::uint8_t> media_data_t;
 
@@ -62,6 +68,7 @@ struct codec_info_t
     codec_id_t                  id;
     std::string                 name;
     media_data_t                extra_data;
+    bool is_coded() const;
 };
 
 typedef std::uint32_t option_type_t;

@@ -1,5 +1,5 @@
-#ifndef ffmpeg_LIBAV_STREAM_CAPTURER_H
-#define ffmpeg_LIBAV_STREAM_CAPTURER_H
+#ifndef FFMPEG_LIBAV_STREAM_CAPTURER_H
+#define FFMPEG_LIBAV_STREAM_CAPTURER_H
 
 #include "libav_base.h"
 

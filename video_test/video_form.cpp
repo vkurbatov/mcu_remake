@@ -10,11 +10,15 @@
 #include "core/media/common/ffmpeg/libav_converter.h"
 #include "core/media/common/ffmpeg/libav_stream_capturer.h"
 #include "core/media/common/ffmpeg/libav_decoder.h"
+#include "core/media/common/v4l2/v4l2_device.h"
 
 #include <cstring>
 #include <mutex>
 #include <chrono>
 #include <atomic>
+#include <thread>
+
+#include "media/common/utils/format_converter.h"
 
 ffmpeg::scaling_method_t scaling_method = ffmpeg::scaling_method_t::default_method;
 std::uint32_t scaling_factor = 1;
@@ -32,6 +36,7 @@ double delay_factor = 0.1;
 
 ffmpeg::libav_converter converter(ffmpeg::scaling_method_t::default_method);
 std::unique_ptr<ffmpeg::libav_stream_capturer> rtsp_capturer;
+std::unique_ptr<v4l2::v4l2_device> v4l2_capturer;
 ffmpeg::libav_decoder decoder;
 std::mutex  mutex;
 std::atomic_bool image_change(false);
@@ -72,7 +77,7 @@ video_form::video_form(QWidget *parent) :
             }
         }
 
-        auto data_handler = [this](const ffmpeg::stream_info_t& stream_info
+        auto rtsp_data_handler = [this](const ffmpeg::stream_info_t& stream_info
                 , ffmpeg::media_data_t&& media_data)
         {
             if (stream_info.media_type == ffmpeg::media_type_t::video)
@@ -129,7 +134,104 @@ video_form::video_form(QWidget *parent) :
             return true;
         };
 
-        rtsp_capturer.reset(new ffmpeg::libav_stream_capturer(data_handler));
+        rtsp_capturer.reset(new ffmpeg::libav_stream_capturer(rtsp_data_handler));
+
+
+        auto v4ls_data_handler = [this](const v4l2::frame_info_t& frame_info
+                , v4l2::frame_data_t&& frame_data)
+        {
+            auto codec = core::media::utils::ffmpeg_codec_id_from_v4l2_format(frame_info.pixel_format);
+            auto format = core::media::utils::ffmpeg_format_from_v4l2_format(frame_info.pixel_format);
+
+
+            if (codec == ffmpeg::codec_id_raw_video
+                    || codec == ffmpeg::codec_id_none)
+            {
+                mutex.lock();
+
+                std::uint32_t d_x = 0;
+                std::uint32_t d_y = 0;
+
+                last_fragment_info = ffmpeg::fragment_info_t(d_x
+                                                             , d_y
+                                                             , frame_info.size.width - d_x * 2
+                                                             , frame_info.size.height - d_y * 2
+                                                             , frame_info.size.width
+                                                             , frame_info.size.height
+                                                             , format
+                                                             );
+
+                last_frame_buffer = std::move(frame_data);
+
+                mutex.unlock();
+            }
+            else
+            {
+                if (decoder.is_open()
+                        && codec != decoder.codec_id())
+                {
+                    decoder.close();
+                }
+
+                if (!decoder.is_open())
+                {
+
+                    ffmpeg::media_info_t media_info;
+
+                    media_info.video_info.fps = frame_info.fps;
+                    media_info.video_info.size = { frame_info.size.width, frame_info.size.height };
+                    media_info.video_info.pixel_format = format;
+                    decoder.open(codec
+                                 , media_info);
+                }
+
+                if (decoder.is_open())
+                {
+                    auto tp = std::chrono::high_resolution_clock::now();
+
+                    auto decoded_frames = std::move(decoder.decode(frame_data.data(), frame_data.size()));
+
+                    decoded_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
+                    dec_delay += (decoded_delay - dec_delay) * delay_factor;
+
+                    mutex.lock();
+
+                    while (!decoded_frames.empty())
+                    {
+                        ffmpeg::decoded_frame_t& frame = decoded_frames.front();
+
+                        std::uint32_t d_x = 0;
+                        std::uint32_t d_y = 0;
+
+                        last_fragment_info = ffmpeg::fragment_info_t(d_x
+                                                                     , d_y
+                                                                     , frame.info.media_info.video_info.size.width - d_x * 2
+                                                                     , frame.info.media_info.video_info.size.height - d_y * 2
+                                                                     , frame.info.media_info.video_info.size.width
+                                                                     , frame.info.media_info.video_info.size.height
+                                                                     , frame.info.media_info.video_info.pixel_format
+                                                                     );
+
+                        last_frame_buffer = std::move(frame.media_data);
+
+                        decoded_frames.pop();
+                    }
+
+                    mutex.unlock();
+
+                }
+            }
+
+            if (image_change == false)
+            {
+                image_change = true;
+                QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
+            }
+
+            return true;
+        };
+
+        v4l2_capturer.reset(new v4l2::v4l2_device(v4ls_data_handler));
     }
     ui->setupUi(this);
 }
@@ -137,6 +239,7 @@ video_form::video_form(QWidget *parent) :
 video_form::~video_form()
 {
     rtsp_capturer->close();
+    v4l2_capturer->close();
     delete ui;
 }
 
@@ -156,7 +259,7 @@ void video_form::prepare_image()
         ffmpeg::fragment_info_t output_info = input_info;
         output_info.pixel_format = ffmpeg::pixel_format_rgb24;
 
-        output_info.frame_rect.size = output_info.frame_size = { 3840, 2160 };
+        output_info.frame_rect.size = output_info.frame_size = { 1920, 1080 };
 
         const QSize q_size(output_info.frame_size.width
                            , output_info.frame_size.height);
@@ -275,18 +378,31 @@ void video_form::prepare_image()
 void video_form::on_pushButton_clicked()
 {
 
-    if (rtsp_capturer->is_opened())
+    auto& device = v4l2_capturer;
+
+    if (device->is_opened())
     {
-        rtsp_capturer->close();
+        device->close();
     }
     else
     {
         //rtsp_capturer->open("rtsp://admin:Algont12345678@10.11.4.151");
         //rtsp_capturer->open("camera://dev/video0");
-        rtsp_capturer->open("v4l2://dev/video0");
+        device->open("/dev/video0", 2);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        auto formats = device->get_supported_formats();
+
+        for (const auto& f : formats)
+        {
+            auto item_string = QString("%1x%2@%3:%4").arg(QString::number(f.size.width)
+                                                          , QString::number(f.size.height)
+                                                          , QString::number(f.fps)
+                                                          , QString::fromStdString(core::media::utils::format_name_from_v4l2_format(f.pixel_format)));
+            ui->cbResoulution->addItem(item_string);
+        }
     }
 
-    ui->pushButton->setText(rtsp_capturer->is_opened() ? "Stop" : "Start");
+    ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");
     return;
 
     QSize size_src(1280, 720);
@@ -386,4 +502,15 @@ void video_form::on_cbScaling_currentIndexChanged(int index)
 {
     const std::uint32_t scaling_table[] = { 1, 2, 4, 8, 10 };
     scaling_factor = scaling_table[index];
+}
+
+void video_form::on_cbResoulution_activated(const QString &arg1)
+{
+
+}
+
+void video_form::on_cbResoulution_activated(int index)
+{
+    v4l2_capturer->set_format(index);
+    // for
 }

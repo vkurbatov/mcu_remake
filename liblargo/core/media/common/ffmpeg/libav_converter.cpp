@@ -91,7 +91,6 @@ struct libav_converter_context_t
     {
         reset();
     }   
-
     bool check_or_create_context(const frame_size_t& input_frame_size
                                  , pixel_format_t input_pixel_format
                                  , const frame_size_t& output_frame_size
@@ -136,7 +135,8 @@ struct libav_converter_context_t
         std::size_t result = 0;
 
         if (input_fragment_info.is_full()
-                && input_fragment_info == output_fragment_info)
+                && input_fragment_info == output_fragment_info
+                && is_rotate == false)
         {
             result = input_fragment_info.get_frame_size();
             if (output_frame != input_frame)

@@ -1,5 +1,5 @@
-#ifndef ffmpeg_LIBAV_DECODER_H
-#define ffmpeg_LIBAV_DECODER_H
+#ifndef FFMPEG_LIBAV_DECODER_H
+#define FFMPEG_LIBAV_DECODER_H
 
 #include "libav_base.h"
 
@@ -42,6 +42,8 @@ public:
 
     decoded_queue_t decode(const void* data
                            , std::size_t size);
+
+    codec_id_t codec_id() const;
 
 };
 

@@ -1,5 +1,5 @@
-#ifndef LIBAV_CONVERTER_H
-#define LIBAV_CONVERTER_H
+#ifndef FFMPEG_LIBAV_CONVERTER_H
+#define FFMPEG_LIBAV_CONVERTER_H
 
 #include "libav_base.h"
 

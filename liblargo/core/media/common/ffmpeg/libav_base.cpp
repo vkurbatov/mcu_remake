@@ -14,8 +14,11 @@ extern "C"
 namespace ffmpeg
 {
 
-
 const codec_id_t codec_id_h264 = static_cast<codec_id_t>(AV_CODEC_ID_H264);
+const codec_id_t codec_id_mjpeg = static_cast<codec_id_t>(AV_CODEC_ID_MJPEG);
+const codec_id_t codec_id_raw_video = static_cast<codec_id_t>(AV_CODEC_ID_RAWVIDEO);
+const codec_id_t codec_id_none = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
+
 //extern const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SAMPLE_FMT_S16);
@@ -23,6 +26,17 @@ const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SA
 const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR24);
 const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
+const pixel_format_t pixel_format_none = static_cast<pixel_format_t>(AV_PIX_FMT_NONE);
+
+
+std::string error_to_string(int32_t av_error)
+{
+    char err[AV_ERROR_MAX_STRING_SIZE] = {};
+    av_strerror(av_error, err, AV_ERROR_MAX_STRING_SIZE);
+    return err;
+}
+
+
 
 //const codec_id_t codec_id_yuv420p = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
 
@@ -417,12 +431,9 @@ bool frame_rect_t::is_join(const frame_size_t &frame_size) const
             && frame_size.height >= (offset.y + size.height);
 }
 
-std::string error_to_string(int32_t av_error)
+bool codec_info_t::is_coded() const
 {
-    char err[AV_ERROR_MAX_STRING_SIZE] = {};
-    av_strerror(av_error, err, AV_ERROR_MAX_STRING_SIZE);
-    return err;
+    return id > 0 && id != AV_CODEC_ID_RAWVIDEO;
 }
-
 
 }

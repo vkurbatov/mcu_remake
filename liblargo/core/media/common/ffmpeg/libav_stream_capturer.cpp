@@ -127,8 +127,6 @@ std::int32_t init(const std::string& uri)
     bool is_rtsp = uri.find("rtsp:") == 0;
     bool is_camera = uri.find("v4l2:") == 0;
 
-    AVInputFormat *ifmt = nullptr;
-
     if (!is_init)
     {
         AVDictionary* options = nullptr;
@@ -140,11 +138,15 @@ std::int32_t init(const std::string& uri)
         {
             av_dict_set(&options, "pixel_format", "mjpeg", 0);
             c_uri += 6;
+            if (*c_uri != '/')
+            {
+                c_uri++;
+            }
         }
 
         result = avformat_open_input(&context
                                      , c_uri
-                                     , ifmt
+                                     , nullptr
                                      , &options);
 
         if (result == 0)

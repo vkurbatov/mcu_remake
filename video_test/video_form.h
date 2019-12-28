@@ -26,6 +26,10 @@ private slots:
 
     void on_cbScaling_currentIndexChanged(int index);
 
+    void on_cbResoulution_activated(const QString &arg1);
+
+    void on_cbResoulution_activated(int index);
+
 private:
     Ui::video_form *ui;
     video_surface m_surface;

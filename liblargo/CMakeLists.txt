@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 2.8)
 
 set(TARGET largo)
 
+find_package(PkgConfig)
+
+pkg_search_module(AVCODEC REQUIRED libavcodec>=57.89.100)
+pkg_search_module(AVFORMAT REQUIRED libavformat>=57.71.100)
+pkg_search_module(AVDEVICE REQUIRED libavdevice)
+pkg_search_module(AVUTIL REQUIRED libavutil)
+pkg_search_module(SWSCALE REQUIRED libswscale>=4.6.100)
+pkg_search_module(V4L2 QUIET libv4l2>=0.8.8)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 project(${TARGET})
@@ -19,6 +28,10 @@ set(SOURCES
     "core/media/common/ffmpeg/libav_decoder.cpp"
     "core/media/common/ffmpeg/libav_stream_capturer.cpp"
     "core/media/common/ffmpeg/libav_converter.cpp"
+    "core/media/common/v4l2/v4l2_base.cpp"
+    "core/media/common/v4l2/v4l2_device.cpp"
+    "core/media/common/v4l2/v4l2_api.cpp"
+    "core/media/common/utils/format_converter.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_format.cpp"
     "core/media/audio/audio_point.cpp"
@@ -57,6 +70,10 @@ set(PRIVATE_HEADERS
     "core/media/common/ffmpeg/libav_decoder.h"
     "core/media/common/ffmpeg/libav_stream_capturer.h"
     "core/media/common/ffmpeg/libav_converter.h"
+    "core/media/common/v4l2/v4l2_base.h"
+    "core/media/common/v4l2/v4l2_device.h"
+    "core/media/common/v4l2/v4l2_api.h"
+    "core/media/common/utils/format_converter.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_point.h"
     "core/media/audio/volume_controller.h"
@@ -107,6 +124,7 @@ set(PUBLIC_HEADERS
 )
 
 include_directories(
+    ${V4L2_INCLUDE_DIRS}
 )
 
 add_library(${TARGET}
@@ -119,10 +137,12 @@ target_link_libraries(${TARGET} PRIVATE
     pthread
     rt
     asound
-    avcodec
-    avutil
-    avformat
-    avdevice
+    ${AVCODEC_LIBRARIES}
+    ${AVFORMAT_LIBRARIES}
+    ${AVDEVICE_LIBRARIES}
+    ${SWSCALE_LIBRARIES}
+    ${AVUTIL_LIBRARIES}
+    ${V4L2_LIBRARIES}
     swscale
 )
 

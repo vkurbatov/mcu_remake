@@ -85,6 +85,13 @@ struct libav_decoder_context_t
              , extra_data_size);        
     }
 
+    codec_id_t codec_id() const
+    {
+        return context != nullptr
+                ? static_cast<codec_id_t>(context->codec_id)
+                : unknown_codec_id;
+    }
+
     bool init(const AVCodec* codec
               , const media_info_t& media_params
               , const void *extra_data
@@ -413,6 +420,13 @@ decoded_queue_t libav_decoder::decode(const void *data
     }
 
     return std::move(result);
+}
+
+codec_id_t libav_decoder::codec_id() const
+{
+    return m_decoder_context != nullptr
+            ? m_decoder_context->codec_id()
+            : unknown_codec_id;
 }
 
 }
