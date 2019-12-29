@@ -26,11 +26,15 @@ public:
     bool close();
     bool is_opened() const;
     bool is_established() const;
-    format_list_t get_supported_formats();
+
+    format_list_t get_supported_formats() const;
     const frame_info_t& get_format() const;
     bool set_format(const frame_info_t& format);
-    bool set_format(std::int32_t index);
-    // media_queue_t fetch_media_queue(std::int32_t stream_id);
+
+    control_list_t get_control_list() const;
+    void control(std::uint32_t control_id, std::int32_t value);
+
+    frame_queue_t fetch_media_queue();
 };
 
 }

@@ -178,6 +178,11 @@ int32_t xioctl(handle_t handle
     {
         result = ioctl(handle, request, arg) < 0 ? -errno : 0;
 
+        if (result == -EINTR)
+        {
+            continue;
+        }
+
         auto timeout = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - tp).count();
 
         if (timeout >= try_timeout)
@@ -186,8 +191,7 @@ int32_t xioctl(handle_t handle
         }
 
     }
-    while (result == -EINTR
-           || result == -EBUSY
+    while (result == -EBUSY
            || result == -EAGAIN);
 
     return result;
@@ -255,9 +259,9 @@ bool fetch_fps(handle_t handle
     return false;
 }
 
-control_list_t fetch_control_list(handle_t handle)
+control_map_t fetch_control_list(handle_t handle)
 {
-    control_list_t control_list;
+    control_map_t control_list;
 
     struct v4l2_query_ext_ctrl queryctrl = {};
     queryctrl.id = V4L2_CTRL_CLASS_USER | V4L2_CTRL_FLAG_NEXT_CTRL | V4L2_CTRL_FLAG_GRABBED;
@@ -267,7 +271,7 @@ control_list_t fetch_control_list(handle_t handle)
         struct v4l2_control c = {};
         c.id = queryctrl.id;
 
-        if (queryctrl.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_READ_ONLY) == 0
+        if ((queryctrl.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_READ_ONLY)) == 0
                 && xioctl(handle, VIDIOC_G_CTRL, &c) >= 0)
         {
             control_t control(c.id
@@ -295,7 +299,7 @@ control_list_t fetch_control_list(handle_t handle)
                 }
             }
 
-            control_list.push_back(std::move(control));
+            control_list.emplace(control.id, std::move(control));
         }
 
         queryctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
@@ -438,6 +442,29 @@ frame_data_t fetch_frame_data(handle_t handle
     }
 
     return std::move(frame_data);
+}
+
+bool set_control(handle_t handle, uint32_t id, int32_t value)
+{
+    struct v4l2_control v_control = {};
+    v_control.id = id;
+    v_control.value = value;
+
+    return xioctl(handle, VIDIOC_S_CTRL, &v_control) >= 0;
+}
+
+bool get_control(handle_t handle, uint32_t id, int32_t &value)
+{
+    struct v4l2_control v_control = {};
+    v_control.id = id;
+
+    if (xioctl(handle, VIDIOC_G_CTRL, &v_control) >= 0)
+    {
+        value = v_control.value;
+        return true;
+    }
+
+    return false;
 }
 
 

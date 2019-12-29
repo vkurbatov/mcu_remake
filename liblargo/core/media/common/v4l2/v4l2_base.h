@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <queue>
 #include <memory>
 #include <functional>
@@ -67,6 +68,8 @@ struct frame_t
             , frame_data_t&& frame_data);
 };
 
+typedef std::queue<frame_t> frame_queue_t;
+
 typedef std::int32_t value_type_t;
 
 struct control_range_t
@@ -123,6 +126,7 @@ struct control_t
     control_type_t type() const;
 };
 
+typedef std::map<std::uint32_t, control_t> control_map_t;
 typedef std::vector<control_t> control_list_t;
 
 struct buffer_item_t

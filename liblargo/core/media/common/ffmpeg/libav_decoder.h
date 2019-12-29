@@ -43,6 +43,7 @@ public:
     decoded_queue_t decode(const void* data
                            , std::size_t size);
 
+
     codec_id_t codec_id() const;
 
 };

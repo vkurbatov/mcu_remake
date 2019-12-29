@@ -30,6 +30,12 @@ private slots:
 
     void on_cbResoulution_activated(int index);
 
+    void on_cbControlList_activated(int index);
+
+    void on_slControl_actionTriggered(int action);
+
+    void on_slControl_sliderMoved(int position);
+
 private:
     Ui::video_form *ui;
     video_surface m_surface;

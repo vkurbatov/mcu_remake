@@ -388,9 +388,11 @@ void video_form::on_pushButton_clicked()
     {
         //rtsp_capturer->open("rtsp://admin:Algont12345678@10.11.4.151");
         //rtsp_capturer->open("camera://dev/video0");
-        device->open("/dev/video0", 2);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        device->open("/dev/video2", 4);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         auto formats = device->get_supported_formats();
+
+        ui->cbResoulution->clear();
 
         for (const auto& f : formats)
         {
@@ -400,6 +402,18 @@ void video_form::on_pushButton_clicked()
                                                           , QString::fromStdString(core::media::utils::format_name_from_v4l2_format(f.pixel_format)));
             ui->cbResoulution->addItem(item_string);
         }
+
+        ui->cbControlList->clear();
+
+        auto controls = device->get_control_list();
+        for (const auto& c : controls)
+        {
+
+            auto item_string = QString("%1").arg(QString::fromStdString(c.name));
+
+            ui->cbControlList->addItem(item_string);
+        }
+
     }
 
     ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");
@@ -511,6 +525,39 @@ void video_form::on_cbResoulution_activated(const QString &arg1)
 
 void video_form::on_cbResoulution_activated(int index)
 {
-    v4l2_capturer->set_format(index);
+    auto formats = v4l2_capturer->get_supported_formats();
+    if (index >= 0 && index < formats.size())
+    {
+        v4l2_capturer->set_format(formats[index]);
+    }
     // for
+}
+
+void video_form::on_cbControlList_activated(int index)
+{
+    auto controls = v4l2_capturer->get_control_list();
+    if (index >= 0 && index < controls.size())
+    {
+        v4l2::control_t& ctrl = controls[index];
+        ui->slControl->setMaximum(ctrl.range.max);
+        ui->slControl->setMinimum(ctrl.range.min);
+        ui->slControl->setValue(ctrl.current_value);
+    }
+}
+
+void video_form::on_slControl_actionTriggered(int action)
+{
+
+}
+
+void video_form::on_slControl_sliderMoved(int position)
+{
+    auto controls = v4l2_capturer->get_control_list();
+    auto index = ui->cbControlList->currentIndex();
+
+    if (index >= 0 && index < controls.size())
+    {
+        v4l2::control_t& ctrl = controls[index];
+        v4l2_capturer->control(ctrl.id, position);
+    }
 }
