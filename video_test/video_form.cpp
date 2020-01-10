@@ -140,8 +140,12 @@ video_form::video_form(QWidget *parent) :
         auto v4ls_data_handler = [this](const v4l2::frame_info_t& frame_info
                 , v4l2::frame_data_t&& frame_data)
         {
-            auto codec = core::media::utils::ffmpeg_codec_id_from_v4l2_format(frame_info.pixel_format);
-            auto format = core::media::utils::ffmpeg_format_from_v4l2_format(frame_info.pixel_format);
+
+            auto video_format = core::media::utils::format_conversion::form_v4l2_format(frame_info.pixel_format);
+
+
+            auto codec = core::media::utils::format_conversion::to_ffmpeg_codec(video_format);
+            auto format = core::media::utils::format_conversion::to_ffmpeg_format(video_format);
 
 
             if (codec == ffmpeg::codec_id_raw_video
@@ -396,10 +400,12 @@ void video_form::on_pushButton_clicked()
 
         for (const auto& f : formats)
         {
+            auto video_format = core::media::utils::format_conversion::form_v4l2_format(f.pixel_format);
+
             auto item_string = QString("%1x%2@%3:%4").arg(QString::number(f.size.width)
                                                           , QString::number(f.size.height)
                                                           , QString::number(f.fps)
-                                                          , QString::fromStdString(core::media::utils::format_name_from_v4l2_format(f.pixel_format)));
+                                                          , QString::fromStdString(core::media::utils::format_conversion::get_format_name(video_format)));
             ui->cbResoulution->addItem(item_string);
         }
 
@@ -558,6 +564,6 @@ void video_form::on_slControl_sliderMoved(int position)
     if (index >= 0 && index < controls.size())
     {
         v4l2::control_t& ctrl = controls[index];
-        v4l2_capturer->control(ctrl.id, position);
+        v4l2_capturer->set_control(ctrl.id, position);
     }
 }

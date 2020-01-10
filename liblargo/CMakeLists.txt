@@ -24,6 +24,7 @@ set(SOURCES
     "core/media/common/delay_timer.cpp"
     "core/media/common/guard_lock.cpp"
     "core/media/common/sync_point.cpp"
+    "core/media/common/media_format.cpp"
     "core/media/common/ffmpeg/libav_base.cpp"
     "core/media/common/ffmpeg/libav_decoder.cpp"
     "core/media/common/ffmpeg/libav_stream_capturer.cpp"
@@ -54,6 +55,10 @@ set(SOURCES
     "core/media/audio/audio_string_format_utils.cpp"
     "core/media/audio/tools/audio_event_server.cpp"
     "core/media/audio/tools/audio_processor.cpp"
+    "core/media/video/video_frame_size.cpp"
+    "core/media/video/video_frame_point.cpp"
+    "core/media/video/video_frame_rect.cpp"
+    "core/media/video/video_format.cpp"
 )
 
 set(PRIVATE_HEADERS
@@ -108,7 +113,9 @@ set(PUBLIC_HEADERS
     "core/media/common/i_media_stream.h"
     "core/media/common/i_data_collection.h"
     "core/media/common/i_sync_point.h"
-    "core/media/common/i_process_state_notifier.h"
+    "core/media/common/media_format.h"
+    "core/media/common/i_media_frame.h"
+    "core/media/common/i_process_state_notifier.h" 
     "core/media/audio/i_audio_formatter.h"
     "core/media/audio/i_audio_point.h"
     "core/media/audio/i_volume_controller.h"
@@ -121,6 +128,10 @@ set(PUBLIC_HEADERS
     "core/media/audio/i_audio_mixer.h"
     "core/media/audio/i_audio_processing.h"
     "core/media/audio/channels/i_audio_channel.h"
+    "core/media/video/video_frame_size.h"
+    "core/media/video/video_frame_point.h"
+    "core/media/video/video_frame_rect.h"
+    "core/media/video/video_format.h"
 )
 
 include_directories(

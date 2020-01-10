@@ -207,7 +207,7 @@ bool io_wait(handle_t handle
     FD_ZERO(&rfds);
     FD_SET(handle, &rfds);
 
-    return select(handle + 1, &rfds, NULL, NULL, &tv) == 0;
+    return select(handle + 1, &rfds, NULL, NULL, &tv) > 0;
 }
 
 format_list_t fetch_supported_format(handle_t handle)

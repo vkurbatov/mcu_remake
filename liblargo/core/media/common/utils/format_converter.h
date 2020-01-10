@@ -3,6 +3,7 @@
 
 #include "media/common/ffmpeg/libav_base.h"
 #include "media/common/v4l2/v4l2_base.h"
+#include "media/video/video_format.h"
 
 namespace core
 {
@@ -13,9 +14,17 @@ namespace media
 namespace utils
 {
 
-    ffmpeg::codec_id_t ffmpeg_codec_id_from_v4l2_format(v4l2::pixel_format_t pixel_format);
-    ffmpeg::pixel_format_t ffmpeg_format_from_v4l2_format(v4l2::pixel_format_t pixel_format);
-    const std::string &format_name_from_v4l2_format(v4l2::pixel_format_t pixel_format);
+namespace format_conversion
+{
+    v4l2::pixel_format_t to_v4l2_format(video::pixel_format_t pixel_format);
+    ffmpeg::pixel_format_t to_ffmpeg_codec(video::pixel_format_t pixel_format);
+    ffmpeg::codec_id_t to_ffmpeg_format(video::pixel_format_t pixel_format);
+    const std::string &get_format_name(video::pixel_format_t pixel_format);
+
+    video::pixel_format_t  form_v4l2_format(v4l2::pixel_format_t pixel_format);
+    video::pixel_format_t  from_ffmpeg_codec(ffmpeg::pixel_format_t pixel_format);
+    video::pixel_format_t  from_ffmpeg_format(ffmpeg::codec_id_t codec_id);
+}
 
 }
 

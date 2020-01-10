@@ -22,7 +22,6 @@ public:
 
     bool open(const std::string& uri
               , std::uint32_t buffer_count = 1);
-    //          , stream_mask_t stream_mask = stream_mask_t::stream_mask_all);
     bool close();
     bool is_opened() const;
     bool is_established() const;
@@ -32,7 +31,8 @@ public:
     bool set_format(const frame_info_t& format);
 
     control_list_t get_control_list() const;
-    void control(std::uint32_t control_id, std::int32_t value);
+    void set_control(std::uint32_t control_id, std::int32_t value);
+
 
     frame_queue_t fetch_media_queue();
 };

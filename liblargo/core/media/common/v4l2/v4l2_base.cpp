@@ -1,7 +1,11 @@
 #include "v4l2_base.h"
+#include <linux/videodev2.h>
 
 namespace v4l2
 {
+
+const pixel_format_t pixel_format_h264 = V4L2_PIX_FMT_H264;
+const pixel_format_t pixel_format_mjpeg = V4L2_PIX_FMT_MJPEG;
 
 frame_size_t::frame_size_t(uint32_t width
                            , uint32_t height)

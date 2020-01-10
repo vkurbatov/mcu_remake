@@ -21,6 +21,12 @@ enum class streaming_event_t
 
 typedef std::vector<std::uint8_t> frame_data_t;
 
+
+typedef std::uint32_t pixel_format_t;
+const pixel_format_t pixel_format_unknown = 0;
+extern const pixel_format_t pixel_format_h264;
+extern const pixel_format_t pixel_format_mjpeg;
+
 struct frame_size_t
 {
     std::uint32_t width;
@@ -34,9 +40,6 @@ struct frame_size_t
 
     bool is_null() const;
 };
-
-
-typedef std::uint32_t pixel_format_t;
 
 struct frame_info_t
 {

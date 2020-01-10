@@ -225,6 +225,7 @@ struct v4l2_device_context_t
 
 
             frame_info_t frame_info;
+            std::uint32_t frame_time = 50;
             if (device->fetch_frame_info(frame_info))
             {
                 m_frame_info = frame_info;
@@ -240,7 +241,7 @@ struct v4l2_device_context_t
 
                 }
 
-                std::uint32_t frame_time = frame_info.fps == 0 ? 100 : (1000 / frame_info.fps);
+                frame_time = frame_info.fps == 0 ? 100 : (1000 / frame_info.fps);
                 push_event(streaming_event_t::open);
 
                 auto tp = std::chrono::high_resolution_clock::now();
@@ -270,7 +271,7 @@ struct v4l2_device_context_t
                         }
                     }
 
-                    auto frame_data = std::move(device->fetch_frame_data(frame_time));
+                    auto frame_data = std::move(device->fetch_frame_data(frame_time * 2));
 
                     if (!frame_data.empty())
                     {
@@ -298,7 +299,7 @@ struct v4l2_device_context_t
                          }
                          else
                          {
-                             break;
+                            break;
                          }
                     }
                 }
@@ -308,7 +309,7 @@ struct v4l2_device_context_t
             }
             else
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(frame_time));
             }
         }
 
@@ -338,7 +339,6 @@ struct v4l2_device_context_t
         {
             m_control_queue.pop();
         }
-
     }
 };
 //------------------------------------------------------------------------------------------
@@ -397,7 +397,7 @@ control_list_t v4l2_device::get_control_list() const
     return std::move(m_v4l2_device_capturer_context->get_control_list());
 }
 
-void v4l2_device::control(uint32_t control_id, int32_t value)
+void v4l2_device::set_control(uint32_t control_id, int32_t value)
 {
     m_v4l2_device_capturer_context->set_control(control_id, value);
 }
