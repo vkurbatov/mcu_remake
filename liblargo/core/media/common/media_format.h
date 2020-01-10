@@ -2,6 +2,7 @@
 #define MEDIA_FORMAT_H
 
 #include <cstdint>
+#include <vector>
 
 namespace core
 {
@@ -19,6 +20,7 @@ enum class media_type_t
 struct media_format_t
 {
     media_type_t        media_type;
+    media_format_t(media_type_t media_type);
 };
 
 }

@@ -93,6 +93,11 @@ video::pixel_format_t get_pixel_format(const T& value)
 
 }
 
+const std::string &get_format_name(video::pixel_format_t pixel_format)
+{
+    return std::get<3>(get_format_desc(pixel_format));
+}
+
 v4l2::pixel_format_t to_v4l2_format(video::pixel_format_t pixel_format)
 {
     return std::get<0>(get_format_desc(pixel_format));
@@ -106,11 +111,6 @@ ffmpeg::pixel_format_t to_ffmpeg_codec(video::pixel_format_t pixel_format)
 ffmpeg::codec_id_t to_ffmpeg_format(video::pixel_format_t pixel_format)
 {
     return std::get<2>(get_format_desc(pixel_format));
-}
-
-const std::string &get_format_name(video::pixel_format_t pixel_format)
-{
-    return std::get<3>(get_format_desc(pixel_format));
 }
 
 video::pixel_format_t form_v4l2_format(v4l2::pixel_format_t pixel_format)
@@ -153,6 +153,12 @@ video::pixel_format_t from_ffmpeg_codec(ffmpeg::pixel_format_t pixel_format)
 
 video::pixel_format_t from_ffmpeg_format(ffmpeg::codec_id_t codec_id)
 {
+    switch (codec_id)
+    {
+        case AV_CODEC_ID_RAWVIDEO:
+            codec_id = AV_CODEC_ID_NONE;
+        break;
+    }
     return get_pixel_format<2>(codec_id);
 }
 
