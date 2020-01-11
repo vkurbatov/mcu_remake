@@ -66,6 +66,28 @@ const std::unordered_map<video::pixel_format_t
     { video::pixel_format_t::cpia,      { V4L2_PIX_FMT_CPIA1,   AV_CODEC_ID_CPIA,   AV_PIX_FMT_NONE,        "cpia"      }   },
 };
 
+
+template<std::int32_t idx, typename T>
+std::unordered_map<T, video::pixel_format_t> create_sub_table()
+{
+    std::unordered_map<T, video::pixel_format_t> sub_table;
+    for(const auto& f : format_table)
+    {
+        const auto& val = std::get<idx>(f.second);
+        if (sub_table.find(val) == sub_table.end())
+        {
+            sub_table.emplace(val
+                              , f.first);
+        }
+    }
+
+    return std::move(sub_table);
+}
+
+const auto v4l2_format_table = create_sub_table<0, v4l2::pixel_format_t>();
+const auto ffmpeg_codec_table = create_sub_table<1, ffmpeg::codec_id_t>();
+const auto ffmpeg_format_table = create_sub_table<2, ffmpeg::pixel_format_t>();
+
 const format_desc_t unknown_format = format_table.find(video::pixel_format_t::unknown)->second;
 
 const format_desc_t& get_format_desc(video::pixel_format_t pixel_format)
@@ -103,35 +125,17 @@ v4l2::pixel_format_t to_v4l2_format(video::pixel_format_t pixel_format)
     return std::get<0>(get_format_desc(pixel_format));
 }
 
-ffmpeg::pixel_format_t to_ffmpeg_codec(video::pixel_format_t pixel_format)
-{
-    return std::get<1>(get_format_desc(pixel_format));
-}
-
-ffmpeg::codec_id_t to_ffmpeg_format(video::pixel_format_t pixel_format)
+ffmpeg::pixel_format_t to_ffmpeg_format(video::pixel_format_t pixel_format)
 {
     return std::get<2>(get_format_desc(pixel_format));
 }
 
-video::pixel_format_t form_v4l2_format(v4l2::pixel_format_t pixel_format)
+ffmpeg::codec_id_t to_ffmpeg_codec(video::pixel_format_t pixel_format)
 {
-    switch (pixel_format)
-    {
-        case AV_PIX_FMT_YUVJ420P:
-            pixel_format = AV_PIX_FMT_YUV420P;
-        break;
-        case AV_PIX_FMT_YUVJ422P:
-            pixel_format = AV_PIX_FMT_YUV422P;
-        break;
-        case AV_PIX_FMT_YUVJ444P:
-            pixel_format = AV_PIX_FMT_YUV444P;
-        break;
-    }
-
-    return get_pixel_format<0, v4l2::pixel_format_t>(pixel_format);
+    return std::get<1>(get_format_desc(pixel_format));
 }
 
-video::pixel_format_t from_ffmpeg_codec(ffmpeg::pixel_format_t pixel_format)
+video::pixel_format_t form_v4l2_format(v4l2::pixel_format_t pixel_format)
 {
     switch (pixel_format)
     {
@@ -148,10 +152,39 @@ video::pixel_format_t from_ffmpeg_codec(ffmpeg::pixel_format_t pixel_format)
             pixel_format = V4L2_PIX_FMT_MJPEG;
         break;
     }
-    return get_pixel_format<1>(pixel_format);
+
+    auto it = v4l2_format_table.find(pixel_format);
+    return it != v4l2_format_table.end()
+            ? it->second
+            :  video::pixel_format_t::unknown;
+
+    // return get_pixel_format<0, v4l2::pixel_format_t>(pixel_format);
 }
 
-video::pixel_format_t from_ffmpeg_format(ffmpeg::codec_id_t codec_id)
+video::pixel_format_t from_ffmpeg_format(ffmpeg::pixel_format_t pixel_format)
+{
+    switch (pixel_format)
+    {
+        case AV_PIX_FMT_YUVJ420P:
+            pixel_format = AV_PIX_FMT_YUV420P;
+        break;
+        case AV_PIX_FMT_YUVJ422P:
+            pixel_format = AV_PIX_FMT_YUV422P;
+        break;
+        case AV_PIX_FMT_YUVJ444P:
+            pixel_format = AV_PIX_FMT_YUV444P;
+        break;
+    }
+
+    auto it = ffmpeg_format_table.find(pixel_format);
+    return it != ffmpeg_format_table.end()
+            ? it->second
+            :  video::pixel_format_t::unknown;
+
+    // return get_pixel_format<1>(pixel_format);
+}
+
+video::pixel_format_t from_ffmpeg_codec(ffmpeg::codec_id_t codec_id)
 {
     switch (codec_id)
     {
@@ -159,7 +192,13 @@ video::pixel_format_t from_ffmpeg_format(ffmpeg::codec_id_t codec_id)
             codec_id = AV_CODEC_ID_NONE;
         break;
     }
-    return get_pixel_format<2>(codec_id);
+
+    auto it = ffmpeg_codec_table.find(codec_id);
+    return it != ffmpeg_codec_table.end()
+            ? it->second
+            :  video::pixel_format_t::unknown;
+
+    // return get_pixel_format<2>(codec_id);
 }
 
 }

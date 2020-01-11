@@ -8,8 +8,8 @@ namespace media
 namespace video
 {
 
-frame_point_t::frame_point_t(uint32_t x
-                           , uint32_t y)
+frame_point_t::frame_point_t(int32_t x
+                           , int32_t y)
     : x(x)
     , y(y)
 {

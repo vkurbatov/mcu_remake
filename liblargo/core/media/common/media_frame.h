@@ -2,6 +2,7 @@
 #define MEDIA_FRAME_H
 
 #include "i_media_frame.h"
+#include "i_media_buffer.h"
 
 namespace core
 {
@@ -11,15 +12,18 @@ namespace media
 
 class media_frame : virtual public i_media_frame
 {
+    const media_format_t&   m_media_format;
+    i_media_buffer&         m_media_buffer;
 
 
-public:
-    virtual ~media_frame() override {}
+public:    
+    media_frame(const media_format_t& media_format
+                , i_media_buffer& media_buffer);
 
     // i_media_frame interface
 public:
     const media_format_t &media_format() const override;
-
+    media_plane_list_t planes() const override;
 };
 
 }

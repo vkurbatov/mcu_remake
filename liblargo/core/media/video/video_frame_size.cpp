@@ -8,8 +8,8 @@ namespace media
 namespace video
 {
 
-frame_size_t::frame_size_t(uint32_t width
-                           , uint32_t height)
+frame_size_t::frame_size_t(int32_t width
+                           , int32_t height)
     : width(width)
     , height(height)
 {

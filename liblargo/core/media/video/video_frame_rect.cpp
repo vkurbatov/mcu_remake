@@ -18,6 +18,15 @@ frame_rect_t::frame_rect_t(const frame_point_t &point
 
 }
 
+frame_rect_t::frame_rect_t(const frame_point_t &point
+                           , const frame_point_t &br_point)
+    : point(point)
+    , size(br_point.x - point.x
+           , br_point.y - point.y)
+{
+
+}
+
 bool frame_rect_t::operator ==(const frame_rect_t &frame_rect)
 {
     return point == frame_rect.point
@@ -52,6 +61,11 @@ frame_rect_t& frame_rect_t::operator -=(const frame_size_t &frame_size)
 {
     size -= frame_size;
     return *this;
+}
+
+frame_point_t frame_rect_t::br_point() const
+{
+    return frame_point_t(point.x + size.width, point.y + size.height);
 }
 
 

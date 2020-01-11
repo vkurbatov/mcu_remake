@@ -12,16 +12,16 @@ namespace media
 namespace video
 {
 
-const std::uint32_t default_frame_x = 0;
-const std::uint32_t default_frame_y = 0;
+const std::int32_t default_frame_x = 0;
+const std::int32_t default_frame_y = 0;
 
 struct frame_point_t
 {
-    std::uint32_t   x;
-    std::uint32_t   y;
+    std::int32_t   x;
+    std::int32_t   y;
 
-    frame_point_t(std::uint32_t x = default_frame_x
-                 , std::uint32_t y = default_frame_y);
+    frame_point_t(std::int32_t x = default_frame_x
+                 , std::int32_t y = default_frame_y);
 
     bool operator == (const frame_point_t& frame_size) const;
     bool operator != (const frame_point_t& frame_size) const;

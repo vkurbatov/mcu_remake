@@ -2,6 +2,7 @@
 #define VIDEO_FORMAT_H
 
 #include "video_frame_size.h"
+#include "media/common/media_format.h"
 
 namespace core
 {
@@ -53,7 +54,7 @@ const pixel_format_t default_pixel_format = pixel_format_t::yuv420p;
 const std::uint32_t default_fps = 0;
 
 
-struct video_format_t
+struct video_format_t : public media_format_t
 {
     pixel_format_t  pixel_format;
     frame_size_t    size;
@@ -64,6 +65,14 @@ struct video_format_t
     static std::size_t bpp(pixel_format_t pixel_format);
     static std::size_t frame_size(pixel_format_t pixel_format
                                   , const frame_size_t& size);
+
+    static std::size_t planes(pixel_format_t pixel_format);
+    static std::size_t plane_width(pixel_format_t pixel_format
+                                   , std::uint32_t width
+                                   , std::uint32_t plane_idx);
+    static std::size_t plane_size(pixel_format_t pixel_format
+                                  , const frame_size_t& size
+                                  , std::uint32_t plane_idx);
 
     video_format_t(pixel_format_t pixel_format = default_pixel_format
                    , frame_size_t size = default_frame_size
@@ -76,6 +85,10 @@ struct video_format_t
     bool is_encoded() const;
     std::size_t bpp() const;
     std::size_t frame_size() const;
+
+    std::size_t planes() const;
+    std::size_t plane_width(std::uint32_t plane_idx) const;
+    std::size_t plane_size(std::uint32_t plane_idx) const;
 };
 
 }

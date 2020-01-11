@@ -12,16 +12,16 @@ namespace media
 namespace video
 {
 
-const std::uint32_t default_frame_width = 0;
-const std::uint32_t default_frame_height = 0;
+const std::int32_t default_frame_width = 0;
+const std::int32_t default_frame_height = 0;
 
 struct frame_size_t
 {
-    std::uint32_t   width;
-    std::uint32_t   height;
+    std::int32_t   width;
+    std::int32_t   height;
 
-    frame_size_t(std::uint32_t width = default_frame_width
-                 , std::uint32_t height = default_frame_height);
+    frame_size_t(std::int32_t width = default_frame_width
+                 , std::int32_t height = default_frame_height);
 
     bool operator == (const frame_size_t& frame_size) const;
     bool operator != (const frame_size_t& frame_size) const;

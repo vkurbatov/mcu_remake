@@ -154,6 +154,29 @@ std::string video_info_t::format_name(pixel_format_t pixel_format)
     return av_get_pix_fmt_name(static_cast<AVPixelFormat>(pixel_format));
 }
 
+std::size_t video_info_t::planes(pixel_format_t pixel_format)
+{
+    return av_pix_fmt_count_planes(static_cast<AVPixelFormat>(pixel_format));
+}
+
+std::size_t video_info_t::plane_width(pixel_format_t pixel_format
+                                      , uint32_t width
+                                      , uint32_t plane_idx)
+{
+    return av_image_get_linesize(static_cast<AVPixelFormat>(pixel_format)
+                                 , width
+                                 , plane_idx);
+}
+
+std::size_t video_info_t::plane_size(pixel_format_t pixel_format
+                                     , const frame_size_t &size
+                                     , uint32_t plane_idx)
+{
+    return plane_width(pixel_format
+                       , size.width
+                       , plane_idx) * size.height;
+}
+
 video_info_t::video_info_t(uint32_t width
                            , uint32_t height
                            , uint32_t fps
@@ -202,6 +225,25 @@ std::size_t video_info_t::frame_size(std::int32_t align) const
 std::string video_info_t::format_name() const
 {
     return format_name(pixel_format);
+}
+
+std::size_t video_info_t::planes() const
+{
+    return planes(pixel_format);
+}
+
+std::size_t video_info_t::plane_width(uint32_t plane_idx) const
+{
+    return plane_width(pixel_format
+                       , size.width
+                       , plane_idx);
+}
+
+std::size_t video_info_t::plane_size(uint32_t plane_idx) const
+{
+    return plane_size(pixel_format
+                      , size
+                      , plane_idx);
 }
 
 

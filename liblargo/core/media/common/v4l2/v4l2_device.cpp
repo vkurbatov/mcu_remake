@@ -235,6 +235,8 @@ struct v4l2_device_context_t
                     auto formats = device->fetch_supported_format_list();
                     auto controls = device->fetch_control_list();
 
+                    // formats.push_back(frame_info_t({ 800, 600 }, 15, pixel_format_h264));
+
                     std::lock_guard<std::mutex> lg(m_mutex);
                     m_format_list = std::move(formats);
                     m_control_list = std::move(controls);
@@ -267,7 +269,6 @@ struct v4l2_device_context_t
                             }
 
                             m_control_queue.pop();
-                            //m_control_queue
                         }
                     }
 

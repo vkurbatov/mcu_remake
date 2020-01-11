@@ -198,6 +198,13 @@ struct video_info_t
                                   , const frame_size_t& size
                                   , std::int32_t align = default_frame_align);
     static std::string format_name(pixel_format_t pixel_format);
+    static std::size_t planes(pixel_format_t pixel_format);
+    static std::size_t plane_width(pixel_format_t pixel_format
+                                   , std::uint32_t width
+                                   , std::uint32_t plane_idx);
+    static std::size_t plane_size(pixel_format_t pixel_format
+                                  , const frame_size_t& size
+                                  , std::uint32_t plane_idx);
 
     video_info_t(std::uint32_t width
                  , std::uint32_t height
@@ -213,6 +220,10 @@ struct video_info_t
     std::uint32_t bpp() const;
     std::size_t frame_size(std::int32_t align = default_frame_align) const;
     std::string format_name() const;
+
+    std::size_t planes() const;
+    std::size_t plane_width(std::uint32_t plane_idx) const;
+    std::size_t plane_size(std::uint32_t plane_idx) const;
 };
 
 struct fragment_info_t

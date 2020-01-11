@@ -61,7 +61,9 @@ set(SOURCES
     "core/media/video/video_frame_size.cpp"
     "core/media/video/video_frame_point.cpp"
     "core/media/video/video_frame_rect.cpp"
-    "core/media/video/video_format.cpp"
+    "core/media/video/video_format.cpp"       
+    "core/media/video/video_frame.cpp"
+    "core/media/video/video_frame_builder.cpp"
 )
 
 set(PRIVATE_HEADERS
@@ -106,6 +108,7 @@ set(PRIVATE_HEADERS
     "core/media/audio/audio_string_format_utils.h"
     "core/media/audio/tools/audio_event_server.h"
     "core/media/audio/tools/audio_processor.h"
+    "core/media/video/video_frame.h"
 )
 
 set(PUBLIC_HEADERS
@@ -140,6 +143,10 @@ set(PUBLIC_HEADERS
     "core/media/video/video_frame_point.h"
     "core/media/video/video_frame_rect.h"
     "core/media/video/video_format.h"
+    "core/media/video/video_frame_builder.h"
+    "core/media/video/i_video_frame.h"
+    "core/media/video/i_video_frame_factory.h"
+
 )
 
 include_directories(
