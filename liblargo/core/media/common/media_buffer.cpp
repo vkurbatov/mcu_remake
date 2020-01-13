@@ -44,6 +44,23 @@ media_buffer::media_buffer(const void **slices
     }
 }
 
+media_buffer::media_buffer(media_data_t &&media_data
+                           , const planar_sizes_t& planar_sizes)
+    : m_planar_sizes(planar_sizes)
+{
+    auto sz = std::accumulate(planar_sizes.begin()
+                              , planar_sizes.end()
+                              , 0);
+    if (media_data.size() != sz)
+    {
+        m_media_data.resize(sz, 0);
+    }
+    else
+    {
+        m_media_data = std::move(media_data);
+    }
+}
+
 bool media_buffer::swap(media_buffer &&other_media_buffer)
 {
     return swap(std::move(other_media_buffer.m_media_data)
@@ -85,8 +102,6 @@ const planar_sizes_t &media_buffer::planar_sizes() const
 {
     return m_planar_sizes;
 }
-
-
 
 }
 

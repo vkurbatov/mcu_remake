@@ -81,12 +81,12 @@ struct video_format_t : public media_format_t
     bool operator ==(const video_format_t& video_format);
     bool operator !=(const video_format_t& video_format);
 
-    bool is_planar() const;
-    bool is_encoded() const;
+    bool is_planar() const override;
+    bool is_encoded() const override;
     std::size_t bpp() const;
-    std::size_t frame_size() const;
+    std::size_t frame_size() const override;
 
-    std::size_t planes() const;
+    std::size_t planes() const override;
     std::size_t plane_width(std::uint32_t plane_idx) const;
     std::size_t plane_size(std::uint32_t plane_idx) const;
 };

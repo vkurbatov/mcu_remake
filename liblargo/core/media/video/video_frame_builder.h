@@ -12,8 +12,6 @@ namespace media
 namespace video
 {
 
-typedef std::unique_ptr<i_video_frame_factory> video_frame_factory_ptr_t;
-
 namespace factory_builder
 {
     video_frame_factory_ptr_t create_video_frame_factory(const video_format_t& video_format

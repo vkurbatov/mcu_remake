@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <memory>
 
 namespace core
 {
@@ -21,6 +22,8 @@ public:
     virtual void* data(std::int32_t offset = 0) = 0;
     virtual const planar_sizes_t& planar_sizes() const = 0;
 };
+
+typedef std::unique_ptr<i_media_buffer> media_buffer_ptr_t;
 
 }
 

@@ -33,8 +33,6 @@ const video_format_t &video_frame::video_format() const
     return m_video_format;
 }
 
-
-
 }
 
 }

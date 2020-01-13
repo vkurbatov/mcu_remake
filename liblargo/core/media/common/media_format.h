@@ -21,6 +21,13 @@ struct media_format_t
 {
     media_type_t        media_type;
     media_format_t(media_type_t media_type);
+
+    virtual bool is_encoded() const = 0;
+    virtual bool is_planar() const = 0;
+    virtual std::size_t frame_size() const = 0;
+    virtual std::size_t planes() const = 0;
+    virtual bool is_valid() const;
+
 };
 
 }

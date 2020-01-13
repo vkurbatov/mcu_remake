@@ -3,7 +3,6 @@
 
 #include "i_media_buffer.h"
 
-
 namespace core
 {
 
@@ -22,6 +21,9 @@ public:
     media_buffer(const void** slices
                  , const planar_sizes_t& planar_sizes);
 
+    media_buffer(media_data_t&& media_data
+                 , const planar_sizes_t& planar_sizes);
+
     bool swap(media_buffer&& other_media_buffer);
     bool swap(media_data_t&& media_data
               , planar_sizes_t&& planar_sizes);
@@ -32,7 +34,7 @@ public:
 public:
     const void *data(int32_t offset = 0) const override;
     void *data(int32_t offset = 0) override;
-    const planar_sizes_t &planar_sizes() const override;
+    const planar_sizes_t& planar_sizes() const override;
 };
 
 }

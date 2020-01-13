@@ -22,6 +22,8 @@ public:
     virtual ~i_media_frame() {}
     virtual const media_format_t& media_format() const = 0;
     virtual media_plane_list_t planes() const = 0;
+    virtual std::size_t size() const = 0;
+    virtual bool is_valid() const = 0;
 };
 
 }

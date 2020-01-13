@@ -36,6 +36,19 @@ media_plane_list_t media_frame::planes() const
     return std::move(plane_list);
 }
 
+std::size_t media_frame::size() const
+{
+    return std::accumulate(m_media_buffer.planar_sizes().begin()
+                           , m_media_buffer.planar_sizes().end()
+                           , 0);
+}
+
+bool media_frame::is_valid() const
+{
+    return m_media_format.is_valid()
+            && (m_media_format.is_encoded()
+                || m_media_format.frame_size() == size());
+}
 
 }
 
