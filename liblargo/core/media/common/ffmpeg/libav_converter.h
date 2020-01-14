@@ -37,11 +37,29 @@ class libav_converter
 public:
     libav_converter(scaling_method_t scaling_method = default_scaling_method);
 
-    std::size_t convert(const fragment_info_t& input_fragment_info
-                        , const void* input_frame
+    std::size_t convert_frames(const fragment_info_t& input_fragment_info
+                               , const void* input_frame
+                               , const fragment_info_t& output_fragment_info
+                               , void* output_frame
+                               , bool is_flip = false);
+
+    std::size_t convert_slices(const fragment_info_t& input_fragment_info
+                               , void* const input_slices[]
+                               , const fragment_info_t& output_fragment_info
+                               , void* output_slices[]
+                               , bool is_flip = false);
+
+    std::size_t convert_to_slices(const fragment_info_t& input_fragment_info
+                        , const void * input_frame
                         , const fragment_info_t& output_fragment_info
-                        , void* output_frame
-                        , bool is_rotate = false);
+                        , void* output_slices[]
+                        , bool is_flip = false);
+
+    std::size_t convert_to_frame(const fragment_info_t& input_fragment_info
+                                 , void* const input_slices[]
+                                 , const fragment_info_t& output_fragment_info
+                                 , void* output_frame
+                                 , bool is_flip = false);
 
     void reset(scaling_method_t scaling_method);
     void reset();

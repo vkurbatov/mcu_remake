@@ -17,28 +17,28 @@ media_plane::media_plane(i_media_buffer &media_buffer
 
 const void *media_plane::data() const
 {
-    return m_plane_id < m_media_buffer.planar_sizes().size()
+    return m_plane_id < m_media_buffer.plane_sizes().size()
             ? m_media_buffer.data(
-                std::accumulate(m_media_buffer.planar_sizes().begin()
-                              , m_media_buffer.planar_sizes().begin() + m_plane_id
+                std::accumulate(m_media_buffer.plane_sizes().begin()
+                              , m_media_buffer.plane_sizes().begin() + m_plane_id
                               , 0))
             : nullptr;
 }
 
 void *media_plane::data()
 {
-    return m_plane_id < m_media_buffer.planar_sizes().size()
+    return m_plane_id < m_media_buffer.plane_sizes().size()
             ? m_media_buffer.data(
-                std::accumulate(m_media_buffer.planar_sizes().begin()
-                              , m_media_buffer.planar_sizes().begin() + m_plane_id
+                std::accumulate(m_media_buffer.plane_sizes().begin()
+                              , m_media_buffer.plane_sizes().begin() + m_plane_id
                               , 0))
             : nullptr;
 }
 
 std::size_t media_plane::size() const
 {
-    return m_plane_id < m_media_buffer.planar_sizes().size()
-            ? m_media_buffer.planar_sizes()[m_plane_id]
+    return m_plane_id < m_media_buffer.plane_sizes().size()
+            ? m_media_buffer.plane_sizes()[m_plane_id]
               : 0;
 }
 

@@ -22,6 +22,7 @@ const sample_format_t unknown_sample_format = -1;
 extern const pixel_format_t pixel_format_bgr24;
 extern const pixel_format_t pixel_format_rgb24;
 extern const pixel_format_t pixel_format_yuv420p;
+extern const pixel_format_t pixel_format_yuv422p;
 
 extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
@@ -32,7 +33,7 @@ extern const codec_id_t codec_id_raw_video;
 extern const codec_id_t codec_id_none;
 //extern const codec_id_t codec_id_yuv420p;
 
-
+const std::size_t max_planes = 4;
 
 typedef std::vector<std::uint8_t> media_data_t;
 
@@ -187,6 +188,16 @@ struct frame_rect_t
 
 };
 
+typedef std::vector<frame_size_t> plane_sizes_t;
+
+struct plane_info_t
+{
+    void* data;
+    std::size_t size;
+};
+
+typedef std::vector<plane_info_t> plane_list_t;
+
 struct video_info_t
 {
     frame_size_t    size;
@@ -202,9 +213,16 @@ struct video_info_t
     static std::size_t plane_width(pixel_format_t pixel_format
                                    , std::uint32_t width
                                    , std::uint32_t plane_idx);
-    static std::size_t plane_size(pixel_format_t pixel_format
-                                  , const frame_size_t& size
-                                  , std::uint32_t plane_idx);
+    static plane_sizes_t plane_sizes(pixel_format_t pixel_format
+                                     , const frame_size_t& size
+                                     , std::int32_t align = default_frame_align);
+
+    static std::size_t split_slices(pixel_format_t pixel_format
+                                     , const frame_size_t& size
+                                     , void *slices[max_planes]
+                                     , const void* data
+                                     , std::int32_t align = default_frame_align);
+
 
     video_info_t(std::uint32_t width
                  , std::uint32_t height
@@ -223,7 +241,7 @@ struct video_info_t
 
     std::size_t planes() const;
     std::size_t plane_width(std::uint32_t plane_idx) const;
-    std::size_t plane_size(std::uint32_t plane_idx) const;
+    plane_sizes_t plane_sizes() const;
 };
 
 struct fragment_info_t

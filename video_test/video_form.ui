@@ -17,7 +17,7 @@
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
-      <x>143</x>
+      <x>173</x>
       <y>0</y>
       <width>85</width>
       <height>27</height>
@@ -36,7 +36,7 @@
    <widget class="QComboBox" name="cbScalingMethod">
     <property name="geometry">
      <rect>
-      <x>227</x>
+      <x>257</x>
       <y>0</y>
       <width>114</width>
       <height>27</height>
@@ -106,7 +106,7 @@
    <widget class="QComboBox" name="cbScaling">
     <property name="geometry">
      <rect>
-      <x>340</x>
+      <x>370</x>
       <y>0</y>
       <width>85</width>
       <height>27</height>
@@ -141,7 +141,7 @@
    <widget class="QComboBox" name="cbResoulution">
     <property name="geometry">
      <rect>
-      <x>425</x>
+      <x>455</x>
       <y>0</y>
       <width>211</width>
       <height>27</height>
@@ -151,7 +151,7 @@
    <widget class="QComboBox" name="cbControlList">
     <property name="geometry">
      <rect>
-      <x>640</x>
+      <x>670</x>
       <y>0</y>
       <width>231</width>
       <height>27</height>
@@ -161,7 +161,7 @@
    <widget class="QSlider" name="slControl">
     <property name="geometry">
      <rect>
-      <x>870</x>
+      <x>900</x>
       <y>0</y>
       <width>160</width>
       <height>29</height>
@@ -169,6 +169,32 @@
     </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spMargin">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>0</y>
+      <width>48</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>32</number>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="cbRotate">
+    <property name="geometry">
+     <rect>
+      <x>1110</x>
+      <y>0</y>
+      <width>97</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Rotate</string>
     </property>
    </widget>
   </widget>

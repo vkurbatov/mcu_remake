@@ -47,6 +47,11 @@ bool frame_size_t::is_empty() const
             || height == 0;
 }
 
+std::size_t frame_size_t::size() const
+{
+    return width * height;
+}
+
 }
 
 }

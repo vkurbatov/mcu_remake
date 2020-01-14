@@ -26,6 +26,8 @@ public:
     virtual bool is_valid() const = 0;
 };
 
+typedef std::shared_ptr<i_media_frame> media_frame_ptr_t;
+
 }
 
 }

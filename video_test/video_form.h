@@ -40,6 +40,8 @@ private:
     Ui::video_form *ui;
     video_surface m_surface;
 
+    void test1();
+
 
     // QWidget interface
 protected:

@@ -17,6 +17,8 @@ enum class media_type_t
     data
 };
 
+typedef std::vector<std::size_t> plane_sizes_t;
+
 struct media_format_t
 {
     media_type_t        media_type;
@@ -26,6 +28,7 @@ struct media_format_t
     virtual bool is_planar() const = 0;
     virtual std::size_t frame_size() const = 0;
     virtual std::size_t planes() const = 0;
+    virtual plane_sizes_t plane_sizes() const = 0;
     virtual bool is_valid() const;
 
 };

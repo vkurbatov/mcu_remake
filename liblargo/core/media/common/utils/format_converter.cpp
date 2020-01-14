@@ -135,7 +135,7 @@ ffmpeg::codec_id_t to_ffmpeg_codec(video::pixel_format_t pixel_format)
     return std::get<1>(get_format_desc(pixel_format));
 }
 
-video::pixel_format_t form_v4l2_format(v4l2::pixel_format_t pixel_format)
+video::pixel_format_t from_v4l2_format(v4l2::pixel_format_t pixel_format)
 {
     switch (pixel_format)
     {

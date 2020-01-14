@@ -15,58 +15,79 @@ extern "C"
 namespace ffmpeg
 {
 
-const std::size_t max_planes = 4;
-
 namespace utils
 {
+
+void fill_items(const frame_rect_t& frame_rect
+               , std::uint8_t* slices[max_planes]
+               , std::int32_t strides[max_planes]
+               , std::size_t frame_size
+               , bool is_flip)
+{
+    const auto base_slice = *slices;
+    auto y_k = 1.0;
+
+    for (auto i = 0; i < max_planes && strides[i] != 0; i++)
+    {
+        auto x_k = static_cast<double>(frame_rect.size.width) / static_cast<double>(strides[i]);
+
+        auto plane_size = strides[i + 1] == 0 || max_planes == i + 1
+                ? frame_size - (slices[i] - base_slice)
+                : slices[i + 1] - slices[i];
+
+        if (plane_size != 0)
+        {
+            y_k = strides[i] * frame_rect.size.height / static_cast<double>(plane_size);
+        }
+
+        auto x_offset = static_cast<std::int32_t>(frame_rect.offset.x / x_k);
+        auto y_offset = strides[i] * static_cast<std::int32_t>(frame_rect.offset.y / y_k);
+
+        if (is_flip)
+        {
+            slices[i] += strides[i] * static_cast<std::int32_t>((frame_rect.size.height - 1) / y_k)
+            - y_offset + x_offset;
+
+            strides[i] = -strides[i];
+
+        }
+        else
+        {
+            slices[i] += y_offset + x_offset;
+        }
+    }
+}
 
 std::size_t fill_arrays(const frame_rect_t& frame_rect
                         , pixel_format_t pixel_format
                         , std::uint8_t* slices[max_planes]
                         , std::int32_t strides[max_planes]
-                        , const void* data
-                        , bool is_rotate = false
+                        , void * const slice_list[]
+                        , bool is_flip = false
                         , std::int32_t align = default_frame_align)
 {
-    std::size_t result = 0;
+    auto frame_size =  video_info_t::frame_size(pixel_format
+                                                , frame_rect.size);
 
-    auto ret = av_image_fill_arrays(slices
-                                    , strides
-                                    , static_cast<const std::uint8_t*>(data)
-                                    , static_cast<AVPixelFormat>(pixel_format)
-                                    , frame_rect.size.width
-                                    , frame_rect.size.height
-                                    , align);
-
-    if (ret >= 0)
+    if (frame_size > 0)
     {
-        for (auto i = 0; i < max_planes && strides[i] != 0; i++)
+        auto i = 0;
+        for (const auto& sz : video_info_t::plane_sizes(pixel_format
+                                       , frame_rect.size))
         {
-
-            auto x_k = static_cast<double>(frame_rect.size.width) / static_cast<double>(strides[i]);
-            auto y_k = i > 0 ? x_k : 1.0;
-
-            auto x_offset = static_cast<std::int32_t>(frame_rect.offset.x / x_k);
-            auto y_offset = strides[i] * static_cast<std::int32_t>(frame_rect.offset.y / y_k);
-
-            if (is_rotate)
-            {
-                slices[i] += strides[i] * static_cast<std::int32_t>((frame_rect.size.height - 1) / y_k)
-                - y_offset + x_offset;
-
-                strides[i] = -strides[i];
-
-            }
-            else
-            {
-                slices[i] += y_offset + x_offset;
-            }
+            slices[i] = const_cast<std::uint8_t*>(static_cast<const std::uint8_t*>(slice_list[i]));
+            strides[i] = sz.width;
+            i++;
         }
 
-        result = ret;
+        fill_items(frame_rect
+                  , slices
+                  , strides
+                  , frame_size
+                  , is_flip);
     }
 
-    return result;
+    return frame_size;
 }
 
 }
@@ -91,6 +112,7 @@ struct libav_converter_context_t
     {
         reset();
     }   
+
     bool check_or_create_context(const frame_size_t& input_frame_size
                                  , pixel_format_t input_pixel_format
                                  , const frame_size_t& output_frame_size
@@ -126,28 +148,18 @@ struct libav_converter_context_t
         return m_sws_context != nullptr;
     }   
 
-    std::size_t convert(const fragment_info_t& input_fragment_info
-                        , const void* input_frame
-                        , const fragment_info_t& output_fragment_info
-                        , void* output_frame
-                        , bool is_rotate)
+    std::size_t scale(const fragment_info_t& input_fragment_info
+                      , void* const input_slices[]
+                      , const fragment_info_t& output_fragment_info
+                      , void* output_slices[]
+                      , bool is_flip)
     {
         std::size_t result = 0;
 
-        if (input_fragment_info.is_full()
-                && input_fragment_info == output_fragment_info
-                && is_rotate == false)
-        {
-            result = input_fragment_info.get_frame_size();
-            if (output_frame != input_frame)
-            {
-                std::memcpy(output_frame, input_frame, result);
-            }
-        }
-        else if (check_or_create_context(input_fragment_info.frame_rect.size
-                                         , input_fragment_info.pixel_format
-                                         , output_fragment_info.frame_rect.size
-                                         , output_fragment_info.pixel_format))
+        if (check_or_create_context(input_fragment_info.frame_rect.size
+                                                 , input_fragment_info.pixel_format
+                                                 , output_fragment_info.frame_rect.size
+                                                 , output_fragment_info.pixel_format))
         {
             std::uint8_t* src_slice[max_planes] = { };
             std::int32_t src_stride[max_planes] = { };
@@ -159,14 +171,14 @@ struct libav_converter_context_t
                                                , input_fragment_info.pixel_format
                                                , src_slice
                                                , src_stride
-                                               , input_frame
-                                               , is_rotate);
+                                               , input_slices
+                                               , is_flip);
 
             auto sz_output = utils::fill_arrays({ output_fragment_info.frame_rect.offset, output_fragment_info.frame_size }
                                                 , output_fragment_info.pixel_format
                                                 , dst_slice
                                                 , dst_stride
-                                                , output_frame);
+                                                , output_slices);
 
             if (sz_input != 0
                     && sz_output != 0)
@@ -185,15 +197,207 @@ struct libav_converter_context_t
                                             , dst_stride);
 
                 if (sws_result > 0)
-                {                    
+                {
                     // std::cout << "src_stride = " << src_stride[0] << ", dst_stride = " << dst_stride[0] << std::endl;
                     result = sz_output;
                 }
             }
+
         }
 
         return result;
     }
+
+    std::size_t convert_frames(const fragment_info_t& input_fragment_info
+                               , const void* input_frame
+                               , const fragment_info_t& output_fragment_info
+                               , void* output_frame
+                               , bool is_flip)
+    {
+
+        std::size_t result = 0;
+
+        if (input_fragment_info.is_full()
+                && input_fragment_info == output_fragment_info
+                && is_flip == false)
+        {
+            result = input_fragment_info.get_frame_size();
+            if (output_frame != input_frame)
+            {
+                std::memcpy(output_frame
+                            , input_frame
+                            , result);
+            }
+        }
+        else
+        {
+
+
+            void *input_slices[max_planes] = {};
+            void *output_slices[max_planes] = {};
+
+            video_info_t::split_slices(input_fragment_info.pixel_format
+                                       , input_fragment_info.frame_size
+                                       , input_slices
+                                       , input_frame);
+
+
+            video_info_t::split_slices(output_fragment_info.pixel_format
+                                       , output_fragment_info.frame_size
+                                       , output_slices
+                                       , output_frame);
+
+
+            result = scale(input_fragment_info
+                           , input_slices
+                           , output_fragment_info
+                           , output_slices
+                           , is_flip);
+
+
+        }
+
+        return result;
+    }
+
+    std::size_t convert_slices(const fragment_info_t& input_fragment_info
+                               , void* const input_slices[]
+                               , const fragment_info_t& output_fragment_info
+                               , void* output_slices[]
+                               , bool is_flip)
+    {
+        std::size_t result = 0;
+
+        if (input_fragment_info.is_full()
+                && input_fragment_info == output_fragment_info
+                && is_flip == false)
+        {
+            result = input_fragment_info.get_frame_size();
+
+            if (input_slices != output_slices)
+            {
+                auto i = 0;
+                for (const auto& sz : video_info_t::plane_sizes(input_fragment_info.pixel_format
+                                                                , input_fragment_info.frame_size))
+                {
+                    if (input_slices[i] != output_slices[i])
+                    {
+                        std::memcpy(output_slices[i]
+                                    , input_slices[i]
+                                    , sz.size());
+                    }
+                    i++;
+                }
+            }
+        }
+        else
+        {
+            result = scale(input_fragment_info
+                           , input_slices
+                           , output_fragment_info
+                           , output_slices
+                           , is_flip);
+        }
+
+        return result;
+    }
+
+    std::size_t convert_to_slices(const fragment_info_t& input_fragment_info
+                                  , const void* input_frame
+                                  , const fragment_info_t& output_fragment_info
+                                  , void* output_slices[]
+                                  , bool is_flip)
+    {
+
+        std::size_t result = 0;
+
+        if (input_fragment_info.is_full()
+                && input_fragment_info == output_fragment_info
+                && is_flip == false)
+        {
+            result = input_fragment_info.get_frame_size();
+
+            auto i = 0;
+            std::size_t offset = 0;
+            for (const auto& sz : video_info_t::plane_sizes(input_fragment_info.pixel_format
+                                                            , input_fragment_info.frame_size))
+            {
+                std::memcpy(output_slices[i]
+                            , static_cast<const std::uint8_t*>(input_frame) + offset
+                            , sz.size());
+
+                offset += sz.size();
+                i++;
+            }
+        }
+        else
+        {
+
+            void *input_slices[max_planes] = {};
+
+            video_info_t::split_slices(input_fragment_info.pixel_format
+                                       , input_fragment_info.frame_size
+                                       , input_slices
+                                       , input_frame);
+
+            result = scale(input_fragment_info
+                           , input_slices
+                           , output_fragment_info
+                           , output_slices
+                           , is_flip);
+
+
+        }
+
+        return result;
+    }
+
+    std::size_t convert_to_frame(const fragment_info_t& input_fragment_info
+                                  , void* const input_slices[]
+                                  , const fragment_info_t& output_fragment_info
+                                  , void* output_frame
+                                  , bool is_flip)
+    {
+        std::size_t result = 0;
+
+        if (input_fragment_info.is_full()
+                && input_fragment_info == output_fragment_info
+                && is_flip == false)
+        {
+            result = input_fragment_info.get_frame_size();
+
+            auto i = 0;
+            std::size_t offset = 0;
+            for (const auto& sz : video_info_t::plane_sizes(input_fragment_info.pixel_format
+                                                            , input_fragment_info.frame_size))
+            {
+                std::memcpy(static_cast<std::uint8_t*>(output_frame) + offset
+                            , input_slices[i]
+                            , sz.size());
+
+                offset += sz.size();
+                i++;
+            }
+        }
+        else
+        {
+            void *output_slices[max_planes] = {};
+
+            video_info_t::split_slices(output_fragment_info.pixel_format
+                                       , output_fragment_info.frame_size
+                                       , output_slices
+                                       , output_frame);
+
+            result = scale(input_fragment_info
+                           , input_slices
+                           , output_fragment_info
+                           , output_slices
+                           , is_flip);
+        }
+
+        return result;
+    }
+
 
     void reset()
     {
@@ -224,17 +428,56 @@ libav_converter::libav_converter(scaling_method_t scaling_method)
 
 }
 
-std::size_t libav_converter::convert(const fragment_info_t& input_fragment_info
-                                     , const void* input_frame
-                                     , const fragment_info_t& output_fragment_info
-                                     , void* output_frame
-                                     , bool is_rotate)
+std::size_t libav_converter::convert_frames(const fragment_info_t& input_fragment_info
+                                           , const void* input_frame
+                                           , const fragment_info_t& output_fragment_info
+                                           , void* output_frame
+                                           , bool is_flip)
 {
-    return m_converter_context->convert(input_fragment_info
-                                        , input_frame
-                                        , output_fragment_info
-                                        , output_frame
-                                        , is_rotate);
+    return m_converter_context->convert_frames(input_fragment_info
+                                               , input_frame
+                                               , output_fragment_info
+                                               , output_frame
+                                               , is_flip);
+}
+
+std::size_t libav_converter::convert_slices(const fragment_info_t &input_fragment_info
+                                            , void * const input_slices[]
+                                            , const fragment_info_t &output_fragment_info
+                                            , void *output_slices[]
+                                            , bool is_flip)
+{
+    return m_converter_context->convert_slices(input_fragment_info
+                                               , input_slices
+                                               , output_fragment_info
+                                               , output_slices
+                                               , is_flip);
+}
+
+std::size_t libav_converter::convert_to_slices(const fragment_info_t &input_fragment_info
+                                               , const void *input_frame
+                                               , const fragment_info_t &output_fragment_info
+                                               , void *output_slices[]
+                                               , bool is_flip)
+{
+    return m_converter_context->convert_to_slices(input_fragment_info
+                                                 , input_frame
+                                                 , output_fragment_info
+                                                 , output_slices
+                                                 , is_flip);
+}
+
+std::size_t libav_converter::convert_to_frame(const fragment_info_t &input_fragment_info
+                                              , void * const input_slices[]
+                                              , const fragment_info_t &output_fragment_info
+                                              , void *output_frame
+                                              , bool is_flip)
+{
+    return m_converter_context->convert_to_frame(input_fragment_info
+                                                 , input_slices
+                                                 , output_fragment_info
+                                                 , output_frame
+                                                 , is_flip);
 }
 
 void libav_converter::reset(scaling_method_t scaling_method)

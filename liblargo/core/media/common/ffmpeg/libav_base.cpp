@@ -26,6 +26,7 @@ const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SA
 const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR24);
 const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
+const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
 const pixel_format_t pixel_format_none = static_cast<pixel_format_t>(AV_PIX_FMT_NONE);
 
 
@@ -168,13 +169,58 @@ std::size_t video_info_t::plane_width(pixel_format_t pixel_format
                                  , plane_idx);
 }
 
-std::size_t video_info_t::plane_size(pixel_format_t pixel_format
-                                     , const frame_size_t &size
-                                     , uint32_t plane_idx)
+plane_sizes_t video_info_t::plane_sizes(pixel_format_t pixel_format
+                                        , const frame_size_t &size
+                                        , std::int32_t align)
 {
-    return plane_width(pixel_format
-                       , size.width
-                       , plane_idx) * size.height;
+    plane_sizes_t plane_sizes;
+
+    std::uint8_t* slices[max_planes] = {};
+    std::int32_t strides[max_planes] = {};
+
+    auto frame_size = av_image_fill_arrays(slices
+                                    , strides
+                                    , nullptr
+                                    , static_cast<AVPixelFormat>(pixel_format)
+                                    , size.width
+                                    , size.height
+                                    , align);
+
+    if (frame_size > 0)
+    {
+        for (int i = 0; i < max_planes && strides[i] > 0; i++)
+        {
+            auto sz = strides[i + 1] == 0 || max_planes == i + 1
+                    ? frame_size - (slices[i] - (std::uint8_t*)(nullptr))
+                    : slices[i + 1] - slices[i];
+
+            plane_sizes.push_back( { strides[i], sz / strides[i] } );
+        }
+    }
+
+    return plane_sizes;
+}
+
+std::size_t video_info_t::split_slices(pixel_format_t pixel_format
+                                        , const frame_size_t &size
+                                        , void *slices[]
+                                        , const void *data
+                                        , int32_t align)
+{
+    std::size_t result = 0;
+
+    std::size_t offset = 0;
+
+    for (const auto& sz : plane_sizes(pixel_format
+                                      , size
+                                      , align))
+    {
+        slices[result] = const_cast<std::uint8_t*>(static_cast<const std::uint8_t*>(data) + offset);
+        offset += sz.size();
+        result++;
+    }
+
+    return result;
 }
 
 video_info_t::video_info_t(uint32_t width
@@ -239,11 +285,10 @@ std::size_t video_info_t::plane_width(uint32_t plane_idx) const
                        , plane_idx);
 }
 
-std::size_t video_info_t::plane_size(uint32_t plane_idx) const
+plane_sizes_t video_info_t::plane_sizes() const
 {
-    return plane_size(pixel_format
-                      , size
-                      , plane_idx);
+    return plane_sizes(pixel_format
+                       , size);
 }
 
 

@@ -9,32 +9,33 @@ namespace core
 namespace media
 {
 
-class media_buffer : virtual public i_media_buffer
+class media_buffer : virtual public i_swapped_media_buffer
 {
     media_data_t    m_media_data;
-    planar_sizes_t  m_planar_sizes;
+    plane_sizes_t   m_planar_sizes;
 
 public:
     media_buffer(const void* data = nullptr
                  , std::size_t size = 0);
 
     media_buffer(const void** slices
-                 , const planar_sizes_t& planar_sizes);
+                 , const plane_sizes_t& plane_sizes);
 
     media_buffer(media_data_t&& media_data
-                 , const planar_sizes_t& planar_sizes);
+                 , const plane_sizes_t& plane_sizes);
+
 
     bool swap(media_buffer&& other_media_buffer);
     bool swap(media_data_t&& media_data
-              , planar_sizes_t&& planar_sizes);
-    media_data_t release();
+              , plane_sizes_t&& plane_sizes) override;
+    media_data_t release() override;
 
 
     // i_media_buffer interface
 public:
     const void *data(int32_t offset = 0) const override;
     void *data(int32_t offset = 0) override;
-    const planar_sizes_t& planar_sizes() const override;
+    const plane_sizes_t& plane_sizes() const override;
 };
 
 }

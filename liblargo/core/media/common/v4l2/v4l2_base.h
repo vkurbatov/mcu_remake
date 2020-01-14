@@ -55,6 +55,7 @@ struct frame_info_t
     bool operator != (const frame_info_t& frame_info) const;
 
     bool is_null() const;
+
 };
 
 typedef std::vector<frame_info_t> format_list_t;

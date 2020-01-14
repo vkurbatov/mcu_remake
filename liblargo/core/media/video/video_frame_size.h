@@ -29,6 +29,7 @@ struct frame_size_t
     frame_size_t& operator -= (const frame_size_t& frame_size);
 
     bool is_empty() const;
+    std::size_t size() const;
 };
 
 const frame_size_t default_frame_size = { default_frame_width

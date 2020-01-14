@@ -11,14 +11,15 @@
 #include "core/media/common/ffmpeg/libav_stream_capturer.h"
 #include "core/media/common/ffmpeg/libav_decoder.h"
 #include "core/media/common/v4l2/v4l2_device.h"
+#include "media/common/utils/format_converter.h"
+#include "media/video/video_frame.h"
+#include "media/common/media_frame.h"
 
 #include <cstring>
 #include <mutex>
 #include <chrono>
 #include <atomic>
 #include <thread>
-
-#include "media/common/utils/format_converter.h"
 
 ffmpeg::scaling_method_t scaling_method = ffmpeg::scaling_method_t::default_method;
 std::uint32_t scaling_factor = 1;
@@ -50,7 +51,11 @@ std::vector<std::uint8_t>           last_output_buffer;
 
 std::uint32_t   fps = 0;
 std::uint32_t   frame_count = 0;
+std::uint32_t   real_fps = 0;
+std::uint32_t   real_frame_count = 0;
+
 auto last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
+auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
 
 video_form::video_form(QWidget *parent) :
@@ -58,6 +63,7 @@ video_form::video_form(QWidget *parent) :
     ui(new Ui::video_form),
     m_surface(this)
 {
+    test1();
     {
         QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
         image_buffer.resize(test_image.width() * test_image.height() * 3);
@@ -141,12 +147,13 @@ video_form::video_form(QWidget *parent) :
                 , v4l2::frame_data_t&& frame_data)
         {
 
-            auto video_format = core::media::utils::format_conversion::form_v4l2_format(frame_info.pixel_format);
+            auto video_format = core::media::utils::format_conversion::from_v4l2_format(frame_info.pixel_format);
 
 
             auto codec = core::media::utils::format_conversion::to_ffmpeg_codec(video_format);
             auto format = core::media::utils::format_conversion::to_ffmpeg_format(video_format);
 
+            auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
             if (codec == ffmpeg::codec_id_raw_video
                     || codec == ffmpeg::codec_id_none)
@@ -221,6 +228,15 @@ video_form::video_form(QWidget *parent) :
                         decoded_frames.pop();
                     }
 
+                    real_frame_count++;
+
+                    if (current_seconds != real_last_seconds)
+                    {
+                        real_fps = real_frame_count;
+                        real_frame_count = 0;
+                        real_last_seconds = current_seconds;
+                    }
+
                     mutex.unlock();
 
                 }
@@ -252,6 +268,28 @@ void video_form::prepare_image()
     mutex.lock();
 
     ffmpeg::fragment_info_t input_info = last_fragment_info;
+/*
+    input_info.pixel_format = ffmpeg::pixel_format_yuv420p;
+
+    std::vector<std::uint8_t> input_buffer(input_info.get_frame_size());
+
+    converter.convert(last_fragment_info
+                      , last_frame_buffer.data()
+                      , input_info
+                      , input_buffer.data()
+                      , false);*/
+
+    ffmpeg::fragment_info_t mid_info = input_info;
+    ffmpeg::fragment_info_t output_info = input_info;
+
+    auto margin = ui->spMargin->value();
+    auto rotate = ui->cbRotate->isChecked();
+
+    input_info.frame_rect.offset.x += margin;
+    input_info.frame_rect.offset.y += margin;
+    input_info.frame_rect.size.width -= margin * 2;
+    input_info.frame_rect.size.height -= margin * 2;
+
     std::vector<std::uint8_t> input_buffer = std::move(last_frame_buffer);
 
     mutex.unlock();
@@ -260,10 +298,14 @@ void video_form::prepare_image()
 
     if (!input_buffer.empty())
     {
-        ffmpeg::fragment_info_t output_info = input_info;
         output_info.pixel_format = ffmpeg::pixel_format_rgb24;
 
         output_info.frame_rect.size = output_info.frame_size = { 1920, 1080 };
+
+        output_info.frame_rect.offset.x += margin * 2;
+        output_info.frame_rect.offset.y += margin * 2;
+        output_info.frame_rect.size.width -= margin * 4;
+        output_info.frame_rect.size.height -= margin * 4;
 
         const QSize q_size(output_info.frame_size.width
                            , output_info.frame_size.height);
@@ -327,11 +369,8 @@ void video_form::prepare_image()
         const auto k_w = scaling_factor;
         const auto k_h = scaling_factor;
 
-        ffmpeg::fragment_info_t mid_info = input_info;
-
         mid_info.frame_rect.size.width /= k_w;
         mid_info.frame_rect.size.height /= k_h;
-        mid_info.frame_size = mid_info.frame_rect.size;
         mid_info.pixel_format = output_info.pixel_format;
 
         std::vector<std::uint8_t> mid_buffer(mid_info.get_frame_size());
@@ -341,18 +380,42 @@ void video_form::prepare_image()
             converter.reset(scaling_method);
         }
 
+
+        core::media::video::video_format_t format( core::media::utils::format_conversion::from_ffmpeg_format(input_info.pixel_format)
+                                                  , { input_info.frame_size.width, input_info.frame_size.height });
+
+        core::media::media_buffer buffer(std::move(input_buffer)
+                                         , format.plane_sizes());
+
+        core::media::video::video_frame frame(format
+                                              , std::move(buffer));
+
         auto tp = std::chrono::high_resolution_clock::now();
 
-        auto res = converter.convert(input_info
-                          , input_buffer.data()
+        /*auto res = converter.convert(input_info
+                          , frame.planes().front()->data()
                           , mid_info
                           , mid_buffer.data()
-                          , false);
+                          , rotate);*/
+
+        void * const slices[] = { frame.planes()[0]->data(), frame.planes()[1]->data(), frame.planes()[2]->data() };
+
+        auto res = converter.convert_to_frame(input_info
+                          , slices
+                          , mid_info
+                          , mid_buffer.data()
+                          , rotate);
 
         convert_delay1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
         tp = std::chrono::high_resolution_clock::now();
+/*
+        mid_info.frame_rect.offset.x += 40;
+        mid_info.frame_rect.offset.y += 40;
+        mid_info.frame_rect.size.width -= 80;
+        mid_info.frame_rect.size.height -= 80;
+*/
 
-        res = converter.convert(mid_info
+        res = converter.convert_frames(mid_info
                           , mid_buffer.data()
                           , output_info
                           , output_buffer.data()
@@ -381,7 +444,6 @@ void video_form::prepare_image()
 
 void video_form::on_pushButton_clicked()
 {
-
     auto& device = v4l2_capturer;
 
     if (device->is_opened())
@@ -400,7 +462,7 @@ void video_form::on_pushButton_clicked()
 
         for (const auto& f : formats)
         {
-            auto video_format = core::media::utils::format_conversion::form_v4l2_format(f.pixel_format);
+            auto video_format = core::media::utils::format_conversion::from_v4l2_format(f.pixel_format);
 
             auto item_string = QString("%1x%2@%3:%4").arg(QString::number(f.size.width)
                                                           , QString::number(f.size.height)
@@ -408,6 +470,16 @@ void video_form::on_pushButton_clicked()
                                                           , QString::fromStdString(core::media::utils::format_conversion::get_format_name(video_format)));
             ui->cbResoulution->addItem(item_string);
         }
+
+        auto fmt = device->get_format();
+        auto current_format_string = QString("%1x%2@%3:%4").arg(QString::number(fmt.size.width)
+                                                      , QString::number(fmt.size.height)
+                                                      , QString::number(fmt.fps)
+                                                      , QString::fromStdString(core::media::utils::format_conversion::get_format_name(core::media::utils::format_conversion::from_v4l2_format(fmt.pixel_format))));
+
+        // device->get_format().
+
+        ui->cbResoulution->setCurrentText(current_format_string);
 
         ui->cbControlList->clear();
 
@@ -456,13 +528,14 @@ void video_form::on_pushButton_clicked()
 
     ffmpeg::fragment_info_t output_fragment_info(d_x, d_y, size_dst.width() - d_x * 2, size_dst.height() - d_y * 2, size_dst.width(), size_dst.height(), ffmpeg::pixel_format_rgb24);
 
-    converter.convert( brg_info
+
+    converter.convert_frames( brg_info
                       , buffer2.data()
                       , yuv_info
                       , yuv_input_buffer.data()
                       , false);
 
-    converter.convert( input_fragment_info
+    converter.convert_frames( input_fragment_info
                       , yuv_input_buffer.data()
                       , output_fragment_info
                       , buffer1.data()
@@ -505,11 +578,12 @@ void video_form::paintEvent(QPaintEvent *event)
     }
 
     painter.setPen(QPen(Qt::green, 1, Qt::SolidLine, Qt::FlatCap));
-    painter.drawText(rect(), QString("%1/%2/%3/%4")
+    painter.drawText(rect(), QString("%1/%2/%3/%4:%5")
                      .arg(QString::number(dec_delay / 1000, 'f', 2))
                      .arg(QString::number(delay1 / 1000, 'f', 2))
                      .arg(QString::number(delay2 / 1000, 'f', 2))
-                     .arg(QString::number(fps)));
+                     .arg(QString::number(fps))
+                     .arg(QString::number(real_fps)));
 
 }
 
@@ -566,4 +640,37 @@ void video_form::on_slControl_sliderMoved(int position)
         v4l2::control_t& ctrl = controls[index];
         v4l2_capturer->set_control(ctrl.id, position);
     }
+}
+
+void video_form::test1()
+{
+    using namespace core::media::video;
+
+    frame_size_t frame_size = { 1280, 720 };
+
+    video_format_t v_format_1(pixel_format_t::yuv420p
+                              , frame_size);
+    video_format_t v_format_2(pixel_format_t::yuv422p
+                              , frame_size);
+
+
+
+    auto planes_1 = v_format_1.plane_sizes();
+    auto planes_2 = v_format_2.plane_sizes();
+
+    auto frame_size_1 = v_format_1.frame_size();
+    auto frame_size_2 = v_format_2.frame_size();
+
+    ffmpeg::frame_size_t f_frame_size( frame_size.width, frame_size.height );
+    ffmpeg::video_info_t v_info_1(f_frame_size
+                                  , 0
+                                  , ffmpeg::pixel_format_yuv420p);
+    ffmpeg::video_info_t v_info_2(f_frame_size
+                                  , 0
+                                  , ffmpeg::pixel_format_yuv422p);
+
+    auto f_planes_1 = v_info_1.plane_sizes();
+    auto f_planes_2 = v_info_2.plane_sizes();
+
+    return;
 }

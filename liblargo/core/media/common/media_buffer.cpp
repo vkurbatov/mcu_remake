@@ -12,13 +12,13 @@ namespace media
 media_buffer::media_buffer(const void *data
                            , std::size_t size)
     : media_buffer(&data
-                   , planar_sizes_t({ size }))
+                   , plane_sizes_t({ size }))
 {
 
 }
 
 media_buffer::media_buffer(const void **slices
-                           , const planar_sizes_t &planar_sizes)
+                           , const plane_sizes_t &planar_sizes)
     : m_media_data(std::accumulate(planar_sizes.begin()
                                    , planar_sizes.end()
                                    , 0)
@@ -45,7 +45,7 @@ media_buffer::media_buffer(const void **slices
 }
 
 media_buffer::media_buffer(media_data_t &&media_data
-                           , const planar_sizes_t& planar_sizes)
+                           , const plane_sizes_t& planar_sizes)
     : m_planar_sizes(planar_sizes)
 {
     auto sz = std::accumulate(planar_sizes.begin()
@@ -68,7 +68,7 @@ bool media_buffer::swap(media_buffer &&other_media_buffer)
 }
 
 bool media_buffer::swap(media_data_t &&media_data
-                        , planar_sizes_t&& planar_sizes)
+                        , plane_sizes_t&& planar_sizes)
 {
     if (media_data.size() == std::accumulate(planar_sizes.begin()
                                              , planar_sizes.end()
@@ -98,7 +98,7 @@ const void *media_buffer::data(int32_t offset) const
     return m_media_data.data() + offset;
 }
 
-const planar_sizes_t &media_buffer::planar_sizes() const
+const plane_sizes_t &media_buffer::plane_sizes() const
 {
     return m_planar_sizes;
 }
