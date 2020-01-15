@@ -18,7 +18,7 @@ class video_frame_factory : virtual public i_video_frame_factory
     // i_video_frame_factory interface
 public:
     static video_frame_ptr_t create_frame(const video_format_t& video_format
-                                          , media::media_buffer&& media_buffer = media_buffer());
+                                          , media::media_buffer&& media_buffer);
 public:
     video_frame_ptr_t create() override;
 };

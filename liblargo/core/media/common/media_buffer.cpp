@@ -17,7 +17,7 @@ media_buffer::media_buffer(const void *data
 
 }
 
-media_buffer::media_buffer(const void **slices
+media_buffer::media_buffer(const void * const slices[]
                            , const plane_sizes_t &planar_sizes)
     : m_media_data(std::accumulate(planar_sizes.begin()
                                    , planar_sizes.end()
@@ -59,6 +59,33 @@ media_buffer::media_buffer(media_data_t &&media_data
     {
         m_media_data = std::move(media_data);
     }
+}
+
+media_buffer_ptr_t media_buffer::create(const void *data
+                                        , std::size_t size)
+{
+    return media_buffer_ptr_t(new media_buffer(data
+                                                , size
+                                               )
+                              );
+}
+
+media_buffer_ptr_t media_buffer::create(const void * const slices[]
+                                        , const plane_sizes_t &plane_sizes)
+{
+    return media_buffer_ptr_t(new media_buffer(slices
+                                                , plane_sizes
+                                               )
+                              );
+}
+
+media_buffer_ptr_t media_buffer::create(media_data_t &&media_data
+                                        , const plane_sizes_t &plane_sizes)
+{
+    return media_buffer_ptr_t(new media_buffer(std::move(media_data)
+                                                , plane_sizes
+                                               )
+                              );
 }
 
 bool media_buffer::swap(media_buffer &&other_media_buffer)

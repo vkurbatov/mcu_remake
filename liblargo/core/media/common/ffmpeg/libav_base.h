@@ -19,6 +19,7 @@ const codec_id_t unknown_codec_id = -1;
 const pixel_format_t unknown_pixel_format = -1;
 const sample_format_t unknown_sample_format = -1;
 
+extern const pixel_format_t pixel_format_none;
 extern const pixel_format_t pixel_format_bgr24;
 extern const pixel_format_t pixel_format_rgb24;
 extern const pixel_format_t pixel_format_yuv420p;
@@ -185,6 +186,7 @@ struct frame_rect_t
     frame_rect_t& operator +=(const frame_point_t& frame_point);
 
     bool is_join(const frame_size_t& frame_size) const;
+    bool is_null() const;
 
 };
 
@@ -269,6 +271,7 @@ struct fragment_info_t
     std::size_t get_frame_size(std::int32_t align = default_frame_align) const;
 
     bool is_full() const;
+    bool is_convertable() const;
 };
 
 

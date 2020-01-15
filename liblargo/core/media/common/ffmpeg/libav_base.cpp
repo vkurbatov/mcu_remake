@@ -23,11 +23,11 @@ const codec_id_t codec_id_none = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
 const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SAMPLE_FMT_S16);
 
+const pixel_format_t pixel_format_none = static_cast<pixel_format_t>(AV_PIX_FMT_NONE);
 const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR24);
 const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
-const pixel_format_t pixel_format_none = static_cast<pixel_format_t>(AV_PIX_FMT_NONE);
 
 
 std::string error_to_string(int32_t av_error)
@@ -461,6 +461,12 @@ bool fragment_info_t::is_full() const
             && frame_rect.size == frame_size;
 }
 
+bool fragment_info_t::is_convertable() const
+{
+    return pixel_format != pixel_format_none
+            && frame_rect.is_join(frame_size);
+}
+
 bool fragment_info_t::operator ==(const fragment_info_t &fragment_info) const
 {
     return frame_rect == fragment_info.frame_rect
@@ -516,6 +522,12 @@ bool frame_rect_t::is_join(const frame_size_t &frame_size) const
 {
     return frame_size.width >= (offset.x + size.width)
             && frame_size.height >= (offset.y + size.height);
+}
+
+bool frame_rect_t::is_null() const
+{
+    return offset.is_null()
+            && size.width == 0 && size.height == 0;
 }
 
 bool codec_info_t::is_coded() const

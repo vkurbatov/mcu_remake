@@ -34,7 +34,8 @@ public:
 
 };
 
-typedef std::unique_ptr<i_media_buffer> media_buffer_ptr_t;
+typedef std::shared_ptr<i_media_buffer> media_buffer_ptr_t;
+typedef std::shared_ptr<i_swapped_media_buffer> swapped_media_buffer_ptr_t;
 
 }
 

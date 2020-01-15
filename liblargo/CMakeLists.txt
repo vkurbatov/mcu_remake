@@ -27,8 +27,8 @@ set(SOURCES
     "core/media/common/media_format.cpp"
     "core/media/common/media_plane.cpp"
     "core/media/common/media_buffer.cpp"
-    "core/media/common/media_frame.cpp"
-    "core/media/common/media_frame_buffered.cpp"
+    "core/media/common/media_frame.cpp"       
+    "core/media/common/media_control.cpp"
     "core/media/common/ffmpeg/libav_base.cpp"
     "core/media/common/ffmpeg/libav_decoder.cpp"
     "core/media/common/ffmpeg/libav_stream_capturer.cpp"
@@ -64,9 +64,9 @@ set(SOURCES
     "core/media/video/video_frame_rect.cpp"
     "core/media/video/video_format.cpp"       
     "core/media/video/video_frame.cpp"
-    "core/media/video/video_frame_buffered.cpp"
     "core/media/video/video_frame_builder.cpp"
     "core/media/video/video_frame_factory.cpp"
+    "core/media/video/video_frame_converter.cpp"
 )
 
 set(PRIVATE_HEADERS
@@ -82,7 +82,7 @@ set(PRIVATE_HEADERS
     "core/media/common/media_plane.h"
     "core/media/common/media_buffer.h"
     "core/media/common/media_frame.h"
-    "core/media/common/media_frame_buffered.h"
+    "core/media/common/media_control.h"
     "core/media/common/ffmpeg/libav_base.h"
     "core/media/common/ffmpeg/libav_decoder.h"
     "core/media/common/ffmpeg/libav_stream_capturer.h"
@@ -113,8 +113,8 @@ set(PRIVATE_HEADERS
     "core/media/audio/tools/audio_event_server.h"
     "core/media/audio/tools/audio_processor.h"
     "core/media/video/video_frame.h"
-    "core/media/video/video_frame_buffered.h"
     "core/media/video/video_frame_factory.h"
+    "core/media/video/video_frame_converter.h"
 )
 
 set(PUBLIC_HEADERS
@@ -132,6 +132,13 @@ set(PUBLIC_HEADERS
     "core/media/common/i_media_buffer.h"
     "core/media/common/i_media_plane.h"
     "core/media/common/i_media_frame.h"
+    "core/media/common/i_media_channel.h"
+    "core/media/common/i_media_track.h"
+    "core/media/common/i_media_sink.h"
+    "core/media/common/i_media_source.h"
+    "core/media/common/i_media_device_control.h"
+    "core/media/common/i_media_frame_converter.h"
+    "core/media/common/i_media_frame_transcoder.h"
     "core/media/common/i_process_state_notifier.h" 
     "core/media/audio/i_audio_formatter.h"
     "core/media/audio/i_audio_point.h"

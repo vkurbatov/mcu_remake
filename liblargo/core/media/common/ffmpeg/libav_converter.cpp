@@ -422,6 +422,9 @@ void libav_converter_context_deleter_t::operator()(libav_converter_context_t *li
     delete libav_converter_context_ptr;
 }
 // -----------------------------------------------------------------------------
+
+#define CHECK_FORMATS if (!input_fragment_info.is_convertable() || !output_fragment_info.is_convertable()) return 0
+
 libav_converter::libav_converter(scaling_method_t scaling_method)
     : m_converter_context(new libav_converter_context_t(scaling_method))
 {
@@ -434,6 +437,7 @@ std::size_t libav_converter::convert_frames(const fragment_info_t& input_fragmen
                                            , void* output_frame
                                            , bool is_flip)
 {
+    CHECK_FORMATS;
     return m_converter_context->convert_frames(input_fragment_info
                                                , input_frame
                                                , output_fragment_info
@@ -447,6 +451,7 @@ std::size_t libav_converter::convert_slices(const fragment_info_t &input_fragmen
                                             , void *output_slices[]
                                             , bool is_flip)
 {
+    CHECK_FORMATS;
     return m_converter_context->convert_slices(input_fragment_info
                                                , input_slices
                                                , output_fragment_info
@@ -460,6 +465,7 @@ std::size_t libav_converter::convert_to_slices(const fragment_info_t &input_frag
                                                , void *output_slices[]
                                                , bool is_flip)
 {
+    CHECK_FORMATS;
     return m_converter_context->convert_to_slices(input_fragment_info
                                                  , input_frame
                                                  , output_fragment_info
@@ -473,6 +479,7 @@ std::size_t libav_converter::convert_to_frame(const fragment_info_t &input_fragm
                                               , void *output_frame
                                               , bool is_flip)
 {
+    CHECK_FORMATS;
     return m_converter_context->convert_to_frame(input_fragment_info
                                                  , input_slices
                                                  , output_fragment_info

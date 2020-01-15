@@ -27,6 +27,16 @@ frame_rect_t::frame_rect_t(const frame_point_t &point
 
 }
 
+frame_rect_t::frame_rect_t(int32_t x
+                           , int32_t y
+                           , int32_t width
+                           , int32_t height)
+    : point( { x, y } )
+    , size( { width, height } )
+{
+
+}
+
 bool frame_rect_t::operator ==(const frame_rect_t &frame_rect)
 {
     return point == frame_rect.point
@@ -67,6 +77,15 @@ frame_point_t frame_rect_t::br_point() const
 {
     return frame_point_t(point.x + size.width, point.y + size.height);
 }
+
+bool frame_rect_t::is_join(const frame_size_t &size) const
+{
+    return point.x >= 0
+            && point.y >= 0
+            && br_point().x <= size.width
+            && br_point().y <= size.height;
+}
+
 
 
 

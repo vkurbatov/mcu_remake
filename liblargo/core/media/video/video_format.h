@@ -41,6 +41,7 @@ enum class pixel_format_t
     sgbrg8,
     sgrbg8,
     srggb8,
+    jpeg,
     mjpeg,
     h264,
     h263,

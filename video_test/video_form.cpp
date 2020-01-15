@@ -14,6 +14,7 @@
 #include "media/common/utils/format_converter.h"
 #include "media/video/video_frame.h"
 #include "media/common/media_frame.h"
+#include "media/video/video_frame_converter.h"
 
 #include <cstring>
 #include <mutex>
@@ -22,6 +23,8 @@
 #include <thread>
 
 ffmpeg::scaling_method_t scaling_method = ffmpeg::scaling_method_t::default_method;
+core::media::video::aspect_ratio_mode_t aspect_ratio_method = core::media::video::aspect_ratio_mode_t::scale;
+
 std::uint32_t scaling_factor = 1;
 
 std::uint32_t decoded_delay = 0;
@@ -41,6 +44,8 @@ std::unique_ptr<v4l2::v4l2_device> v4l2_capturer;
 ffmpeg::libav_decoder decoder;
 std::mutex  mutex;
 std::atomic_bool image_change(false);
+
+core::media::video::video_frame_converter   frame_converter(scaling_method);
 
 QImage last_image;
 
@@ -300,7 +305,9 @@ void video_form::prepare_image()
     {
         output_info.pixel_format = ffmpeg::pixel_format_rgb24;
 
-        output_info.frame_rect.size = output_info.frame_size = { 1920, 1080 };
+        output_info.frame_rect.size = output_info.frame_size = { 1280, 720 };
+
+        mid_info = output_info;
 
         output_info.frame_rect.offset.x += margin * 2;
         output_info.frame_rect.offset.y += margin * 2;
@@ -370,27 +377,46 @@ void video_form::prepare_image()
         const auto k_h = scaling_factor;
 
         mid_info.frame_rect.size.width /= k_w;
-        mid_info.frame_rect.size.height /= k_h;
-        mid_info.pixel_format = output_info.pixel_format;
+        mid_info.frame_rect.size.height /= (k_h);
+        mid_info.frame_size = mid_info.frame_rect.size;
+        mid_info.pixel_format = ffmpeg::pixel_format_yuv420p;
 
-        std::vector<std::uint8_t> mid_buffer(mid_info.get_frame_size());
+
+        //std::vector<std::uint8_t> mid_buffer(mid_info.get_frame_size());
 
         if (scaling_method != converter.scaling_method())
         {
             converter.reset(scaling_method);
+            frame_converter.set_scaling_method(scaling_method);
         }
 
 
-        core::media::video::video_format_t format( core::media::utils::format_conversion::from_ffmpeg_format(input_info.pixel_format)
+        core::media::video::video_format_t input_format( core::media::utils::format_conversion::from_ffmpeg_format(input_info.pixel_format)
                                                   , { input_info.frame_size.width, input_info.frame_size.height });
 
-        core::media::media_buffer buffer(std::move(input_buffer)
-                                         , format.plane_sizes());
+        auto input_frame = core::media::video::video_frame::create(input_format
+                                                                   , core::media::media_buffer::create(std::move(input_buffer)
+                                                                                                       , input_format.plane_sizes()));
 
-        core::media::video::video_frame frame(format
-                                              , std::move(buffer));
 
         auto tp = std::chrono::high_resolution_clock::now();
+
+        core::media::video::video_format_t mid_format(input_format);
+        mid_format.size = { mid_info.frame_size.width, mid_info.frame_size.height };
+        mid_format.pixel_format = core::media::video::pixel_format_t::yuv420p;
+
+        /*core::media::video::frame_rect_t input_area = core::media::video::frame_rect_t( { input_info.frame_rect.offset.x, input_info.frame_rect.offset.y }
+                                                                                        , frame_sizeinput_info.frame_rect.size.width, input_info.frame_rect.size.height });
+*/
+        core::media::video::frame_rect_t input_area(input_info.frame_rect.offset.x
+                                                    , input_info.frame_rect.offset.y
+                                                    , input_info.frame_rect.size.width
+                                                    , input_info.frame_rect.size.height);
+
+        frame_converter.set_input_area(input_area);
+        frame_converter.set_aspect_ratio_mode(aspect_ratio_method);
+
+        auto mid_frame = frame_converter.convert(*input_frame, mid_format);
 
         /*auto res = converter.convert(input_info
                           , frame.planes().front()->data()
@@ -398,13 +424,13 @@ void video_form::prepare_image()
                           , mid_buffer.data()
                           , rotate);*/
 
-        void * const slices[] = { frame.planes()[0]->data(), frame.planes()[1]->data(), frame.planes()[2]->data() };
+        // void * const slices[] = { frame.planes()[0]->data(), frame.planes()[1]->data(), frame.planes()[2]->data() };
 
-        auto res = converter.convert_to_frame(input_info
-                          , slices
+        /*auto res = converter.convert_frames(input_info
+                          , input_frame->planes()[0]->data()
                           , mid_info
                           , mid_buffer.data()
-                          , rotate);
+                          , rotate);*/
 
         convert_delay1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
         tp = std::chrono::high_resolution_clock::now();
@@ -415,8 +441,8 @@ void video_form::prepare_image()
         mid_info.frame_rect.size.height -= 80;
 */
 
-        res = converter.convert_frames(mid_info
-                          , mid_buffer.data()
+        auto res = converter.convert_frames(mid_info
+                          , mid_frame->planes()[0]->data()
                           , output_info
                           , output_buffer.data()
                           , false);
@@ -673,4 +699,9 @@ void video_form::test1()
     auto f_planes_2 = v_info_2.plane_sizes();
 
     return;
+}
+
+void video_form::on_cbAspectRatio_currentIndexChanged(int index)
+{
+    aspect_ratio_method = static_cast<core::media::video::aspect_ratio_mode_t>(index);
 }

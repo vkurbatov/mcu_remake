@@ -24,6 +24,11 @@ struct frame_rect_t
     frame_rect_t(const frame_point_t& point
                  , const frame_point_t& br_point);
 
+    frame_rect_t(std::int32_t x
+                 , std::int32_t y
+                 , std::int32_t width
+                 , std::int32_t height);
+
     bool operator == (const frame_rect_t& frame_rect);
     bool operator != (const frame_rect_t& frame_rect);
 
@@ -34,6 +39,8 @@ struct frame_rect_t
     frame_rect_t& operator -= (const frame_size_t& frame_size);
 
     frame_point_t br_point() const;
+
+    bool is_join(const frame_size_t& size) const;
 };
 
 }

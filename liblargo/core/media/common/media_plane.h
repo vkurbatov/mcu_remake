@@ -12,11 +12,11 @@ namespace media
 
 class media_plane : virtual public i_media_plane
 {
-    i_media_buffer&     m_media_buffer;
-    std::uint32_t       m_plane_id;
+    std::weak_ptr<i_media_buffer>       m_media_buffer;
+    std::uint32_t                       m_plane_id;
 
 public:
-    media_plane(i_media_buffer& media_buffer
+    media_plane(media_buffer_ptr_t media_buffer
                 , std::uint32_t plane_id);
 
     // i_media_plane interface

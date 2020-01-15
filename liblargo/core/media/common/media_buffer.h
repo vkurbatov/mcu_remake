@@ -14,16 +14,25 @@ class media_buffer : virtual public i_swapped_media_buffer
     media_data_t    m_media_data;
     plane_sizes_t   m_planar_sizes;
 
-public:
+private:
     media_buffer(const void* data = nullptr
                  , std::size_t size = 0);
 
-    media_buffer(const void** slices
+    media_buffer(const void * const slices[]
                  , const plane_sizes_t& plane_sizes);
 
     media_buffer(media_data_t&& media_data
                  , const plane_sizes_t& plane_sizes);
 
+public:
+    static media_buffer_ptr_t create(const void* data = nullptr
+            , std::size_t size = 0);
+
+    static media_buffer_ptr_t create(const void * const slices[]
+                                     , const plane_sizes_t& plane_sizes);
+
+    static media_buffer_ptr_t create(media_data_t&& media_data
+                                     , const plane_sizes_t& plane_sizes);
 
     bool swap(media_buffer&& other_media_buffer);
     bool swap(media_data_t&& media_data

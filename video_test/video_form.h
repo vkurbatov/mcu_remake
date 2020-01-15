@@ -36,6 +36,8 @@ private slots:
 
     void on_slControl_sliderMoved(int position);
 
+    void on_cbAspectRatio_currentIndexChanged(int index);
+
 private:
     Ui::video_form *ui;
     video_surface m_surface;
