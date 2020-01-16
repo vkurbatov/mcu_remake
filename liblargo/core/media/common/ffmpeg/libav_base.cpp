@@ -191,7 +191,7 @@ plane_sizes_t video_info_t::plane_sizes(pixel_format_t pixel_format
         for (int i = 0; i < max_planes && strides[i] > 0; i++)
         {
             auto sz = strides[i + 1] == 0 || max_planes == i + 1
-                    ? frame_size - (slices[i] - (std::uint8_t*)(nullptr))
+                    ? frame_size - (slices[i] - slices[0])
                     : slices[i + 1] - slices[i];
 
             plane_sizes.push_back( { strides[i], sz / strides[i] } );
@@ -208,7 +208,6 @@ std::size_t video_info_t::split_slices(pixel_format_t pixel_format
                                         , int32_t align)
 {
     std::size_t result = 0;
-
     std::size_t offset = 0;
 
     for (const auto& sz : plane_sizes(pixel_format
@@ -221,6 +220,67 @@ std::size_t video_info_t::split_slices(pixel_format_t pixel_format
     }
 
     return result;
+}
+
+plane_list_t video_info_t::split_planes(pixel_format_t pixel_format
+                                        , const frame_size_t &size
+                                        , const void *data
+                                        , int32_t align)
+{
+    plane_list_t plane_list;
+
+    std::uint8_t* slices[max_planes] = {};
+    std::int32_t strides[max_planes] = {};
+
+    auto frame_size = av_image_fill_arrays(slices
+                                    , strides
+                                    , static_cast<const std::uint8_t*>(data)
+                                    , static_cast<AVPixelFormat>(pixel_format)
+                                    , size.width
+                                    , size.height
+                                    , align);
+
+    if (frame_size > 0)
+    {
+        for (int i = 0; i < max_planes && strides[i] > 0; i++)
+        {
+            auto sz = strides[i + 1] == 0 || max_planes == i + 1
+                    ? frame_size - (slices[i] - slices[0])
+                    : slices[i + 1] - slices[i];
+
+            plane_list.push_back({ static_cast<void*>(slices[i])
+                                  , { strides[i], sz / strides[i] }
+                                 });
+        }
+    }
+
+    return plane_list;
+}
+
+bool video_info_t::blackout(pixel_format_t pixel_format
+                            , const frame_size_t &size
+                            , void *slices[])
+{
+    std::int32_t    linesizes[max_planes] = {};
+
+    if (av_image_fill_linesizes(linesizes
+                                , static_cast<AVPixelFormat>(pixel_format)
+                                , size.width) >= 0)
+    {
+        ptrdiff_t lines[] = { linesizes[0]
+                              , linesizes[1]
+                              , linesizes[2]
+                              , linesizes[3] };
+        av_image_fill_black(*(reinterpret_cast<uint8_t***>(&slices))
+                            , lines
+                            , static_cast<AVPixelFormat>(pixel_format)
+                            , AVCOL_RANGE_MPEG
+                            , size.width
+                            , size.height);
+    }
+
+    return false;
+
 }
 
 video_info_t::video_info_t(uint32_t width
@@ -289,6 +349,33 @@ plane_sizes_t video_info_t::plane_sizes() const
 {
     return plane_sizes(pixel_format
                        , size);
+}
+
+std::size_t video_info_t::split_slices(void *slices[]
+                                       , const void *data
+                                       , int32_t align) const
+{
+    return split_slices(pixel_format
+                        , size
+                        , slices
+                        , data
+                        , align);
+}
+
+plane_list_t video_info_t::split_planes(const void *data
+                                        , int32_t align)
+{
+    return split_planes(pixel_format
+                        , size
+                        , data
+                        , align);
+}
+
+bool video_info_t::blackout(void *slices[]) const
+{
+    return blackout(pixel_format
+                    , size
+                    , slices);
 }
 
 
@@ -420,6 +507,57 @@ frame_size_t &frame_size_t::operator +=(const frame_point_t &frame_point)
     return *this;
 }
 
+frame_rect_t::frame_rect_t(const frame_point_t &offset, const frame_size_t &size)
+    : offset(offset)
+    , size(size)
+{
+
+}
+
+frame_rect_t::frame_rect_t(uint32_t x
+                           , uint32_t y
+                           , uint32_t width
+                           , uint32_t height)
+    : frame_rect_t({ x, y }
+                   , { width, height })
+{
+
+}
+
+bool frame_rect_t::operator ==(const frame_rect_t &frame_rect) const
+{
+    return offset == frame_rect.offset && size == frame_rect.size;
+}
+
+bool frame_rect_t::operator !=(const frame_rect_t &frame_rect) const
+{
+    return !operator==(frame_rect);
+}
+
+frame_rect_t &frame_rect_t::operator +=(const frame_size_t &frame_size)
+{
+    size += frame_size;
+    return *this;
+}
+
+frame_rect_t &frame_rect_t::operator +=(const frame_point_t &frame_point)
+{
+    offset += frame_point;
+    return *this;
+}
+
+bool frame_rect_t::is_join(const frame_size_t &frame_size) const
+{
+    return frame_size.width >= (offset.x + size.width)
+            && frame_size.height >= (offset.y + size.height);
+}
+
+bool frame_rect_t::is_null() const
+{
+    return offset.is_null()
+            && size.width == 0 && size.height == 0;
+}
+
 fragment_info_t::fragment_info_t(uint32_t x
                                  , uint32_t y
                                  , uint32_t width
@@ -477,57 +615,6 @@ bool fragment_info_t::operator ==(const fragment_info_t &fragment_info) const
 bool fragment_info_t::operator !=(const fragment_info_t &fragment_info) const
 {
     return !operator ==(fragment_info);
-}
-
-frame_rect_t::frame_rect_t(const frame_point_t &offset, const frame_size_t &size)
-    : offset(offset)
-    , size(size)
-{
-
-}
-
-frame_rect_t::frame_rect_t(uint32_t x
-                           , uint32_t y
-                           , uint32_t width
-                           , uint32_t height)
-    : frame_rect_t({ x, y }
-                   , { width, height })
-{
-
-}
-
-bool frame_rect_t::operator ==(const frame_rect_t &frame_rect) const
-{
-    return offset == frame_rect.offset && size == frame_rect.size;
-}
-
-bool frame_rect_t::operator !=(const frame_rect_t &frame_rect) const
-{
-    return !operator==(frame_rect);
-}
-
-frame_rect_t &frame_rect_t::operator +=(const frame_size_t &frame_size)
-{
-    size += frame_size;
-    return *this;
-}
-
-frame_rect_t &frame_rect_t::operator +=(const frame_point_t &frame_point)
-{
-    offset += frame_point;
-    return *this;
-}
-
-bool frame_rect_t::is_join(const frame_size_t &frame_size) const
-{
-    return frame_size.width >= (offset.x + size.width)
-            && frame_size.height >= (offset.y + size.height);
-}
-
-bool frame_rect_t::is_null() const
-{
-    return offset.is_null()
-            && size.width == 0 && size.height == 0;
 }
 
 bool codec_info_t::is_coded() const

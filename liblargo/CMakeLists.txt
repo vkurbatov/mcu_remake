@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 set(TARGET largo)
 
 find_package(PkgConfig)
+find_package(OpenCV REQUIRED core imgproc)
 
 pkg_search_module(AVCODEC REQUIRED libavcodec>=57.89.100)
 pkg_search_module(AVFORMAT REQUIRED libavformat>=57.71.100)
@@ -36,6 +37,7 @@ set(SOURCES
     "core/media/common/v4l2/v4l2_base.cpp"
     "core/media/common/v4l2/v4l2_device.cpp"
     "core/media/common/v4l2/v4l2_api.cpp"
+    "core/media/common/opencv/cv_base.cpp"
     "core/media/common/utils/format_converter.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_format.cpp"
@@ -67,6 +69,9 @@ set(SOURCES
     "core/media/video/video_frame_builder.cpp"
     "core/media/video/video_frame_factory.cpp"
     "core/media/video/video_frame_converter.cpp"
+    "core/media/video/filters/video_filter.cpp"
+    "core/media/video/filters/video_filter_flip.cpp"
+    "core/media/video/video_utils.cpp"
 )
 
 set(PRIVATE_HEADERS
@@ -90,6 +95,7 @@ set(PRIVATE_HEADERS
     "core/media/common/v4l2/v4l2_base.h"
     "core/media/common/v4l2/v4l2_device.h"
     "core/media/common/v4l2/v4l2_api.h"
+    "core/media/common/opencv/cv_base.h"
     "core/media/common/utils/format_converter.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_point.h"
@@ -115,6 +121,9 @@ set(PRIVATE_HEADERS
     "core/media/video/video_frame.h"
     "core/media/video/video_frame_factory.h"
     "core/media/video/video_frame_converter.h"
+    "core/media/video/filters/video_filter.h"
+    "core/media/video/filters/video_filter_flip.h"
+    "core/media/video/video_utils.h"
 )
 
 set(PUBLIC_HEADERS
@@ -136,6 +145,7 @@ set(PUBLIC_HEADERS
     "core/media/common/i_media_track.h"
     "core/media/common/i_media_sink.h"
     "core/media/common/i_media_source.h"
+    "core/media/common/i_media_filter.h"
     "core/media/common/i_media_device_control.h"
     "core/media/common/i_media_frame_converter.h"
     "core/media/common/i_media_frame_transcoder.h"
@@ -182,6 +192,7 @@ target_link_libraries(${TARGET} PRIVATE
     ${SWSCALE_LIBRARIES}
     ${AVUTIL_LIBRARIES}
     ${V4L2_LIBRARIES}
+    ${OpenCV_LIBS}
     swscale
 )
 

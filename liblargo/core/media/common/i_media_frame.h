@@ -26,6 +26,7 @@ public:
     virtual std::size_t size() const = 0;
     virtual bool is_valid() const = 0;
 
+    virtual void clear() = 0;
     virtual void swap(media_buffer_ptr_t&& media_buffer) = 0;
     virtual media_buffer_ptr_t release() = 0;
 };

@@ -2,6 +2,8 @@
 #include "media/common/utils/format_converter.h"
 #include "media/common/ffmpeg/libav_base.h"
 
+#include <sstream>
+
 
 namespace core
 {
@@ -57,14 +59,30 @@ plane_sizes_t video_format_t::plane_sizes(pixel_format_t pixel_format
     return plane_sizes;
 }
 
-
-std::size_t video_format_t::plane_width(pixel_format_t pixel_format
-                                        , uint32_t width
+frame_size_t video_format_t::plane_size(pixel_format_t pixel_format
+                                        , const frame_size_t& size
                                         , uint32_t plane_idx)
 {
-    return ffmpeg::video_info_t::plane_width(utils::format_conversion::to_ffmpeg_format(pixel_format)
-                                               , width
-                                               , plane_idx);
+    auto sizes = ffmpeg::video_info_t::plane_sizes(utils::format_conversion::to_ffmpeg_format(pixel_format)
+                                                              , { size.width, size.height });
+
+    return plane_idx < sizes.size()
+            ? frame_size_t(sizes[plane_idx].width, sizes[plane_idx].height)
+            : frame_size_t();
+}
+
+std::string video_format_t::to_string(pixel_format_t pixel_format
+                                      , frame_size_t size
+                                      , uint32_t fps)
+{
+    return static_cast<std::stringstream&>(std::stringstream()
+                                           << size.width
+                                           << "x"
+                                           << size.height
+                                           << "@"
+                                           << fps
+                                           << ":"
+                                           << media::utils::format_conversion::get_format_name(pixel_format)).str();
 }
 
 
@@ -123,11 +141,18 @@ plane_sizes_t video_format_t::plane_sizes() const
                        , size);
 }
 
-std::size_t video_format_t::plane_width(uint32_t plane_idx) const
+frame_size_t video_format_t::plane_size(uint32_t plane_idx) const
 {
-    return plane_width(pixel_format
-                       , size.width
-                       , plane_idx);
+    return plane_size(pixel_format
+                      , size
+                      , plane_idx);
+}
+
+std::string video_format_t::to_string() const
+{
+    return to_string(pixel_format
+                     , size
+                     , fps);
 }
 
 

@@ -20,7 +20,7 @@ public:
     virtual const video_format_t& video_format() const = 0;
 };
 
-typedef std::unique_ptr<i_video_frame> video_frame_ptr_t;
+typedef std::shared_ptr<i_video_frame> video_frame_ptr_t;
 
 }
 

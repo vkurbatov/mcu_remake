@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 
 namespace core
 {
@@ -34,6 +35,8 @@ struct media_format_t
     virtual std::size_t planes() const = 0;
     virtual plane_sizes_t plane_sizes() const = 0;
     virtual bool is_valid() const;
+
+    virtual std::string to_string() const;
 
 };
 

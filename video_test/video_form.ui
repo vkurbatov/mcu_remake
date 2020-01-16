@@ -184,19 +184,6 @@
      <number>32</number>
     </property>
    </widget>
-   <widget class="QCheckBox" name="cbRotate">
-    <property name="geometry">
-     <rect>
-      <x>1190</x>
-      <y>0</y>
-      <width>97</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Rotate</string>
-    </property>
-   </widget>
    <widget class="QComboBox" name="cbAspectRatio">
     <property name="geometry">
      <rect>
@@ -219,6 +206,36 @@
     <item>
      <property name="text">
       <string>fill</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QComboBox" name="cbFlipMethod">
+    <property name="geometry">
+     <rect>
+      <x>1200</x>
+      <y>0</y>
+      <width>85</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>none</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>vflip</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>hflip</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>both</string>
      </property>
     </item>
    </widget>

@@ -68,9 +68,13 @@ struct video_format_t : public media_format_t
     static std::size_t planes(pixel_format_t pixel_format);
     static plane_sizes_t plane_sizes(pixel_format_t pixel_format
                                      , const frame_size_t& size);
-    static std::size_t plane_width(pixel_format_t pixel_format
-                                   , std::uint32_t width
+    static frame_size_t plane_size(pixel_format_t pixel_format
+                                   , const frame_size_t& size
                                    , std::uint32_t plane_idx);
+
+    static std::string to_string(pixel_format_t pixel_format = default_pixel_format
+                                , frame_size_t size = default_frame_size
+                                , std::uint32_t fps = default_fps);
 
     video_format_t(pixel_format_t pixel_format = default_pixel_format
                    , frame_size_t size = default_frame_size
@@ -85,7 +89,10 @@ struct video_format_t : public media_format_t
     std::size_t frame_size() const override;
     std::size_t planes() const override;
     plane_sizes_t plane_sizes() const override;
-    std::size_t plane_width(std::uint32_t plane_idx) const;
+
+    frame_size_t plane_size(std::uint32_t plane_idx) const;
+
+    std::string to_string() const override;
 };
 
 }

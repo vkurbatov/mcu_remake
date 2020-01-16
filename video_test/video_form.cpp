@@ -15,6 +15,8 @@
 #include "media/video/video_frame.h"
 #include "media/common/media_frame.h"
 #include "media/video/video_frame_converter.h"
+#include "media/video/filters/video_filter_flip.h"
+#include "media/common/opencv/cv_base.h"
 
 #include <cstring>
 #include <mutex>
@@ -45,7 +47,8 @@ ffmpeg::libav_decoder decoder;
 std::mutex  mutex;
 std::atomic_bool image_change(false);
 
-core::media::video::video_frame_converter   frame_converter(scaling_method);
+core::media::video::video_frame_converter           frame_converter(scaling_method);
+core::media::video::filters::video_filter_flip      filter_flip;
 
 QImage last_image;
 
@@ -288,7 +291,6 @@ void video_form::prepare_image()
     ffmpeg::fragment_info_t output_info = input_info;
 
     auto margin = ui->spMargin->value();
-    auto rotate = ui->cbRotate->isChecked();
 
     input_info.frame_rect.offset.x += margin;
     input_info.frame_rect.offset.y += margin;
@@ -377,7 +379,7 @@ void video_form::prepare_image()
         const auto k_h = scaling_factor;
 
         mid_info.frame_rect.size.width /= k_w;
-        mid_info.frame_rect.size.height /= (k_h);
+        mid_info.frame_rect.size.height /= k_h;
         mid_info.frame_size = mid_info.frame_rect.size;
         mid_info.pixel_format = ffmpeg::pixel_format_yuv420p;
 
@@ -388,6 +390,13 @@ void video_form::prepare_image()
         {
             converter.reset(scaling_method);
             frame_converter.set_scaling_method(scaling_method);
+        }
+
+        auto flip_method = static_cast<core::media::video::filters::flip_method_t>(ui->cbFlipMethod->currentIndex());
+
+        if (flip_method != filter_flip.flip_method())
+        {
+            filter_flip.set_flip_method(flip_method);
         }
 
 
@@ -416,13 +425,18 @@ void video_form::prepare_image()
         frame_converter.set_input_area(input_area);
         frame_converter.set_aspect_ratio_mode(aspect_ratio_method);
 
-        auto mid_frame = frame_converter.convert(*input_frame, mid_format);
+        auto mid_frame = frame_converter.convert(*input_frame
+                                                 , mid_format);
+
+
+        filter_flip.filter(*mid_frame);
+
 
         /*auto res = converter.convert(input_info
                           , frame.planes().front()->data()
                           , mid_info
                           , mid_buffer.data()
-                          , rotate);*/
+                          , false);*/
 
         // void * const slices[] = { frame.planes()[0]->data(), frame.planes()[1]->data(), frame.planes()[2]->data() };
 
@@ -430,7 +444,7 @@ void video_form::prepare_image()
                           , input_frame->planes()[0]->data()
                           , mid_info
                           , mid_buffer.data()
-                          , rotate);*/
+                          , false);*/
 
         convert_delay1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
         tp = std::chrono::high_resolution_clock::now();
@@ -446,6 +460,10 @@ void video_form::prepare_image()
                           , output_info
                           , output_buffer.data()
                           , false);
+
+        opencv::draw_text("Hello World!!!"
+                          , output_buffer.data()
+                          , { output_info.frame_size.width, output_info.frame_size.height });
 
         convert_delay2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
 

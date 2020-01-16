@@ -195,7 +195,7 @@ typedef std::vector<frame_size_t> plane_sizes_t;
 struct plane_info_t
 {
     void* data;
-    std::size_t size;
+    frame_size_t size;
 };
 
 typedef std::vector<plane_info_t> plane_list_t;
@@ -225,13 +225,22 @@ struct video_info_t
                                      , const void* data
                                      , std::int32_t align = default_frame_align);
 
+    static plane_list_t split_planes(pixel_format_t pixel_format
+                                     , const frame_size_t& size
+                                     , const void* data
+                                     , std::int32_t align = default_frame_align);
+
+    static bool blackout(pixel_format_t pixel_format
+                                , const frame_size_t& size
+                                , void *slices[max_planes]);
+
 
     video_info_t(std::uint32_t width
                  , std::uint32_t height
                  , std::uint32_t fps = 1
                  , pixel_format_t pixel_format = default_pixel_format);
 
-    video_info_t(frame_size_t size = { 0, 0}
+    video_info_t(frame_size_t size = { 0, 0 }
                  , std::uint32_t fps = 1
                  , pixel_format_t pixel_format = default_pixel_format);
 
@@ -244,6 +253,13 @@ struct video_info_t
     std::size_t planes() const;
     std::size_t plane_width(std::uint32_t plane_idx) const;
     plane_sizes_t plane_sizes() const;
+    std::size_t split_slices(void *slices[max_planes]
+                             , const void* data
+                             , std::int32_t align = default_frame_align) const;
+    plane_list_t split_planes(const void* data = nullptr
+                             , std::int32_t align = default_frame_align);
+
+    bool blackout(void *slices[max_planes]) const;
 };
 
 struct fragment_info_t

@@ -1,5 +1,6 @@
 #include "video_frame.h"
 #include "media/common/media_frame.h"
+#include "video_utils.h"
 
 namespace core
 {
@@ -35,6 +36,11 @@ video_frame::video_frame(const video_format_t &video_format
 const media_format_t &video_frame::media_format() const
 {
     return m_video_format;
+}
+
+void video_frame::clear()
+{
+    video_utils::blackout(*this);
 }
 
 const video_format_t &video_frame::video_format() const

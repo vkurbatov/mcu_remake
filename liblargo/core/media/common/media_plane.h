@@ -12,7 +12,7 @@ namespace media
 
 class media_plane : virtual public i_media_plane
 {
-    std::weak_ptr<i_media_buffer>       m_media_buffer;
+    std::shared_ptr<i_media_buffer>     m_media_buffer;
     std::uint32_t                       m_plane_id;
 
 public:
