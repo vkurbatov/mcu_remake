@@ -72,9 +72,9 @@ struct video_format_t : public media_format_t
                                    , const frame_size_t& size
                                    , std::uint32_t plane_idx);
 
-    static std::string to_string(pixel_format_t pixel_format = default_pixel_format
-                                , frame_size_t size = default_frame_size
-                                , std::uint32_t fps = default_fps);
+    static std::string to_string(pixel_format_t pixel_format
+                                , frame_size_t size
+                                , std::uint32_t fps);
 
     video_format_t(pixel_format_t pixel_format = default_pixel_format
                    , frame_size_t size = default_frame_size
@@ -85,6 +85,7 @@ struct video_format_t : public media_format_t
 
     bool is_planar() const override;
     bool is_encoded() const override;
+    bool is_convertable() const override;
     std::size_t bpp() const;
     std::size_t frame_size() const override;
     std::size_t planes() const override;

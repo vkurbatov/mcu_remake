@@ -56,6 +56,8 @@ public:
 
     media_frame_ptr_t convert(const i_media_frame &input_frame
                               , media_format_t &output_format) override;
+
+
 };
 
 }

@@ -17,6 +17,7 @@ namespace video_utils
 
     bool fill_slices(const i_media_frame& media_frame
                      , void* slices[]);
+
     bool blackout(const i_media_frame& media_frame);
     bool vertical_flip(const i_media_frame& media_frame);
     bool horizontal_flip(const i_media_frame& media_frame);

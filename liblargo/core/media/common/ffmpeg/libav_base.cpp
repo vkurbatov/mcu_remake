@@ -619,7 +619,8 @@ bool fragment_info_t::operator !=(const fragment_info_t &fragment_info) const
 
 bool codec_info_t::is_coded() const
 {
-    return id > 0 && id != AV_CODEC_ID_RAWVIDEO;
+    return id > AV_CODEC_ID_NONE
+            && id != AV_CODEC_ID_RAWVIDEO;
 }
 
 }

@@ -32,8 +32,6 @@ media_plane_list_t media_frame::planes() const
     {
         for (std::uint32_t i = 0; i < m_media_buffer->plane_sizes().size(); i++)
         {
-            new media_plane(m_media_buffer
-                                                                , i);
             plane_list.emplace_back(new media_plane(m_media_buffer
                                                     , i));
         }

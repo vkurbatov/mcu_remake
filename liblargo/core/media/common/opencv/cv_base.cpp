@@ -1,8 +1,6 @@
 #include "cv_base.h"
 
-#include <opencv/cv.h>
 #include <opencv2/imgproc.hpp>
-//#include <opencv/highgui.h>
 
 namespace opencv
 {
@@ -143,20 +141,26 @@ bool frame_rect_t::is_null() const
 
 void draw_text(const std::string &text
                , void *frame_data
-               , const frame_size_t &frame_size)
+               , const frame_size_t &frame_size
+               , std::int32_t pixel_width)
 {
-    cv::Mat matrix(frame_size.width
-              , frame_size.height
-              , CV_8UC3
-              , frame_data
-              , frame_size.width * 3);
+    cv::Mat matrix(frame_size.height
+              , frame_size.width
+              , CV_MAKETYPE(CV_8U, pixel_width)
+              , frame_data);
+
+    auto sz = cv::getTextSize(text.c_str()
+                    , cv::FONT_HERSHEY_DUPLEX
+                    , 1.0
+                    , 2
+                    , nullptr);
 
     cv::putText(matrix
               , text.c_str()
               , cv::Point(frame_size.width / 2, frame_size.height / 2) //top-left position
               , cv::FONT_HERSHEY_DUPLEX
               , 1.0
-              , CV_RGB(118, 185, 0) //font color
+              , CV_RGB(255, 0, 127) //font color
               , 2);
 }
 

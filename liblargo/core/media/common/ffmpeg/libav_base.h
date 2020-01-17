@@ -309,6 +309,12 @@ struct frame_info_t
     virtual std::string to_string() const;
 };
 
+struct frame_t
+{
+    frame_info_t    frame_info;
+    media_data_t    frame_data;
+};
+
 struct stream_info_t: public frame_info_t
 {
     codec_info_t                codec_info;

@@ -18,9 +18,9 @@ public:
     static bool check_media_buffer(const media_format_t& media_format
                                    , const i_media_buffer& media_buffer);
 
-public:    
+public:
     media_frame(media_buffer_ptr_t media_buffer);
-
+    virtual ~media_frame(){}
 
     // i_media_frame interface
 public:

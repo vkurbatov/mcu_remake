@@ -425,6 +425,12 @@ void video_form::prepare_image()
         frame_converter.set_input_area(input_area);
         frame_converter.set_aspect_ratio_mode(aspect_ratio_method);
 
+
+        /*auto buffer = core::media::media_buffer::create(nullptr, mid_format.plane_sizes());
+
+        auto frame = core::media::video::video_frame::create(mid_format
+                                                             , std::move(buffer));*/
+
         auto mid_frame = frame_converter.convert(*input_frame
                                                  , mid_format);
 
@@ -455,15 +461,17 @@ void video_form::prepare_image()
         mid_info.frame_rect.size.height -= 80;
 */
 
+        opencv::draw_text("Hello World!!!"
+                          , mid_frame->planes()[0]->data()
+                          , { mid_info.frame_size.width, mid_info.frame_size.height }
+                          , 1);
+
         auto res = converter.convert_frames(mid_info
                           , mid_frame->planes()[0]->data()
                           , output_info
                           , output_buffer.data()
                           , false);
 
-        opencv::draw_text("Hello World!!!"
-                          , output_buffer.data()
-                          , { output_info.frame_size.width, output_info.frame_size.height });
 
         convert_delay2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
 
@@ -506,24 +514,24 @@ void video_form::on_pushButton_clicked()
 
         for (const auto& f : formats)
         {
-            auto video_format = core::media::utils::format_conversion::from_v4l2_format(f.pixel_format);
+            core::media::video::video_format_t video_format(core::media::utils::format_conversion::from_v4l2_format(f.pixel_format)
+                                                            , { f.size.width, f.size.height }
+                                                            , f.fps);
 
-            auto item_string = QString("%1x%2@%3:%4").arg(QString::number(f.size.width)
-                                                          , QString::number(f.size.height)
-                                                          , QString::number(f.fps)
-                                                          , QString::fromStdString(core::media::utils::format_conversion::get_format_name(video_format)));
-            ui->cbResoulution->addItem(item_string);
+
+            ui->cbResoulution->addItem(QString::fromStdString(video_format.to_string()));
         }
 
         auto fmt = device->get_format();
-        auto current_format_string = QString("%1x%2@%3:%4").arg(QString::number(fmt.size.width)
-                                                      , QString::number(fmt.size.height)
-                                                      , QString::number(fmt.fps)
-                                                      , QString::fromStdString(core::media::utils::format_conversion::get_format_name(core::media::utils::format_conversion::from_v4l2_format(fmt.pixel_format))));
+
+        core::media::video::video_format_t current_video_format(core::media::utils::format_conversion::from_v4l2_format(fmt.pixel_format)
+                                                        , { fmt.size.width, fmt.size.height }
+                                                        , fmt.fps);
+
 
         // device->get_format().
 
-        ui->cbResoulution->setCurrentText(current_format_string);
+        ui->cbResoulution->setCurrentText(QString::fromStdString(current_video_format.to_string()));
 
         ui->cbControlList->clear();
 

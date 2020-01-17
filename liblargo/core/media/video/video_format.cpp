@@ -119,6 +119,12 @@ bool video_format_t::is_encoded() const
     return is_encoded(pixel_format);
 }
 
+bool video_format_t::is_convertable() const
+{
+    return !is_encoded()
+            && pixel_format != pixel_format_t::unknown;
+}
+
 std::size_t video_format_t::bpp() const
 {
     return bpp(pixel_format);

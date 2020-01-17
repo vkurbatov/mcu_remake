@@ -29,7 +29,7 @@ public:
     // i_media_frame interface
 public:
     const media_format_t &media_format() const override;
-     void clear() override;
+    void clear() override;
 
     // i_video_frame interface
 public:

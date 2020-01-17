@@ -156,6 +156,7 @@ bool video_frame_converter::convert(const i_media_frame &input_frame
         utils::fill_slices(input_frame.planes(), input_slices);
         utils::fill_slices(output_frame.planes(), output_slices);
 
+
         auto store_output_rect = output_fragment.frame_rect;
 
         utils::aspect_ratio(input_fragment.frame_rect
@@ -166,6 +167,7 @@ bool video_frame_converter::convert(const i_media_frame &input_frame
         {
             output_frame.clear();
         }
+
 
         return m_ffmpeg_converter.convert_slices(input_fragment
                                                  , input_slices

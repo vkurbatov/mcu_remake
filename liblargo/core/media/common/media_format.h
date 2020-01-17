@@ -30,6 +30,7 @@ struct media_format_t
     virtual ~media_format_t(){}
 
     virtual bool is_encoded() const = 0;
+    virtual bool is_convertable() const = 0;
     virtual bool is_planar() const = 0;
     virtual std::size_t frame_size() const = 0;
     virtual std::size_t planes() const = 0;

@@ -68,7 +68,8 @@ struct frame_rect_t
 
 void draw_text(const std::string& text
                , void* frame_data
-               , const frame_size_t& frame_size);
+               , const frame_size_t& frame_size
+               , std::int32_t pixel_width = 3);
 
 }
 

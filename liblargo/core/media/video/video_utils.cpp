@@ -6,6 +6,8 @@
 #include <functional>
 #include <algorithm>
 
+#define SWAP(l, r) { auto __tmp = (l); (l) = (r); (r) = __tmp; }
+
 namespace core
 {
 
@@ -21,17 +23,33 @@ namespace video_utils
 typedef std::function<void(i_media_plane& plane
                       , const frame_size_t& plane_size)> plane_processor_handle_t;
 
-static void reverse(void* data
+
+template<typename T>
+static void reverse(T* data
                     , std::size_t size)
 {
-    auto array = static_cast<std::uint8_t*>(data);
-    while (size > 0)
+    auto begin = data;
+    auto end = begin + size - 1;
+    while (begin < end)
     {
-        std::swap(*array
-                  , *(array + size - 1));
+        SWAP(*begin, *end);
 
-        size -= 2;
-        array++;
+        begin++;
+        end--;
+    }
+}
+
+template<typename T>
+static void swap_lines(T* lline
+                      , T* rline
+                      , std::size_t size)
+{
+    while (size-- > 0)
+    {
+        SWAP(*lline, *rline);
+
+        lline++;
+        rline++;
     }
 }
 
@@ -62,11 +80,9 @@ static void vertical_flip_plane(i_media_plane& plane
 
     for (auto y = 0; y < plane_size.height / 2; y++)
     {
-        for (auto x = 0; x < plane_size.width; x++)
-        {
-            std::swap(plane_data[y * plane_size.width + x]
-                    , plane_data[(plane_size.height - y - 1) * plane_size.width + x]);
-        }
+        swap_lines(&plane_data[y * plane_size.width]
+                    , &plane_data[(plane_size.height - y - 1) * plane_size.width]
+                    , plane_size.width);
     }
 }
 
@@ -85,7 +101,7 @@ static void horizontal_flip_plane(i_media_plane& plane
 static void fast_rotate_plane(i_media_plane& plane
                                    , const frame_size_t& plane_size)
 {
-    return reverse(plane.data()
+    return reverse(static_cast<std::uint8_t*>(plane.data())
                    , plane_size.size());
 }
 
