@@ -168,7 +168,6 @@ bool video_frame_converter::convert(const i_media_frame &input_frame
             output_frame.clear();
         }
 
-
         return m_ffmpeg_converter.convert_slices(input_fragment
                                                  , input_slices
                                                  , output_fragment

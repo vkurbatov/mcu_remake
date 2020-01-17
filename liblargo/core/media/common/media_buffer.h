@@ -12,7 +12,6 @@ namespace media
 class media_buffer : virtual public i_swapped_media_buffer
 {
     media_data_t    m_media_data;
-    plane_sizes_t   m_planar_sizes;
 
 private:
     media_buffer(const void* data = nullptr
@@ -21,8 +20,7 @@ private:
     media_buffer(const void * const slices[]
                  , const plane_sizes_t& plane_sizes);
 
-    media_buffer(media_data_t&& media_data
-                 , const plane_sizes_t& plane_sizes);
+    media_buffer(media_data_t&& media_data);
 
 public:
     static media_buffer_ptr_t create(const void* data = nullptr
@@ -31,12 +29,11 @@ public:
     static media_buffer_ptr_t create(const void * const slices[]
                                      , const plane_sizes_t& plane_sizes);
 
-    static media_buffer_ptr_t create(media_data_t&& media_data
-                                     , const plane_sizes_t& plane_sizes);
+    static media_buffer_ptr_t create(media_data_t&& media_data);
 
-    bool swap(media_buffer&& other_media_buffer);
-    bool swap(media_data_t&& media_data
-              , plane_sizes_t&& plane_sizes) override;
+
+    void swap(media_buffer&& other_media_buffer);
+    void swap(media_data_t&& media_data) override;
     media_data_t release() override;
 
 
@@ -44,7 +41,7 @@ public:
 public:
     const void *data(int32_t offset = 0) const override;
     void *data(int32_t offset = 0) override;
-    const plane_sizes_t& plane_sizes() const override;
+    std::size_t size() const override;
 };
 
 }

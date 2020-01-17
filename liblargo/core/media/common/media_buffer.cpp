@@ -23,7 +23,6 @@ media_buffer::media_buffer(const void * const slices[]
                                    , planar_sizes.end()
                                    , 0)
                    , 0)
-    , m_planar_sizes(planar_sizes)
 {
     if (slices != nullptr)
     {
@@ -44,21 +43,10 @@ media_buffer::media_buffer(const void * const slices[]
     }
 }
 
-media_buffer::media_buffer(media_data_t &&media_data
-                           , const plane_sizes_t& planar_sizes)
-    : m_planar_sizes(planar_sizes)
+media_buffer::media_buffer(media_data_t &&media_data)
+    : m_media_data(std::move(media_data))
 {
-    auto sz = std::accumulate(planar_sizes.begin()
-                              , planar_sizes.end()
-                              , 0);
-    if (media_data.size() != sz)
-    {
-        m_media_data.resize(sz, 0);
-    }
-    else
-    {
-        m_media_data = std::move(media_data);
-    }
+
 }
 
 media_buffer_ptr_t media_buffer::create(const void *data
@@ -79,39 +67,23 @@ media_buffer_ptr_t media_buffer::create(const void * const slices[]
                               );
 }
 
-media_buffer_ptr_t media_buffer::create(media_data_t &&media_data
-                                        , const plane_sizes_t &plane_sizes)
+media_buffer_ptr_t media_buffer::create(media_data_t &&media_data)
 {
-    return media_buffer_ptr_t(new media_buffer(std::move(media_data)
-                                                , plane_sizes
-                                               )
-                              );
+    return media_buffer_ptr_t(new media_buffer(std::move(media_data)));
 }
 
-bool media_buffer::swap(media_buffer &&other_media_buffer)
+void media_buffer::swap(media_buffer &&other_media_buffer)
 {
-    return swap(std::move(other_media_buffer.m_media_data)
-                , std::move(other_media_buffer.m_planar_sizes));
+    swap(std::move(other_media_buffer.m_media_data));
 }
 
-bool media_buffer::swap(media_data_t &&media_data
-                        , plane_sizes_t&& planar_sizes)
+void media_buffer::swap(media_data_t &&media_data)
 {
-    if (media_data.size() == std::accumulate(planar_sizes.begin()
-                                             , planar_sizes.end()
-                                             , 0))
-    {
-        m_media_data.swap(media_data);
-        m_planar_sizes.swap(planar_sizes);
-        return true;
-    }
-
-    return false;
+    m_media_data.swap(media_data);
 }
 
 media_data_t media_buffer::release()
 {
-    m_planar_sizes.clear();
     return std::move(m_media_data);
 }
 
@@ -120,14 +92,14 @@ void *media_buffer::data(int32_t offset)
     return m_media_data.data() + offset;
 }
 
+std::size_t media_buffer::size() const
+{
+    return m_media_data.size();
+}
+
 const void *media_buffer::data(int32_t offset) const
 {
     return m_media_data.data() + offset;
-}
-
-const plane_sizes_t &media_buffer::plane_sizes() const
-{
-    return m_planar_sizes;
 }
 
 }

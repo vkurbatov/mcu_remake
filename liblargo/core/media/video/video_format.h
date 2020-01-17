@@ -33,6 +33,8 @@ enum class pixel_format_t
     rgb32,
     abgr32,
     argb32,
+    bgra32,
+    rgba32,
     gray8,
     gray16,
     gray16x,

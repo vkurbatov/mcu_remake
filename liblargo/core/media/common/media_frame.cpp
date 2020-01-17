@@ -15,7 +15,7 @@ bool media_frame::check_media_buffer(const media_format_t &media_format
                                      , const i_media_buffer &media_buffer)
 {
     return media_format.is_encoded()
-           || media_buffer.plane_sizes() == media_format.plane_sizes();
+           || media_buffer.size() == media_format.frame_size();
 }
 
 media_frame::media_frame(media_buffer_ptr_t media_buffer)
@@ -30,11 +30,18 @@ media_plane_list_t media_frame::planes() const
 
     if (m_media_buffer != nullptr)
     {
-        for (std::uint32_t i = 0; i < m_media_buffer->plane_sizes().size(); i++)
+        auto i = 0;
+        auto offset = 0;
+        for (const auto& sz : media_format().plane_sizes())
         {
             plane_list.emplace_back(new media_plane(m_media_buffer
-                                                    , i));
+                                                    , i
+                                                    , offset
+                                                    , sz));
+            i++;
+            offset += sz;
         }
+
     }
 
     return std::move(plane_list);
@@ -42,11 +49,7 @@ media_plane_list_t media_frame::planes() const
 
 std::size_t media_frame::size() const
 {
-    return m_media_buffer != nullptr
-            ? std::accumulate(m_media_buffer->plane_sizes().begin()
-                           , m_media_buffer->plane_sizes().end()
-                           , 0)
-            : 0;
+    return m_media_buffer->size();
 }
 
 bool media_frame::is_valid() const

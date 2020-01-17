@@ -6,6 +6,34 @@
 namespace opencv
 {
 
+enum class font_t
+{
+    simplex,
+    plain,
+    duplex,
+    complex,
+    triplex,
+    complex_small,
+    script_simplex,
+    script_complex,
+};
+
+enum class v_align_t
+{
+    left,
+    right,
+    center
+};
+
+enum class h_align_t
+{
+    top,
+    bottom,
+    center
+};
+
+typedef std::uint32_t color_t;
+
 struct frame_size_t; //fwd
 
 struct frame_point_t
@@ -66,10 +94,60 @@ struct frame_rect_t
     bool is_null() const;
 };
 
+struct draw_format_t
+{
+    color_t         color;
+    std::int32_t    thickness;
+
+    draw_format_t(color_t color = 0
+                  , std::int32_t thickness = 1);
+
+};
+
+struct text_format_t : public draw_format_t
+{
+    font_t              font;
+    double              scale_factor;
+    bool                italic;
+    v_align_t           v_align;
+    h_align_t           h_align;
+
+    static frame_size_t text_size(const std::string& text
+                                  , font_t font
+                                  , std::uint32_t scale_factor = 1.0
+                                  , bool italic = false
+                                  , std::int32_t thickness = 1);
+
+    text_format_t(font_t font = font_t::simplex
+                  , std::uint32_t scale_factor = 1.0
+                  , bool italic = false
+                  , color_t color = 0
+                  , std::int32_t thickness = 1
+                  , v_align_t v_align = v_align_t::left
+                  , h_align_t h_align = h_align_t::top);
+
+    frame_size_t text_size(const std::string& text) const;
+};
+
 void draw_text(const std::string& text
                , void* frame_data
                , const frame_size_t& frame_size
-               , std::int32_t pixel_width = 3);
+               , const text_format_t& text_format
+               , const frame_point_t& text_point
+               , std::int32_t text_height = 0);
+
+void draw_image(const void* input_frame_data
+                , const frame_size_t& input_frame_size
+                , const frame_rect_t& input_frame_rect
+                , void* output_frame_data
+                , const frame_point_t& output_frame_point
+                , const frame_size_t& output_frame_size
+                , double opacity = 0.0);
+
+void draw_image(const void* input_frame_data
+                , void* output_frame_data
+                , const frame_size_t& frame_size
+                , double opacity = 0.0);
 
 }
 

@@ -305,7 +305,7 @@ void video_form::prepare_image()
 
     if (!input_buffer.empty())
     {
-        output_info.pixel_format = ffmpeg::pixel_format_rgb24;
+        output_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(core::media::video::pixel_format_t::rgb24);
 
         output_info.frame_rect.size = output_info.frame_size = { 1280, 720 };
 
@@ -404,8 +404,7 @@ void video_form::prepare_image()
                                                   , { input_info.frame_size.width, input_info.frame_size.height });
 
         auto input_frame = core::media::video::video_frame::create(input_format
-                                                                   , core::media::media_buffer::create(std::move(input_buffer)
-                                                                                                       , input_format.plane_sizes()));
+                                                                   , core::media::media_buffer::create(std::move(input_buffer)));
 
 
         auto tp = std::chrono::high_resolution_clock::now();
@@ -423,7 +422,7 @@ void video_form::prepare_image()
                                                     , input_info.frame_rect.size.height);
 
         frame_converter.set_input_area(input_area);
-        frame_converter.set_aspect_ratio_mode(aspect_ratio_method);
+        frame_converter.set_aspect_ratio_mode(aspect_ratio_method);       
 
 
         /*auto buffer = core::media::media_buffer::create(nullptr, mid_format.plane_sizes());
@@ -461,16 +460,82 @@ void video_form::prepare_image()
         mid_info.frame_rect.size.height -= 80;
 */
 
-        opencv::draw_text("Hello World!!!"
-                          , mid_frame->planes()[0]->data()
-                          , { mid_info.frame_size.width, mid_info.frame_size.height }
-                          , 1);
 
         auto res = converter.convert_frames(mid_info
                           , mid_frame->planes()[0]->data()
                           , output_info
                           , output_buffer.data()
                           , false);
+
+        std::string text = "HELLO WORLD!!!";
+        auto text_height = output_info.frame_size.height / 25;
+
+        opencv::text_format_t text_format(opencv::font_t::simplex
+                                          , 1.0
+                                          , false
+                                          , 0xFF00FF00
+                                          , 2
+                                          , opencv::v_align_t::left
+                                          , opencv::h_align_t::top);
+
+
+        auto text_size = text_format.text_size(text);
+
+        auto scale = double(text_height) / double(text_size.height);
+        text_size.width *= scale;
+        text_size.height *= scale;
+
+        opencv::frame_rect_t rect((output_info.frame_size.width - text_size.width) / 2
+                                  , (output_info.frame_size.height - text_size.height) / 2
+                                  , text_size.width
+                                  , text_size.height);
+
+        std::vector<std::uint8_t> tmp_buffer(text_size.size() * 3);
+
+        opencv::draw_image(output_buffer.data()
+                           , { output_info.frame_size.width, output_info.frame_size.height }
+                           , rect
+                           , tmp_buffer.data()
+                           , { 0, 0 }
+                           , text_size);
+
+        opencv::draw_text(text
+                          , tmp_buffer.data()
+                          , text_size
+                          , text_format
+                          , { 0, 0 }
+                          , text_height);
+
+        opencv::draw_image(tmp_buffer.data()
+                           , text_size
+                           , { { 0, 0 }, text_size }
+                           , output_buffer.data()
+                           , rect.offset
+                           , { output_info.frame_size.width, output_info.frame_size.height }
+                           , 0.5);
+
+        // auto tmp_buffer = output_buffer;
+
+/*
+        opencv::draw_text(text
+                          , tmp_buffer.data()
+                          , { output_info.frame_size.width, output_info.frame_size.height }
+                          , text_format
+                          , { output_info.frame_size.width / 2, output_info.frame_size.height / 2 }
+                          , text_height);
+
+
+        opencv::draw_image(tmp_buffer.data()
+                           , output_buffer.data()
+                           , { output_info.frame_size.width, output_info.frame_size.height }
+                           , 0.3);
+
+*/
+
+        /*opencv::draw_text("Hello World!!!"
+                          , output_buffer.data()
+                          , { output_info.frame_size.width, output_info.frame_size.height }
+                          , 0.05);*/
 
 
         convert_delay2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
