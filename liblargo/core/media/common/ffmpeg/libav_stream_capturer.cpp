@@ -21,6 +21,41 @@ namespace ffmpeg
 
 const std::size_t max_queue_size = 1000;
 const std::size_t idle_timeout_ms = 10;
+
+enum class device_type_t
+{
+    unknown,
+    rtsp,
+    rtmp,
+    rtp,
+    camera,
+    file
+};
+//------------------------------------------------------------------------------------
+static device_type_t fetch_device_type(const std::string& uri)
+{
+    static const std::string device_names_table[] = { "", "rtsp://", "rtmp://", "rtp://", "v4l2://", "file://" };
+
+    if (uri.find("/") == 0)
+    {
+        return device_type_t::file;
+    }
+
+    auto i = 0;
+    for (const auto& device_name : device_names_table)
+    {
+        if (i > 0)
+        {
+            if (uri.find(device_name.c_str()) == 0)
+            {
+                return static_cast<device_type_t>(i);
+            }
+        }
+        i++;
+    }
+
+    return device_type_t::unknown;
+}
 //------------------------------------------------------------------------------------
 namespace utils
 {
@@ -78,6 +113,7 @@ namespace utils
     }
 }
 //------------------------------------------------------------------------------------
+
 struct libav_format_context_t
 {
 struct AVFormatContext*     context;
@@ -85,6 +121,7 @@ struct AVPacket             packet;
 std::uint32_t               context_id;
 std::size_t                 total_read_bytes;
 std::size_t                 total_read_frames;
+device_type_t               type;
 
 bool                        is_init;
 
@@ -93,6 +130,7 @@ libav_format_context_t()
     , context_id(0)
     , total_read_bytes(0)
     , total_read_frames(0)
+    , type(device_type_t::unknown)
     , is_init(false)
 {
     static std::uint32_t ctx_id = 0;
@@ -124,24 +162,26 @@ std::int32_t init(const std::string& uri)
 
     auto c_uri = uri.c_str();
 
-    bool is_rtsp = uri.find("rtsp:") == 0;
-    bool is_camera = uri.find("v4l2:") == 0;
+    auto device_type = fetch_device_type(uri);
 
     if (!is_init)
     {
         AVDictionary* options = nullptr;
-        if (is_rtsp)
+
+        type = device_type;
+        switch(type)
         {
-            av_dict_set_int(&options, "stimeout", 1000000, 0);
-        }
-        else if (is_camera)
-        {
-            av_dict_set(&options, "pixel_format", "mjpeg", 0);
-            c_uri += 6;
-            if (*c_uri != '/')
-            {
-                c_uri++;
-            }
+            case device_type_t::rtsp:
+                av_dict_set_int(&options, "stimeout", 1000000, 0);
+            break;
+            case device_type_t::camera:
+                av_dict_set(&options, "pixel_format", "mjpeg", 0);
+                c_uri += 6;
+                if (*c_uri != '/')
+                {
+                    c_uri++;
+                }
+            break;
         }
 
         result = avformat_open_input(&context
@@ -213,7 +253,14 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
 
                     stream_info.media_info.video_info.size.width = av_stream->codec->width;
                     stream_info.media_info.video_info.size.height = av_stream->codec->height;
-                    stream_info.media_info.video_info.fps = av_stream->codec_info_nb_frames;
+
+                    stream_info.media_info.video_info.fps = av_q2d(av_stream->avg_frame_rate);
+
+                    if (stream_info.media_info.video_info.fps == 0)
+                    {
+                        stream_info.media_info.video_info.fps = av_q2d(av_stream->r_frame_rate);
+                    }
+
                     stream_info.media_info.video_info.pixel_format = static_cast<pixel_format_t>(av_stream->codec->pix_fmt);
                 break;
 
@@ -255,7 +302,6 @@ std::pair<std::int32_t, media_data_t> fetch_media_data()
     if (is_init)
     {
         packet.size = 0;
-
         media_data.first = av_read_frame(context, &packet);
 
         if (media_data.first >= 0 && packet.size > 0)
@@ -263,12 +309,13 @@ std::pair<std::int32_t, media_data_t> fetch_media_data()
             media_data.first = packet.stream_index;
             media_data.second = std::move(media_data_t(packet.data
                                                        , packet.data + packet.size));
+
             total_read_bytes += packet.size;
             total_read_frames++;
         }
 
         LOG_D << "Context #" << context_id << ". Fetch media data size " << packet.size
-              << " from stream #" << media_data.first LOG_END;
+              << " from stream #" << media_data.first LOG_END;               
 
         av_packet_unref(&packet);
     }
@@ -412,7 +459,11 @@ struct libav_stream_capturer_context_t
 
         push_event(streaming_event_t::start);
 
-        std::uint32_t error_counter = 0;        
+        std::uint32_t error_counter = 0;
+
+        adaptive_timer_t delay_timer;
+        // std::size_t frame_counter = 0;
+
 
         while(m_is_running)
         {        
@@ -427,6 +478,11 @@ struct libav_stream_capturer_context_t
 
                 if (!media_data.second.empty())
                 {
+                    if (m_format_context->total_read_frames == 1)
+                    {
+                        delay_timer.reset();
+                    }
+
                     error_counter = 0;
 
                     auto it = m_streams.find(media_data.first);
@@ -434,17 +490,29 @@ struct libav_stream_capturer_context_t
                     if (it != m_streams.end()
                             && !media_data.second.empty())
                     {
+                        const stream_info_t& stream_info = it->second.stream_info;
+
                         if (m_stream_data_handler == nullptr
-                                || !m_stream_data_handler(it->second.stream_info
+                                || !m_stream_data_handler(stream_info
                                                          , std::move(media_data.second))
                                 )
                         {
                             LOG_D << "Capturer #" << m_capturer_id << ". Fetch data size " << media_data.second.size()
-                                  << " for " << it->second.stream_info.to_string() LOG_END;
+                                  << " for " << stream_info.to_string() LOG_END;
 
                             it->second.push_data(std::move(media_data.second));
                         }
+
+                        if (m_format_context->type == device_type_t::file)
+                        {
+                            if (stream_info.media_type == media_type_t::video)
+                            {
+                                stream_info.media_info.video_info.fps != 0;
+                                delay_timer.wait(1000/stream_info.media_info.video_info.fps);
+                            }
+                        }
                     }
+
                 }
                 else
                 {

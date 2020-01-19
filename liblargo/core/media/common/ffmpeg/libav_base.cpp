@@ -10,6 +10,8 @@ extern "C"
 }
 
 #include <sstream>
+#include <chrono>
+#include <thread>
 
 namespace ffmpeg
 {
@@ -621,6 +623,47 @@ bool codec_info_t::is_coded() const
 {
     return id > AV_CODEC_ID_NONE
             && id != AV_CODEC_ID_RAWVIDEO;
+}
+
+adaptive_timer_t::adaptive_timer_t()
+{
+    reset();
+}
+
+uint64_t adaptive_timer_t::now()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+
+void adaptive_timer_t::reset()
+{
+    time_base = now();
+}
+
+bool adaptive_timer_t::wait(std::uint64_t wait_time
+                            , bool is_wait)
+{
+    auto elapsed_time = elapsed();
+
+    if (elapsed_time >= wait_time)
+    {
+        time_base += wait_time;
+        return true;
+    }
+
+    if (is_wait)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(wait_time - elapsed_time));
+        time_base += wait_time;
+        return true;
+    }
+
+    return false;
+}
+
+uint64_t adaptive_timer_t::elapsed() const
+{
+    return now() - time_base;
 }
 
 }

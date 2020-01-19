@@ -274,23 +274,23 @@ void draw_text(const std::string &text
             dx = 0;
         break;
         case v_align_t::right:
-            dx = text_size.width - 1;
+            dx = text_size.width;
         break;
         case v_align_t::center:
-            dx = (text_size.width - 1) / 2;
+            dx = (text_size.width) / 2;
         break;
     }
 
     switch(text_format.h_align)
     {
         case h_align_t::top:
-            dy = text_size.height - 1;
+            dy = text_size.height;
         break;
         case h_align_t::bottom:
             dy = 0;
         break;
         case h_align_t::center:
-            dy = (text_size.height - 1) / 2;
+            dy = (text_size.height) / 2;
         break;
     }
 

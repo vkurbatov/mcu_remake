@@ -7,6 +7,7 @@ find_package(OpenCV REQUIRED core imgproc)
 
 pkg_search_module(AVCODEC REQUIRED libavcodec>=57.89.100)
 pkg_search_module(AVFORMAT REQUIRED libavformat>=57.71.100)
+pkg_search_module(AVFILTER REQUIRED libavfilter)
 pkg_search_module(AVDEVICE REQUIRED libavdevice)
 pkg_search_module(AVUTIL REQUIRED libavutil)
 pkg_search_module(SWSCALE REQUIRED libswscale>=4.6.100)
@@ -34,6 +35,8 @@ set(SOURCES
     "core/media/common/ffmpeg/libav_decoder.cpp"
     "core/media/common/ffmpeg/libav_stream_capturer.cpp"
     "core/media/common/ffmpeg/libav_converter.cpp"
+    "core/media/common/ffmpeg/libav_filter.cpp"
+    "core/media/common/ffmpeg/test_libav_filter.cpp"
     "core/media/common/v4l2/v4l2_base.cpp"
     "core/media/common/v4l2/v4l2_device.cpp"
     "core/media/common/v4l2/v4l2_api.cpp"
@@ -92,6 +95,8 @@ set(PRIVATE_HEADERS
     "core/media/common/ffmpeg/libav_decoder.h"
     "core/media/common/ffmpeg/libav_stream_capturer.h"
     "core/media/common/ffmpeg/libav_converter.h"
+    "core/media/common/ffmpeg/libav_filter.h"
+    "core/media/common/ffmpeg/test_libav_filter.h"
     "core/media/common/v4l2/v4l2_base.h"
     "core/media/common/v4l2/v4l2_device.h"
     "core/media/common/v4l2/v4l2_api.h"
@@ -189,6 +194,7 @@ target_link_libraries(${TARGET} PRIVATE
     ${AVCODEC_LIBRARIES}
     ${AVFORMAT_LIBRARIES}
     ${AVDEVICE_LIBRARIES}
+    ${AVFILTER_LIBRARIES}
     ${SWSCALE_LIBRARIES}
     ${AVUTIL_LIBRARIES}
     ${V4L2_LIBRARIES}

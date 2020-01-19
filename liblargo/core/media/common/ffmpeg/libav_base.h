@@ -321,6 +321,19 @@ struct stream_info_t: public frame_info_t
     std::string to_string() const override;
 };
 
+struct adaptive_timer_t
+{
+    std::uint64_t   time_base;
+    adaptive_timer_t();
+
+    static std::uint64_t now();
+
+    void reset();
+    bool wait(std::uint64_t wait_time
+              , bool is_wait = true);
+    std::uint64_t elapsed() const;
+};
+
 typedef std::vector<stream_info_t> stream_info_list_t;
 typedef std::queue<media_data_t> media_queue_t;
 typedef std::function<bool(const stream_info_t& stream_info

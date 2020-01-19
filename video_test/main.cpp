@@ -13,6 +13,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
+#include <libavfilter/avfilter.h>
 }
 
 int main(int argc, char* argv[])
@@ -20,6 +21,7 @@ int main(int argc, char* argv[])
     avcodec_register_all();
     avformat_network_init();
     avdevice_register_all();
+    avfilter_register_all();
     av_register_all();
 
     QApplication app(argc, argv);
