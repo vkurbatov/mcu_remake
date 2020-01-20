@@ -10,16 +10,20 @@ namespace media
 namespace video
 {
 
-frame_rect_t::frame_rect_t(const frame_point_t &point
-                           , const frame_size_t &size)
+template class frame_rect_base_t<std::int32_t>;
+
+template<typename T>
+frame_rect_base_t<T>::frame_rect_base_t(const frame_point_base_t<T> &point
+                           , const frame_size_base_t<T> &size)
     : point(point)
     , size(size)
 {
 
 }
 
-frame_rect_t::frame_rect_t(const frame_point_t &point
-                           , const frame_point_t &br_point)
+template<typename T>
+frame_rect_base_t<T>::frame_rect_base_t(const frame_point_base_t<T> &point
+                           , const frame_point_base_t<T> &br_point)
     : point(point)
     , size(br_point.x - point.x
            , br_point.y - point.y)
@@ -27,58 +31,67 @@ frame_rect_t::frame_rect_t(const frame_point_t &point
 
 }
 
-frame_rect_t::frame_rect_t(int32_t x
-                           , int32_t y
-                           , int32_t width
-                           , int32_t height)
+template<typename T>
+frame_rect_base_t<T>::frame_rect_base_t(T x
+                                       , T y
+                                       , T width
+                                       , T height)
     : point( { x, y } )
     , size( { width, height } )
 {
 
 }
 
-bool frame_rect_t::operator ==(const frame_rect_t &frame_rect)
+template<typename T>
+bool frame_rect_base_t<T>::operator ==(const frame_rect_base_t<T> &frame_rect)
 {
     return point == frame_rect.point
             && size == frame_rect.size;
 
 }
 
-bool frame_rect_t::operator !=(const frame_rect_t &frame_rect)
+template<typename T>
+bool frame_rect_base_t<T>::operator !=(const frame_rect_base_t<T> &frame_rect)
 {
     return !operator ==(frame_rect);
 }
 
-frame_rect_t& frame_rect_t::operator +=(const frame_point_t &frame_point)
+template<typename T>
+frame_rect_base_t<T>& frame_rect_base_t<T>::operator +=(const frame_point_base_t<T> &frame_point)
 {
     point += frame_point;
     return *this;
 }
 
-frame_rect_t& frame_rect_t::operator -=(const frame_point_t &frame_point)
+template<typename T>
+frame_rect_base_t<T>& frame_rect_base_t<T>::operator -=(const frame_point_base_t<T> &frame_point)
 {
     point -= frame_point;
     return *this;
 }
 
-frame_rect_t& frame_rect_t::operator +=(const frame_size_t &frame_size)
+template<typename T>
+frame_rect_base_t<T>& frame_rect_base_t<T>::operator +=(const frame_size_base_t<T> &frame_size)
 {
     size += frame_size;
     return *this;
 }
 
-frame_rect_t& frame_rect_t::operator -=(const frame_size_t &frame_size)
+template<typename T>
+frame_rect_base_t<T>& frame_rect_base_t<T>::operator -=(const frame_size_base_t<T> &frame_size)
 {
     size -= frame_size;
     return *this;
 }
 
-frame_point_t frame_rect_t::br_point() const
+template<typename T>
+frame_point_base_t<T> frame_rect_base_t<T>::br_point() const
 {
-    return frame_point_t(point.x + size.width, point.y + size.height);
+    return frame_point_base_t<T>(point.x + size.width, point.y + size.height);
 }
 
-bool frame_rect_t::is_join(const frame_size_t &size) const
+template<typename T>
+bool frame_rect_base_t<T>::is_join(const frame_size_base_t<T> &size) const
 {
     return point.x >= 0
             && point.y >= 0

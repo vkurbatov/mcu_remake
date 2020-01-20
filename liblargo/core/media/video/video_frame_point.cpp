@@ -8,44 +8,54 @@ namespace media
 namespace video
 {
 
-frame_point_t::frame_point_t(int32_t x
-                           , int32_t y)
+template class frame_point_base_t<std::int32_t>;
+template class frame_point_base_t<double>;
+
+template<typename T>
+frame_point_base_t<T>::frame_point_base_t(T x
+                                       , T y)
     : x(x)
     , y(y)
 {
 
 }
 
-bool frame_point_t::operator==(const frame_point_t &frame_point) const
+template<typename T>
+bool frame_point_base_t<T>::operator ==(const frame_point_base_t<T> &frame_point) const
 {
     return x == frame_point.x
             && y == frame_point.y;
 }
 
-bool frame_point_t::operator !=(const frame_point_t &frame_point) const
+template<typename T>
+bool frame_point_base_t<T>::operator !=(const frame_point_base_t<T> &frame_point) const
 {
     return ! operator ==(frame_point);
 }
 
-frame_point_t &frame_point_t::operator +=(const frame_point_t &frame_point)
+template<typename T>
+frame_point_base_t<T> &frame_point_base_t<T>::operator +=(const frame_point_base_t<T> &frame_point)
 {
     x += frame_point.x;
     y += frame_point.y;
     return *this;
 }
 
-frame_point_t &frame_point_t::operator -=(const frame_point_t &frame_point)
+template<typename T>
+frame_point_base_t<T> &frame_point_base_t<T>::operator -=(const frame_point_base_t<T> &frame_point)
 {
     x -= frame_point.x;
     y -= frame_point.y;
     return *this;
 }
 
-bool frame_point_t::is_null() const
+template<typename T>
+bool frame_point_base_t<T>::is_null() const
 {
     return x == 0
             && y == 0;
 }
+
 
 }
 

@@ -8,46 +8,51 @@ namespace media
 namespace video
 {
 
-frame_size_t::frame_size_t(int32_t width
-                           , int32_t height)
+template class frame_size_base_t<std::int32_t>;
+template class frame_size_base_t<double>;
+
+
+template<typename T>
+frame_size_base_t<T>::frame_size_base_t(T width
+                           , T height)
     : width(width)
     , height(height)
 {
 
 }
-
-bool frame_size_t::operator==(const frame_size_t &frame_size) const
+template<typename T>
+bool frame_size_base_t<T>::operator==(const frame_size_base_t<T> &frame_size) const
 {
     return width == frame_size.width
             && height == frame_size.height;
 }
-
-bool frame_size_t::operator !=(const frame_size_t &frame_size) const
+template<typename T>
+bool frame_size_base_t<T>::operator !=(const frame_size_base_t<T> &frame_size) const
 {
     return ! operator ==(frame_size);
 }
-
-frame_size_t &frame_size_t::operator +=(const frame_size_t &frame_size)
+template<typename T>
+frame_size_base_t<T> &frame_size_base_t<T>::operator +=(const frame_size_base_t<T> &frame_size)
 {
     width += frame_size.width;
     height += frame_size.height;
     return *this;
 }
-
-frame_size_t &frame_size_t::operator -=(const frame_size_t &frame_size)
+template<typename T>
+frame_size_base_t<T> &frame_size_base_t<T>::operator -=(const frame_size_base_t<T> &frame_size)
 {
     width -= frame_size.width;
     height -= frame_size.height;
     return *this;
 }
-
-bool frame_size_t::is_empty() const
+template<typename T>
+bool frame_size_base_t<T>::is_empty() const
 {
     return width == 0
             || height == 0;
 }
-
-std::size_t frame_size_t::size() const
+template<typename T>
+std::size_t frame_size_base_t<T>::size() const
 {
     return width * height;
 }

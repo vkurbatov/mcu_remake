@@ -12,24 +12,28 @@ namespace media
 namespace video
 {
 
-const std::int32_t default_frame_x = 0;
-const std::int32_t default_frame_y = 0;
+const double default_frame_x = 0;
+const double default_frame_y = 0;
 
-struct frame_point_t
+template<typename T>
+struct frame_point_base_t
 {
-    std::int32_t   x;
-    std::int32_t   y;
+    T   x;
+    T   y;
 
-    frame_point_t(std::int32_t x = default_frame_x
-                 , std::int32_t y = default_frame_y);
+    frame_point_base_t(T x = static_cast<T>(default_frame_x)
+                 , T y = static_cast<T>(default_frame_y));
 
-    bool operator == (const frame_point_t& frame_size) const;
-    bool operator != (const frame_point_t& frame_size) const;
-    frame_point_t& operator += (const frame_point_t& frame_point);
-    frame_point_t& operator -= (const frame_point_t& frame_point);
+    bool operator == (const frame_point_base_t<T>& frame_size) const;
+    bool operator != (const frame_point_base_t<T>& frame_size) const;
+    frame_point_base_t<T>& operator += (const frame_point_base_t<T>& frame_point);
+    frame_point_base_t<T>& operator -= (const frame_point_base_t<T>& frame_point);
 
     bool is_null() const;
 };
+
+typedef frame_point_base_t<std::int32_t> frame_point_t;
+typedef frame_point_base_t<double> relative_frame_point_t;
 
 const frame_point_t default_frame_point = { default_frame_x
                                         , default_frame_y };
