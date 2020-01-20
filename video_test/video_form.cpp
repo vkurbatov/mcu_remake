@@ -18,6 +18,8 @@
 #include "media/video/video_frame_converter.h"
 #include "media/video/filters/video_filter_flip.h"
 #include "media/common/opencv/cv_base.h"
+#include "media/common/magick/magick_base.h"
+#include "media/common/qt/qt_base.h"
 
 #include <cstring>
 #include <mutex>
@@ -76,7 +78,6 @@ video_form::video_form(QWidget *parent) :
 {
 
     test1();
-
 
     {
         QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
@@ -289,7 +290,7 @@ void video_form::prepare_image()
 
     if (!input_buffer.empty())
     {
-        output_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(core::media::video::pixel_format_t::rgb24);
+        output_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(core::media::video::pixel_format_t::rgba32);
 
         output_info.frame_rect.size = output_info.frame_size = { 1280, 720 };
 
@@ -454,11 +455,11 @@ void video_form::prepare_image()
 
         std::string text = "HELLO WORLD!!!";
         auto text_height = output_info.frame_size.height / 25;
-
+/*
         opencv::text_format_t text_format(opencv::font_t::simplex
                                           , 1.0
                                           , false
-                                          , 0xFF00FF00
+                                          , 0xFF000000
                                           , 2
                                           , opencv::v_align_t::center
                                           , opencv::h_align_t::center);
@@ -477,9 +478,17 @@ void video_form::prepare_image()
                                   , text_size.width
                                   , text_size.height);
 
-        std::vector<std::uint8_t> tmp_buffer(text_size.size() * 3);
+        std::vector<std::uint8_t> tmp_buffer(text_size.size() * 4);*/
 
         auto tp_text = std::chrono::high_resolution_clock::now();
+
+   /*     magick::draw_text(text
+                          , output_info.frame_size.width / 2
+                          , output_info.frame_size.height / 2
+                          , 0xff000000
+                          , output_buffer.data()
+                          , output_info.frame_size.width
+                          , output_info.frame_size.height);
 
         opencv::draw_image(output_buffer.data()
                            , { output_info.frame_size.width, output_info.frame_size.height }
@@ -501,7 +510,57 @@ void video_form::prepare_image()
                            , output_buffer.data()
                            , rect.offset
                            , { output_info.frame_size.width, output_info.frame_size.height }
-                           , 0.5);
+                           , 0.5);*/
+
+
+        qt::text_format_t text_format(qt::font_t("Times"
+                                                 , text_height
+                                                 , 10
+                                                 , false)
+                                      , 0xFF00007F);
+
+        qt::draw_format_t draw_format(0x00FF007F
+                                      , 1
+                                      , 0x0000FF7F);
+
+        /*qt::draw_text(text
+                      , text_format
+                      , { output_info.frame_size.width / 2, output_info.frame_size.height / 2 }
+                      , output_buffer.data()
+                      , { output_info.frame_size.width, output_info.frame_size.height }
+                      , qt::pixel_format_t::rgba32);*/
+
+        auto tsz = text_format.font.text_size(text);
+
+        qt::draw_rect(draw_format
+                      , { (output_info.frame_size.width - tsz.width) / 2
+                          , (output_info.frame_size.height - tsz.height) / 2
+                          , tsz.width
+                          , tsz.height}
+                      , output_buffer.data()
+                      , { output_info.frame_size.width, output_info.frame_size.height });
+
+        qt::draw_text(text
+                      , text_format
+                      , { 0, 0, output_info.frame_size.width, output_info.frame_size.height }
+                      , qt::h_align_t::center
+                      , qt::v_align_t::center
+                      , output_buffer.data()
+                      , { output_info.frame_size.width, output_info.frame_size.height }
+                      , qt::pixel_format_t::rgba32);
+
+
+
+        /*
+        qt::draw_text(text
+                          , output_info.frame_size.width / 2
+                          , output_info.frame_size.height / 2
+                          , 0xff00007F
+                          , text_height
+                          , output_buffer.data()
+                          , output_info.frame_size.width
+                          , output_info.frame_size.height);*/
+
         auto flt_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp_text).count();
 
 
@@ -537,7 +596,7 @@ void video_form::prepare_image()
         delay2 += (convert_delay2 - delay2) * delay_factor;
 
         last_output_buffer = std::move(output_buffer);
-        last_image = QImage(last_output_buffer.data(), q_size.width(), q_size.height(), QImage::Format_RGB888);
+        last_image = QImage(last_output_buffer.data(), q_size.width(), q_size.height(), QImage::Format_RGBA8888);
 
         frame_count++;
 

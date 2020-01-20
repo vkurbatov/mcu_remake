@@ -1,11 +1,18 @@
 #include "cv_base.h"
 
 #include <opencv2/imgproc.hpp>
+#include <opencv2/freetype.hpp>
+
+#define BT(val, n) ((val) >> n * 8) & 0xFF
+
+#define RGB(color) BT(color, 3), BT(color, 2), BT(color, 1)
+#define RGBA(color) RGB(color), BT(color, 0)
+
 
 namespace opencv
 {
 
-const auto opencv_image_type = CV_MAKETYPE(CV_8U, 3);
+const auto opencv_image_type = CV_MAKETYPE(CV_8U, 4);
 
 frame_point_t::frame_point_t(uint32_t x, uint32_t y)
     : x(x)
@@ -266,6 +273,11 @@ void draw_text(const std::string &text
     std::int32_t dx = 0;
     std::int32_t dy = 0;
 
+    cv::Ptr<cv::freetype::FreeType2> ft;
+    ft = cv::freetype::createFreeType2();
+    ft->loadFontData("/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"
+                     , 0);
+
     auto text_size = text_format.text_size(text);
 
     switch(text_format.v_align)
@@ -302,22 +314,37 @@ void draw_text(const std::string &text
     }
 
     cv::putText(matrix
+                , text.c_str()
+                , cv::Point((text_point.x - dx * scale_factor)
+                            , (text_point.y + dy * scale_factor))
+                , static_cast<std::int32_t>(text_format.font) | text_format.italic ? cv::FONT_ITALIC : 0
+                , scale_factor * text_format.scale_factor
+                , cv::Scalar(RGB(text_format.color))
+                , text_format.thickness
+                , cv::LINE_8
+                , false);
+
+    /*
+    ft->putText(matrix
               , text.c_str()
               , cv::Point((text_point.x - dx * scale_factor)
                           , (text_point.y + dy * scale_factor))
 
-              , static_cast<std::int32_t>(text_format.font) | text_format.italic ? cv::FONT_ITALIC : 0
-              , scale_factor * text_format.scale_factor
+              , text_height
+              //, static_cast<std::int32_t>(text_format.font) | text_format.italic ? cv::FONT_ITALIC : 0
+              // , scale_factor * text_format.scale_factor
               , cv::Scalar((text_format.color) & 0xFF
                            , (text_format.color >> 8) & 0xFF
                            , (text_format.color >> 16) & 0xFF)
-              , text_format.thickness);
+              , text_format.thickness
+              , cv::LINE_8
+              , false);*/
 
-    cv::circle(matrix
+    /*cv::circle(matrix
              , { text_point.x, text_point.y }
              , 1
              , cv::Scalar(255, 0, 0)
-             , 2);
+             , 2);*/
 
 }
 
