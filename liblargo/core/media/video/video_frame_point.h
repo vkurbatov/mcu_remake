@@ -30,6 +30,9 @@ struct frame_point_base_t
     frame_point_base_t<T>& operator -= (const frame_point_base_t<T>& frame_point);
 
     bool is_null() const;
+
+    frame_point_base_t<T>& merge_min(const frame_point_base_t<T>& frame_point);
+    frame_point_base_t<T>& merge_max(const frame_point_base_t<T>& frame_point);
 };
 
 typedef frame_point_base_t<std::int32_t> frame_point_t;

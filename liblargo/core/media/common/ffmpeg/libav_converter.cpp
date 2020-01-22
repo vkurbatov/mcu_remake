@@ -18,11 +18,12 @@ namespace ffmpeg
 namespace utils
 {
 
+/*
 void fill_items(const frame_rect_t& frame_rect
                , std::uint8_t* slices[max_planes]
                , std::int32_t strides[max_planes]
                , std::size_t frame_size
-               , bool is_flip)
+               , bool is_flip = false)
 {
     const auto base_slice = *slices;
     auto y_k = 1.0;
@@ -63,7 +64,6 @@ std::size_t fill_arrays(const frame_rect_t& frame_rect
                         , std::uint8_t* slices[max_planes]
                         , std::int32_t strides[max_planes]
                         , void * const slice_list[]
-                        , bool is_flip = false
                         , std::int32_t align = default_frame_align)
 {
     auto frame_size =  video_info_t::frame_size(pixel_format
@@ -84,10 +84,63 @@ std::size_t fill_arrays(const frame_rect_t& frame_rect
                   , slices
                   , strides
                   , frame_size
-                  , is_flip);
+                  , false);
     }
 
     return frame_size;
+}
+*/
+
+bool fill_frame(AVPicture& picture
+               , void* const slice_list[]
+               , pixel_format_t pixel_format
+               , const frame_size_t& frame_size)
+{
+    if (av_image_fill_linesizes(picture.linesize
+                                , static_cast<AVPixelFormat>(pixel_format)
+                                , frame_size.width) >= 0)
+    {
+        std::memcpy(picture.data
+                    , slice_list
+                    , sizeof(void*) * video_info_t::planes(pixel_format));
+        return true;
+    }
+
+    return false;
+}
+
+bool crop_frame(AVPicture& picture
+               , pixel_format_t pixel_format
+               , const frame_point_t& frame_point)
+{
+    return av_picture_crop((AVPicture*)&picture
+                          , (AVPicture*)&picture
+                          , static_cast<AVPixelFormat>(pixel_format)
+                          , frame_point.y
+                          , frame_point.x) >= 0;
+}
+
+std::size_t prepare_frame(AVPicture& picture
+                         , const frame_rect_t& frame_rect
+                         , pixel_format_t pixel_format
+                         , void * const slice_list[]
+                         , std::int32_t align = default_frame_align)
+{
+
+    if (fill_frame(picture
+                   , slice_list
+                   , pixel_format
+                   , frame_rect.size)
+            && crop_frame(picture
+                          , pixel_format
+                          , frame_rect.offset))
+    {
+        return video_info_t::frame_size(pixel_format
+                                        , frame_rect.size
+                                        , align);
+    }
+
+    return 0;
 }
 
 }
@@ -100,10 +153,13 @@ struct libav_converter_context_t
     frame_size_t        m_output_frame_size;
     pixel_format_t      m_output_pixel_format;
     scaling_method_t    m_scaling_method;
+    std::int32_t        m_linesize_align;
 
-    libav_converter_context_t(scaling_method_t scaling_method)
+    libav_converter_context_t(scaling_method_t scaling_method
+                              , std::int32_t linesize_align)
         : m_sws_context(nullptr)
         , m_scaling_method(scaling_method)
+        , m_linesize_align(linesize_align)
     {
 
     }
@@ -151,8 +207,7 @@ struct libav_converter_context_t
     std::size_t scale(const fragment_info_t& input_fragment_info
                       , void* const input_slices[]
                       , const fragment_info_t& output_fragment_info
-                      , void* output_slices[]
-                      , bool is_flip)
+                      , void* output_slices[])
     {
         std::size_t result = 0;
 
@@ -161,24 +216,41 @@ struct libav_converter_context_t
                                                  , output_fragment_info.frame_rect.size
                                                  , output_fragment_info.pixel_format))
         {
-            std::uint8_t* src_slice[max_planes] = { };
-            std::int32_t src_stride[max_planes] = { };
 
-            std::uint8_t* dst_slice[max_planes] = { };
-            std::int32_t dst_stride[max_planes] = { };
 
-            auto sz_input = utils::fill_arrays({ input_fragment_info.frame_rect.offset, input_fragment_info.frame_size }
-                                               , input_fragment_info.pixel_format
-                                               , src_slice
-                                               , src_stride
-                                               , input_slices
-                                               , is_flip);
 
-            auto sz_output = utils::fill_arrays({ output_fragment_info.frame_rect.offset, output_fragment_info.frame_size }
-                                                , output_fragment_info.pixel_format
-                                                , dst_slice
-                                                , dst_stride
-                                                , output_slices);
+            frame_size_t input_frame_size = input_fragment_info.frame_size;
+            frame_size_t output_frame_size = output_fragment_info.frame_size;
+
+            /*input_frame_size.width -= input_frame_size.width % default_frame_align;
+            output_frame_size.width -= output_frame_size.width % default_frame_align;*/
+
+            /*
+            if (input_frame_size.width % default_frame_align != 0)
+            {
+                input_frame_size.width += (default_frame_align - input_frame_size.width % default_frame_align);
+            }
+
+            if (output_frame_size.width % default_frame_align != 0)
+            {
+                output_frame_size.width += (default_frame_align - output_frame_size.width % default_frame_align);
+            }*/
+
+
+            AVPicture src_frame = {};
+            AVPicture dst_frame = {};
+
+            auto sz_input = utils::prepare_frame(src_frame
+                                                 , { input_fragment_info.frame_rect.offset, input_frame_size }
+                                                 , input_fragment_info.pixel_format
+                                                 , input_slices
+                                                 , m_linesize_align);
+
+            auto sz_output = utils::prepare_frame(dst_frame
+                                                 , { output_fragment_info.frame_rect.offset, output_frame_size }
+                                                 , output_fragment_info.pixel_format
+                                                 , output_slices
+                                                 , m_linesize_align);
 
             if (sz_input != 0
                     && sz_output != 0)
@@ -189,12 +261,12 @@ struct libav_converter_context_t
                             : 0;
 
                 auto sws_result = sws_scale(m_sws_context
-                                            , src_slice
-                                            , src_stride
+                                            , src_frame.data
+                                            , src_frame.linesize
                                             , h_corr
                                             , input_fragment_info.frame_rect.size.height - h_corr
-                                            , dst_slice
-                                            , dst_stride);
+                                            , dst_frame.data
+                                            , dst_frame.linesize);
 
                 if (sws_result > 0)
                 {
@@ -211,15 +283,13 @@ struct libav_converter_context_t
     std::size_t convert_frames(const fragment_info_t& input_fragment_info
                                , const void* input_frame
                                , const fragment_info_t& output_fragment_info
-                               , void* output_frame
-                               , bool is_flip)
+                               , void* output_frame)
     {
 
         std::size_t result = 0;
 
         if (input_fragment_info.is_full()
-                && input_fragment_info == output_fragment_info
-                && is_flip == false)
+                && input_fragment_info == output_fragment_info)
         {
             result = input_fragment_info.get_frame_size();
             if (output_frame != input_frame)
@@ -251,8 +321,7 @@ struct libav_converter_context_t
             result = scale(input_fragment_info
                            , input_slices
                            , output_fragment_info
-                           , output_slices
-                           , is_flip);
+                           , output_slices);
 
 
         }
@@ -263,14 +332,12 @@ struct libav_converter_context_t
     std::size_t convert_slices(const fragment_info_t& input_fragment_info
                                , void* const input_slices[]
                                , const fragment_info_t& output_fragment_info
-                               , void* output_slices[]
-                               , bool is_flip)
+                               , void* output_slices[])
     {
         std::size_t result = 0;
 
         if (input_fragment_info.is_full()
-                && input_fragment_info == output_fragment_info
-                && is_flip == false)
+                && input_fragment_info == output_fragment_info)
         {
             result = input_fragment_info.get_frame_size();
 
@@ -295,8 +362,7 @@ struct libav_converter_context_t
             result = scale(input_fragment_info
                            , input_slices
                            , output_fragment_info
-                           , output_slices
-                           , is_flip);
+                           , output_slices);
         }
 
         return result;
@@ -305,15 +371,13 @@ struct libav_converter_context_t
     std::size_t convert_to_slices(const fragment_info_t& input_fragment_info
                                   , const void* input_frame
                                   , const fragment_info_t& output_fragment_info
-                                  , void* output_slices[]
-                                  , bool is_flip)
+                                  , void* output_slices[])
     {
 
         std::size_t result = 0;
 
         if (input_fragment_info.is_full()
-                && input_fragment_info == output_fragment_info
-                && is_flip == false)
+                && input_fragment_info == output_fragment_info)
         {
             result = input_fragment_info.get_frame_size();
 
@@ -343,8 +407,7 @@ struct libav_converter_context_t
             result = scale(input_fragment_info
                            , input_slices
                            , output_fragment_info
-                           , output_slices
-                           , is_flip);
+                           , output_slices);
 
 
         }
@@ -355,14 +418,12 @@ struct libav_converter_context_t
     std::size_t convert_to_frame(const fragment_info_t& input_fragment_info
                                   , void* const input_slices[]
                                   , const fragment_info_t& output_fragment_info
-                                  , void* output_frame
-                                  , bool is_flip)
+                                  , void* output_frame)
     {
         std::size_t result = 0;
 
         if (input_fragment_info.is_full()
-                && input_fragment_info == output_fragment_info
-                && is_flip == false)
+                && input_fragment_info == output_fragment_info)
         {
             result = input_fragment_info.get_frame_size();
 
@@ -391,8 +452,7 @@ struct libav_converter_context_t
             result = scale(input_fragment_info
                            , input_slices
                            , output_fragment_info
-                           , output_slices
-                           , is_flip);
+                           , output_slices);
         }
 
         return result;
@@ -425,8 +485,10 @@ void libav_converter_context_deleter_t::operator()(libav_converter_context_t *li
 
 #define CHECK_FORMATS if (!input_fragment_info.is_convertable() || !output_fragment_info.is_convertable()) return 0
 
-libav_converter::libav_converter(scaling_method_t scaling_method)
-    : m_converter_context(new libav_converter_context_t(scaling_method))
+libav_converter::libav_converter(scaling_method_t scaling_method
+                                 , std::int32_t linesize_align)
+    : m_converter_context(new libav_converter_context_t(scaling_method
+                                                        , linesize_align))
 {
 
 }
@@ -434,57 +496,49 @@ libav_converter::libav_converter(scaling_method_t scaling_method)
 std::size_t libav_converter::convert_frames(const fragment_info_t& input_fragment_info
                                            , const void* input_frame
                                            , const fragment_info_t& output_fragment_info
-                                           , void* output_frame
-                                           , bool is_flip)
+                                           , void* output_frame)
 {
     CHECK_FORMATS;
     return m_converter_context->convert_frames(input_fragment_info
                                                , input_frame
                                                , output_fragment_info
-                                               , output_frame
-                                               , is_flip);
+                                               , output_frame);
 }
 
 std::size_t libav_converter::convert_slices(const fragment_info_t &input_fragment_info
                                             , void * const input_slices[]
                                             , const fragment_info_t &output_fragment_info
-                                            , void *output_slices[]
-                                            , bool is_flip)
+                                            , void *output_slices[])
 {
     CHECK_FORMATS;
     return m_converter_context->convert_slices(input_fragment_info
                                                , input_slices
                                                , output_fragment_info
-                                               , output_slices
-                                               , is_flip);
+                                               , output_slices);
 }
 
 std::size_t libav_converter::convert_to_slices(const fragment_info_t &input_fragment_info
                                                , const void *input_frame
                                                , const fragment_info_t &output_fragment_info
-                                               , void *output_slices[]
-                                               , bool is_flip)
+                                               , void *output_slices[])
 {
     CHECK_FORMATS;
     return m_converter_context->convert_to_slices(input_fragment_info
                                                  , input_frame
                                                  , output_fragment_info
-                                                 , output_slices
-                                                 , is_flip);
+                                                 , output_slices);
 }
 
 std::size_t libav_converter::convert_to_frame(const fragment_info_t &input_fragment_info
                                               , void * const input_slices[]
                                               , const fragment_info_t &output_fragment_info
-                                              , void *output_frame
-                                              , bool is_flip)
+                                              , void *output_frame)
 {
     CHECK_FORMATS;
     return m_converter_context->convert_to_frame(input_fragment_info
                                                  , input_slices
                                                  , output_fragment_info
-                                                 , output_frame
-                                                 , is_flip);
+                                                 , output_frame);
 }
 
 void libav_converter::reset(scaling_method_t scaling_method)

@@ -1,6 +1,8 @@
 #ifndef FFMPEG_LIBAV_BASE_H
 #define FFMPEG_LIBAV_BASE_H
 
+#include "../base/frame_base.h"
+
 #include <string>
 #include <vector>
 #include <queue>
@@ -13,7 +15,7 @@ namespace ffmpeg
 typedef std::int32_t codec_id_t;
 typedef std::int32_t pixel_format_t;
 typedef std::int32_t sample_format_t;
-const std::int32_t default_frame_align = 1;
+const std::int32_t default_frame_align = 32;
 
 const codec_id_t unknown_codec_id = -1;
 const pixel_format_t unknown_pixel_format = -1;
@@ -83,6 +85,10 @@ enum class option_format_t
     unknown
 };
 
+using frame_point_t = base::frame_point_t;
+using frame_size_t = base::frame_size_t;
+using frame_rect_t = base::frame_rect_t;
+
 struct device_option_t
 {
     std::string         name;
@@ -129,67 +135,6 @@ struct audio_info_t
     std::string format_name() const;
 };
 
-struct frame_size_t; //fwd
-
-struct frame_point_t
-{
-    std::uint32_t   x;
-    std::uint32_t   y;
-
-    frame_point_t(std::uint32_t x = 0
-                  , std::uint32_t y = 0);
-
-    bool is_null() const;
-
-    bool operator ==(const frame_point_t& frame_point) const;
-    bool operator !=(const frame_point_t& frame_point) const;
-
-    frame_point_t& operator +=(const frame_point_t& frame_point);
-    frame_point_t& operator +=(const frame_size_t& frame_size);
-};
-
-struct frame_size_t
-{
-    std::uint32_t   width;
-    std::uint32_t   height;
-
-    frame_size_t(std::uint32_t width = 0
-                  , std::uint32_t height = 0);
-
-    std::size_t size() const;
-    bool is_null() const;
-    bool operator ==(const frame_size_t& frame_size) const;
-    bool operator !=(const frame_size_t& frame_size) const;
-
-    frame_size_t& operator +=(const frame_size_t& frame_size);
-    frame_size_t& operator +=(const frame_point_t& frame_point);
-
-};
-
-struct frame_rect_t
-{
-    frame_point_t  offset;
-    frame_size_t   size;
-
-    frame_rect_t(const frame_point_t& offset = { 0, 0 }
-            , const frame_size_t& size = { 0, 0 });
-
-    frame_rect_t(std::uint32_t x
-                 , std::uint32_t y
-                 , std::uint32_t width
-                 , std::uint32_t height);
-
-    bool operator ==(const frame_rect_t& frame_rect) const;
-    bool operator !=(const frame_rect_t& frame_rect) const;
-
-    frame_rect_t& operator +=(const frame_size_t& frame_size);
-    frame_rect_t& operator +=(const frame_point_t& frame_point);
-
-    bool is_join(const frame_size_t& frame_size) const;
-    bool is_null() const;
-
-};
-
 typedef std::vector<frame_size_t> plane_sizes_t;
 
 struct plane_info_t
@@ -233,6 +178,9 @@ struct video_info_t
     static bool blackout(pixel_format_t pixel_format
                                 , const frame_size_t& size
                                 , void *slices[max_planes]);
+
+
+    static bool is_planar(pixel_format_t pixel_format);
 
 
     video_info_t(std::uint32_t width

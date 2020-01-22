@@ -5,10 +5,10 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace qt
 {
-
 
 using frame_point_t = base::frame_point_t;
 using frame_size_t = base::frame_size_t;
@@ -37,9 +37,10 @@ enum class pixel_format_t
     rgba32 = 17,
 };
 
-const auto default_pixel_format = pixel_format_t::rgba32;
+const auto default_pixel_format = pixel_format_t::rgb24;
 
 typedef std::uint32_t color_t;
+typedef std::vector<frame_point_t> polylines_t;
 
 struct draw_format_t
 {
@@ -56,8 +57,8 @@ struct draw_format_t
 struct font_t
 {
     std::string     name;
-    std::int32_t   size;
-    std::int32_t   weight;
+    std::int32_t    size;
+    std::int32_t    weight;
     bool            italic;
 
     static frame_size_t text_size(const std::string& text
@@ -108,6 +109,34 @@ void draw_rect(const draw_format_t& draw_format
                , void *frame_data
                , const frame_size_t& frame_size
                , pixel_format_t pixel_format = default_pixel_format);
+
+void draw_ellipse(const draw_format_t& draw_format
+                 , const frame_rect_t& draw_rect
+                 , void *frame_data
+                 , const frame_size_t& frame_size
+                 , pixel_format_t pixel_format = default_pixel_format);
+
+void draw_polygon(const draw_format_t& draw_format
+                  , const polylines_t& polylines
+                  , void *frame_data
+                  , const frame_size_t& frame_size
+                  , pixel_format_t pixel_format = default_pixel_format);
+
+void draw_image(const void* input_frame_data
+                , const frame_size_t& input_frame_size
+                , const frame_rect_t& input_frame_rect
+                , void* output_frame_data
+                , const frame_size_t& output_frame_size
+                , const frame_rect_t& output_frame_rect
+                , double opacity = 0.0
+                , pixel_format_t pixel_format = default_pixel_format);
+
+void draw_image(const void* input_frame_data
+                , const frame_size_t& input_frame_size
+                , void* output_frame_data
+                , const frame_size_t& output_frame_size
+                , double opacity = 0.0
+                , pixel_format_t pixel_format = default_pixel_format);
 }
 
 #endif // QT_BASE_H

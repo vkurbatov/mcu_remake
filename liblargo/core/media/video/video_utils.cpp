@@ -152,6 +152,7 @@ bool fast_rotate(const i_media_frame &media_frame)
                            , fast_rotate_plane);
 }
 
+
 }
 
 }

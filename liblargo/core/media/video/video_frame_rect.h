@@ -25,6 +25,8 @@ struct frame_rect_base_t
     frame_rect_base_t(const frame_point_base_t<T> & point
                  , const frame_point_base_t<T> & br_point);
 
+    frame_rect_base_t(const frame_size_base_t<T> & size);
+
     frame_rect_base_t(T x
                      , T y
                      , T width
@@ -41,11 +43,16 @@ struct frame_rect_base_t
 
     frame_point_base_t<T> br_point() const;
 
+    frame_rect_base_t<T>& set_br_point(const frame_point_base_t<T>& frame_point);
+
     bool is_join(const frame_size_base_t<T>& size) const;
+    frame_rect_base_t<T>&  merge(const frame_rect_base_t<T>& frame_rect);
+    frame_rect_base_t<T>&  cut(const frame_rect_base_t<T>& frame_rect);
+    frame_rect_base_t<T>&  put(const frame_point_base_t<T>& frame_point);
 };
 
 typedef frame_rect_base_t<std::int32_t> frame_rect_t;
-typedef frame_rect_base_t<std::int32_t> relative_frame_rect_t;
+typedef frame_rect_base_t<double> relative_frame_rect_t;
 
 /*
 struct frame_rect_t

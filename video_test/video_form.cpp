@@ -21,6 +21,11 @@
 #include "media/common/magick/magick_base.h"
 #include "media/common/qt/qt_base.h"
 
+#include "media/video/filters/video_filter_overlay.h"
+#include "media/video/filters/video_layer_text.h"
+#include "media/video/filters/video_layer_image.h"
+#include "media/video/filters/video_layer_figure.h"
+
 #include <cstring>
 #include <mutex>
 #include <chrono>
@@ -54,6 +59,12 @@ std::atomic_bool image_change(false);
 core::media::video::video_frame_converter           frame_converter(scaling_method);
 core::media::video::filters::video_filter_flip      filter_flip;
 
+core::media::video::filters::layer_list_t         overlay_list;
+core::media::video::filters::video_filter_overlay   filter_overlay(overlay_list);
+
+//core::media::video::filters::video_filter_custom    filter_custom;
+//core::media::video::filters::video_drawing_text_filter  filter_text("Hello world!!!", { 100, 100 });
+
 
 QImage last_image;
 
@@ -61,6 +72,9 @@ std::vector<std::uint8_t>           image_buffer;
 ffmpeg::fragment_info_t             last_fragment_info;
 std::vector<std::uint8_t>           last_frame_buffer;
 std::vector<std::uint8_t>           last_output_buffer;
+
+core::media::video::frame_size_t    draw_image_size(640, 360);
+std::vector<std::uint8_t>           draw_image_buffer(draw_image_size.size() * 3);
 
 std::uint32_t   fps = 0;
 std::uint32_t   frame_count = 0;
@@ -77,12 +91,25 @@ video_form::video_form(QWidget *parent) :
     m_surface(this)
 {
 
-    test1();
+    QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
+    test_image = test_image.convertToFormat(QImage::Format_RGB888);
+
+    QImage dst(draw_image_buffer.data(), draw_image_size.width, draw_image_size.height, QImage::Format_RGB888);
+
+
+    QPainter painter(&dst);
+    painter.drawImage(dst.rect(), test_image);
+    //painter.drawImage( 0, 0, test_image);
+
+
+    // test1();
 
     {
-        QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
-        image_buffer.resize(test_image.width() * test_image.height() * 3);
+        // QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
 
+
+        // image_buffer.resize(test_image.width() * test_image.height() * 3);
+/*
         for (int i = 0; i < test_image.height(); i++)
         {
             uchar *src = test_image.scanLine(i);
@@ -97,7 +124,7 @@ video_form::video_form(QWidget *parent) :
 
             }
         }
-
+*/
         auto process_data = [](const ffmpeg::stream_info_t& stream_info
                           , ffmpeg::media_data_t&& media_data)
         {
@@ -419,7 +446,6 @@ void video_form::prepare_image()
                                                  , mid_format);
 
 
-
         filter_flip.filter(*mid_frame);
 
 
@@ -446,14 +472,63 @@ void video_form::prepare_image()
         mid_info.frame_rect.size.height -= 80;
 */
 
+        // filter_custom.filter(*mid_frame);
+
+        core::media::video::filters::text_format_t text_format("Times"
+                                                               , 0x0000004F
+                                                               , 20
+                                                               , 10
+                                                               , true);
+
+        core::media::video::filters::image_decriptor_t image(draw_image_buffer.data()
+                                                             , draw_image_size
+                                                             , 0.5);
+
+        core::media::video::filters::figure_format_t figure_format(core::media::video::filters::figure_type_t::polygon
+                                                                   , 0x00FF007F
+                                                                   , 0x0000FF7F
+                                                                   , 3);
+
+        core::media::video::filters::polyline_list_t polylines;
+
+        if (overlay_list.empty())
+        {
+
+            polylines.push_back( { 150, 150 } );
+            polylines.push_back( { 300, 150 } );
+            polylines.push_back( { 225, 300 } );
+
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_image(image
+                                                                                                   , { 100, 100 }));
+
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_figure(figure_format
+                                                                                          , polylines));
+/*
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_image(image
+                                                                                       , { 100, 100 }));*/
+
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_text("Hello World!!!"
+                                                                                       , text_format
+                                                                                       , { 917, 100 }));
+
+            text_format.color = 0xFF00009F;
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_text("Hello World!!!"
+                                                                                       , text_format
+                                                                                       , { 1117, 300 }));
+
+        }
+
+        filter_overlay.filter(*mid_frame);
+
+        auto flt_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()
+                                                                               - tp).count();
 
         auto res = converter.convert_frames(mid_info
                           , mid_frame->planes()[0]->data()
                           , output_info
-                          , output_buffer.data()
-                          , false);
+                          , output_buffer.data());
 
-        std::string text = "HELLO WORLD!!!";
+        std::string text = "HELLO\nWORLD!!!";
         auto text_height = output_info.frame_size.height / 25;
 /*
         opencv::text_format_t text_format(opencv::font_t::simplex
@@ -480,7 +555,7 @@ void video_form::prepare_image()
 
         std::vector<std::uint8_t> tmp_buffer(text_size.size() * 4);*/
 
-        auto tp_text = std::chrono::high_resolution_clock::now();
+
 
    /*     magick::draw_text(text
                           , output_info.frame_size.width / 2
@@ -512,7 +587,7 @@ void video_form::prepare_image()
                            , { output_info.frame_size.width, output_info.frame_size.height }
                            , 0.5);*/
 
-
+/*
         qt::text_format_t text_format(qt::font_t("Times"
                                                  , text_height
                                                  , 10
@@ -521,7 +596,7 @@ void video_form::prepare_image()
 
         qt::draw_format_t draw_format(0x00FF007F
                                       , 1
-                                      , 0x0000FF7F);
+                                      , 0x0000FF7F);*/
 
         /*qt::draw_text(text
                       , text_format
@@ -530,6 +605,9 @@ void video_form::prepare_image()
                       , { output_info.frame_size.width, output_info.frame_size.height }
                       , qt::pixel_format_t::rgba32);*/
 
+
+
+        /*
         auto tsz = text_format.font.text_size(text);
 
         qt::draw_rect(draw_format
@@ -547,7 +625,7 @@ void video_form::prepare_image()
                       , qt::v_align_t::center
                       , output_buffer.data()
                       , { output_info.frame_size.width, output_info.frame_size.height }
-                      , qt::pixel_format_t::rgba32);
+                      , qt::pixel_format_t::rgba32);*/
 
 
 
@@ -561,7 +639,7 @@ void video_form::prepare_image()
                           , output_info.frame_size.width
                           , output_info.frame_size.height);*/
 
-        auto flt_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp_text).count();
+        //auto flt_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp_text).count();
 
 
         // auto tmp_buffer = output_buffer;
@@ -707,14 +785,12 @@ void video_form::on_pushButton_clicked()
     converter.convert_frames( brg_info
                       , buffer2.data()
                       , yuv_info
-                      , yuv_input_buffer.data()
-                      , false);
+                      , yuv_input_buffer.data());
 
     converter.convert_frames( input_fragment_info
                       , yuv_input_buffer.data()
                       , output_fragment_info
-                      , buffer1.data()
-                      , true);
+                      , buffer1.data());
 
     /*converter.convert(input_fragment_info
                       , buffer2.data()

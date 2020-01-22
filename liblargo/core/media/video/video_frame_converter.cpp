@@ -2,6 +2,7 @@
 #include "media/common/utils/format_converter.h"
 #include "media/common/media_buffer.h"
 #include "video_frame.h"
+#include "video_utils.h"
 
 namespace core
 {
@@ -150,6 +151,7 @@ bool video_frame_converter::convert(const i_media_frame &input_frame
         ffmpeg::fragment_info_t output_fragment = utils::create_fragment(m_output_area
                                                          , output_format);
 
+
         void* input_slices[ffmpeg::max_planes] = {};
         void* output_slices[ffmpeg::max_planes] = {};
 
@@ -165,8 +167,9 @@ bool video_frame_converter::convert(const i_media_frame &input_frame
 
         if (store_output_rect != output_fragment.frame_rect)
         {
-            output_frame.clear();
+            // output_frame.clear();
         }
+
 
         return m_ffmpeg_converter.convert_slices(input_fragment
                                                  , input_slices

@@ -88,7 +88,7 @@ frame_size_t font_t::text_size(const std::string &text
     QFontMetrics fm(font);
 
     return { fm.width(QString::fromStdString(text))
-             , fm.height() };
+             , fm.height() * (std::count(text.begin(), text.end(), '\n') + 1)};
 }
 
 font_t::font_t(const std::string &name
@@ -161,6 +161,12 @@ void draw_text(const std::string &text
     set_text_format(painter
                     , text_format);
 
+    if (pixel_format != pixel_format_t::argb32
+            && pixel_format != pixel_format_t::rgba32)
+    {
+        painter.setOpacity(static_cast<double>(text_format.color & 0xFF) / 255.0);
+    }
+
     painter.drawText({
                          text_rect.offset.x
                          , text_rect.offset.y
@@ -205,5 +211,105 @@ void draw_rect(const draw_format_t& draw_format
 
 }
 
+void draw_ellipse(const draw_format_t &draw_format
+                  , const frame_rect_t &draw_rect
+                  , void *frame_data
+                  , const frame_size_t &frame_size
+                  , pixel_format_t pixel_format)
+{
+    QImage img(static_cast<std::uint8_t*>(frame_data)
+               , frame_size.width
+               , frame_size.height
+               , static_cast<QImage::Format>(pixel_format));
+
+    QPainter painter(&img);
+
+    set_draw_format(painter
+                    , draw_format);
+
+    painter.drawEllipse(draw_rect.offset.x
+                       , draw_rect.offset.y
+                       , draw_rect.size.width
+                       , draw_rect.size.height);
+}
+
+void draw_polygon(const draw_format_t &draw_format
+                  , const polylines_t &polylines
+                  , void *frame_data
+                  , const frame_size_t &frame_size
+                  , pixel_format_t pixel_format)
+{
+    QImage img(static_cast<std::uint8_t*>(frame_data)
+               , frame_size.width
+               , frame_size.height
+               , static_cast<QImage::Format>(pixel_format));
+
+    QPainter painter(&img);
+
+    set_draw_format(painter
+                    , draw_format);
+
+    QPolygon polygon;
+
+    std::for_each(polylines.begin()
+                  , polylines.end()
+                  , [&polygon](const frame_point_t& point) { polygon.append({ point.x, point.y }); } );
+
+    painter.drawPolygon(polygon);
+}
+
+void draw_image(const void *input_frame_data
+                , const frame_size_t &input_frame_size
+                , const frame_rect_t &input_frame_rect
+                , void *output_frame_data
+                , const frame_size_t& output_frame_size
+                , const frame_rect_t& output_frame_rect
+                , double opacity
+                , pixel_format_t pixel_format)
+{
+    const QImage input_img(static_cast<const std::uint8_t*>(input_frame_data)
+                     , input_frame_size.width
+                     , input_frame_size.height
+                     , static_cast<QImage::Format>(pixel_format));
+
+    QImage output_img(static_cast<std::uint8_t*>(output_frame_data)
+                     , output_frame_size.width
+                     , output_frame_size.height
+                     , static_cast<QImage::Format>(pixel_format));
+
+    // QPainter input_painter(&input_img);
+    QPainter output_painter(&output_img);
+    output_painter.setOpacity(opacity);
+
+    output_painter.drawImage(QRect(output_frame_rect.offset.x
+                                   , output_frame_rect.offset.y
+                                   , output_frame_rect.size.width
+                                   , output_frame_rect.size.height)
+                             , input_img
+                             , QRect(input_frame_rect.offset.x
+                                     , input_frame_rect.offset.y
+                                     , input_frame_rect.size.width
+                                     , input_frame_rect.size.height)
+                             , Qt::ImageConversionFlag::DiffuseAlphaDither);
+
+
+}
+
+void draw_image(const void *input_frame_data
+                , const frame_size_t &input_frame_size
+                , void *output_frame_data
+                , const frame_size_t &output_frame_size
+                , double opacity
+                , pixel_format_t pixel_format)
+{
+    draw_image(input_frame_data
+               , input_frame_size
+               , { { 0, 0 }, input_frame_size }
+               , output_frame_data
+               , output_frame_size
+               , { { 0, 0 }, output_frame_size }
+               , opacity
+               , pixel_format);
+}
 
 }

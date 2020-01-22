@@ -1,4 +1,6 @@
 #include "video_frame_size.h"
+#include <algorithm>
+
 namespace core
 {
 
@@ -55,6 +57,22 @@ template<typename T>
 std::size_t frame_size_base_t<T>::size() const
 {
     return width * height;
+}
+
+template<typename T>
+frame_size_base_t<T> &frame_size_base_t<T>::merge_min(const frame_size_base_t<T> &frame_size)
+{
+    width = std::min(width, frame_size.width);
+    height = std::min(height, frame_size.height);
+    return *this;
+}
+
+template<typename T>
+frame_size_base_t<T> &frame_size_base_t<T>::merge_max(const frame_size_base_t<T> &frame_size)
+{
+    width = std::max(width, frame_size.width);
+    height = std::max(height, frame_size.height);
+    return *this;
 }
 
 }

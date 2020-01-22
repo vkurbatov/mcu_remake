@@ -31,6 +31,9 @@ struct frame_size_base_t
 
     bool is_empty() const;
     std::size_t size() const;
+
+    frame_size_base_t<T>& merge_min(const frame_size_base_t<T>& frame_size);
+    frame_size_base_t<T>& merge_max(const frame_size_base_t<T>& frame_size);
 };
 
 /*

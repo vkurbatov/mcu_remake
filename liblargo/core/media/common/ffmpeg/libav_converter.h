@@ -35,31 +35,28 @@ class libav_converter
     scaling_method_t                m_scaling_method;
 
 public:
-    libav_converter(scaling_method_t scaling_method = default_scaling_method);
+    libav_converter(scaling_method_t scaling_method = default_scaling_method
+                    , std::int32_t linesize_align = default_frame_align);
 
     std::size_t convert_frames(const fragment_info_t& input_fragment_info
                                , const void* input_frame
                                , const fragment_info_t& output_fragment_info
-                               , void* output_frame
-                               , bool is_flip = false);
+                               , void* output_frame);
 
     std::size_t convert_slices(const fragment_info_t& input_fragment_info
                                , void* const input_slices[]
                                , const fragment_info_t& output_fragment_info
-                               , void* output_slices[]
-                               , bool is_flip = false);
+                               , void* output_slices[]);
 
     std::size_t convert_to_slices(const fragment_info_t& input_fragment_info
                         , const void * input_frame
                         , const fragment_info_t& output_fragment_info
-                        , void* output_slices[]
-                        , bool is_flip = false);
+                        , void* output_slices[]);
 
     std::size_t convert_to_frame(const fragment_info_t& input_fragment_info
                                  , void* const input_slices[]
                                  , const fragment_info_t& output_fragment_info
-                                 , void* output_frame
-                                 , bool is_flip = false);
+                                 , void* output_frame);
 
     void reset(scaling_method_t scaling_method);
     void reset();

@@ -1,6 +1,5 @@
 #include "video_frame_rect.h"
 
-
 namespace core
 {
 
@@ -27,6 +26,14 @@ frame_rect_base_t<T>::frame_rect_base_t(const frame_point_base_t<T> &point
     : point(point)
     , size(br_point.x - point.x
            , br_point.y - point.y)
+{
+
+}
+
+template<typename T>
+frame_rect_base_t<T>::frame_rect_base_t(const frame_size_base_t<T> &size)
+    : point(0, 0)
+    , size(size)
 {
 
 }
@@ -91,6 +98,17 @@ frame_point_base_t<T> frame_rect_base_t<T>::br_point() const
 }
 
 template<typename T>
+frame_rect_base_t<T> &frame_rect_base_t<T>::set_br_point(const frame_point_base_t<T> &frame_point)
+{
+    auto br = br_point().merge_max(frame_point);
+
+    size.width = br.x - point.x;
+    size.height = br.y - point.y;
+
+    return *this;
+}
+
+template<typename T>
 bool frame_rect_base_t<T>::is_join(const frame_size_base_t<T> &size) const
 {
     return point.x >= 0
@@ -99,8 +117,29 @@ bool frame_rect_base_t<T>::is_join(const frame_size_base_t<T> &size) const
             && br_point().y <= size.height;
 }
 
+template<typename T>
+frame_rect_base_t<T>& frame_rect_base_t<T>::merge(const frame_rect_base_t<T> &frame_rect)
+{
+    point.merge_min(frame_rect.point);
 
+    return set_br_point(br_point().merge_max(frame_rect.br_point()));
+}
 
+template<typename T>
+frame_rect_base_t<T>& frame_rect_base_t<T>::cut(const frame_rect_base_t<T> &frame_rect)
+{
+    point.merge_max(frame_rect.point);
+
+    return set_br_point(br_point().merge_min(frame_rect.br_point()));
+}
+
+template<typename T>
+frame_rect_base_t<T> &frame_rect_base_t<T>::put(const frame_point_base_t<T> &frame_point)
+{
+    point.merge_min(frame_point);
+
+    return set_br_point(br_point().merge_max(frame_point));
+}
 
 }
 
