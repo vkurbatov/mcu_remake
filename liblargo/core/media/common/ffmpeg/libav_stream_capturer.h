@@ -27,7 +27,7 @@ public:
     bool is_opened() const;
     bool is_established() const;
     stream_info_list_t streams() const;
-    media_queue_t fetch_media_queue(std::int32_t stream_id);
+    frame_queue_t fetch_media_queue(std::int32_t stream_id);
 };
 
 }

@@ -277,8 +277,9 @@ void draw_image(const void *input_frame_data
                      , output_frame_size.height
                      , static_cast<QImage::Format>(pixel_format));
 
-    // QPainter input_painter(&input_img);
+
     QPainter output_painter(&output_img);
+
     output_painter.setOpacity(opacity);
 
     output_painter.drawImage(QRect(output_frame_rect.offset.x

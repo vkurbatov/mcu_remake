@@ -933,10 +933,10 @@ void test_libav_wrapper()
 	decoder_config = encoder_config;
 
 	largo::codec::audio::LibavWrapper	libav_encoder(codec_id, true, encoder_config);
-	largo::codec::audio::LibavWrapper	libav_decoder(codec_id, false, decoder_config);
+	largo::codec::audio::LibavWrapper	libav_transcoder(codec_id, false, decoder_config);
 
 	libav_encoder.Open();
-	libav_decoder.Open();
+	libav_transcoder.Open();
 
 	std::uint8_t	buffer[recorder_frame_size];
 	std::uint8_t	codec_buffer[recorder_frame_size];
@@ -951,7 +951,7 @@ void test_libav_wrapper()
 
 			if (enc_result > 0)
 			{
-				auto dec_result = libav_decoder.Transcode(codec_buffer, enc_result, buffer, recorder_frame_size);
+				auto dec_result = libav_transcoder.Transcode(codec_buffer, enc_result, buffer, recorder_frame_size);
 
 				if (dec_result > 0)
 				{
@@ -1017,14 +1017,14 @@ void test_libav_codec_system()
 	largo::codec::audio::audio_codec_id_t codec_id = largo::codec::audio::audio_codec_id_t::audio_codec_g723_1;
 
 	largo::codec::audio::LibavAudioTranscoder libav_encoder(codec_id, true, encoder_options);
-	largo::codec::audio::LibavAudioTranscoder libav_decoder(codec_id, false, decoder_options);
+	largo::codec::audio::LibavAudioTranscoder libav_transcoder(codec_id, false, decoder_options);
 
 
 	libav_encoder.SetOptions(encoder_options);
-	libav_decoder.SetOptions(decoder_options);
+	libav_transcoder.SetOptions(decoder_options);
 
 	libav_encoder.Open();
-	libav_decoder.Open();
+	libav_transcoder.Open();
 
 	decoder_config = encoder_config;
 
@@ -1041,7 +1041,7 @@ void test_libav_codec_system()
 
 			if (enc_result > 0)
 			{
-				auto dec_result = libav_decoder(codec_buffer, enc_result, buffer, recorder_frame_size);
+				auto dec_result = libav_transcoder(codec_buffer, enc_result, buffer, recorder_frame_size);
 
 				if (dec_result > 0)
 				{

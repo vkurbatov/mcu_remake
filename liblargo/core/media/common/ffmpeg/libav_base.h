@@ -71,6 +71,7 @@ struct codec_info_t
 {
     codec_id_t                  id;
     std::string                 name;
+    bool                        is_encoder;
     media_data_t                extra_data;
     bool is_coded() const;
 };
@@ -252,21 +253,24 @@ struct media_info_t
 struct frame_info_t
 {
     std::int32_t                stream_id;
-    media_type_t                media_type;
+    media_type_t                media_type;   
     media_info_t                media_info;
+    std::uint32_t               dts;
+    std::uint32_t               pts;
     virtual std::string to_string() const;
-};
-
-struct frame_t
-{
-    frame_info_t    frame_info;
-    media_data_t    frame_data;
 };
 
 struct stream_info_t: public frame_info_t
 {
     codec_info_t                codec_info;
+    std::uint32_t               bitrate;
     std::string to_string() const override;
+};
+
+struct frame_t
+{
+    stream_info_t   info;
+    media_data_t    media_data;
 };
 
 struct adaptive_timer_t
@@ -283,6 +287,7 @@ struct adaptive_timer_t
 };
 
 typedef std::vector<stream_info_t> stream_info_list_t;
+typedef std::queue<frame_t> frame_queue_t;
 typedef std::queue<media_data_t> media_queue_t;
 typedef std::function<bool(const stream_info_t& stream_info
                            , media_data_t&& media_data)> stream_data_handler_t;

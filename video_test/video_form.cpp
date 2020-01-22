@@ -9,7 +9,7 @@
 #include "rgb_video_buffer.h"
 #include "core/media/common/ffmpeg/libav_converter.h"
 #include "core/media/common/ffmpeg/libav_stream_capturer.h"
-#include "core/media/common/ffmpeg/libav_decoder.h"
+#include "core/media/common/ffmpeg/libav_transcoder.h"
 
 #include "core/media/common/v4l2/v4l2_device.h"
 #include "media/common/utils/format_converter.h"
@@ -52,7 +52,7 @@ double delay_factor = 0.1;
 ffmpeg::libav_converter converter(ffmpeg::scaling_method_t::default_method);
 std::unique_ptr<ffmpeg::libav_stream_capturer> rtsp_capturer;
 std::unique_ptr<v4l2::v4l2_device> v4l2_capturer;
-ffmpeg::libav_decoder decoder;
+ffmpeg::libav_transcoder decoder;
 std::mutex  mutex;
 std::atomic_bool image_change(false);
 
@@ -164,10 +164,7 @@ video_form::video_form(QWidget *parent) :
 
                     if (!decoder.is_open())
                     {
-                        decoder.open(stream_info.codec_info.id
-                                     , stream_info.media_info
-                                     , stream_info.codec_info.extra_data.data()
-                                     , stream_info.codec_info.extra_data.size());
+                        decoder.open(stream_info);
                     }
 
                     if (decoder.is_open())

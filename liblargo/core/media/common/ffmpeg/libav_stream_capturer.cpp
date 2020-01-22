@@ -280,6 +280,10 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
             stream_info.stream_id = av_stream->index;
             stream_info.codec_info.id = av_stream->codec->codec_id;
             stream_info.codec_info.name = avcodec_get_name(av_stream->codec->codec_id);
+            stream_info.codec_info.is_encoder = av_codec_is_encoder(av_stream->codec->codec) != 0;
+            stream_info.dts = 0;
+            stream_info.pts = 0;
+            stream_info.bitrate = av_stream->codec->bit_rate;
 
             if (av_stream->codec->extradata != nullptr
                     && av_stream->codec->extradata_size > 0)
@@ -295,6 +299,50 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
     return streams; 
 }
 
+std::int32_t fetch_media_data(frame_t& frame)
+{
+    std::int32_t result = -1;
+
+    if (is_init)
+    {
+        packet.size = 0;
+        result = av_read_frame(context, &packet);
+
+        if (result >= 0 && packet.size > 0)
+        {
+            frame.info.stream_id = packet.stream_index;
+            frame.info.dts = packet.dts;
+            frame.info.dts = packet.pts;
+
+            frame.media_data.resize(packet.size);
+
+
+            memcpy(frame.media_data.data()
+                        , packet.data
+                        , packet.size);
+
+            total_read_bytes += packet.size;
+            total_read_frames++;
+
+            result = frame.info.stream_id;
+        }
+
+        LOG_D << "Context #" << context_id << ". Fetch media data size " << packet.size
+              << " from stream #" << result LOG_END;
+
+        av_packet_unref(&packet);
+
+        return true;
+    }
+    else
+    {
+        LOG_W << "Context #" << context_id << ". Cant't fetch media data, context not init" LOG_END;
+    }
+
+    return result;
+}
+
+/*
 std::pair<std::int32_t, media_data_t> fetch_media_data()
 {
     std::pair<std::int32_t, media_data_t> media_data = { -1, media_data_t() };
@@ -306,6 +354,7 @@ std::pair<std::int32_t, media_data_t> fetch_media_data()
 
         if (media_data.first >= 0 && packet.size > 0)
         {
+
             media_data.first = packet.stream_index;
             media_data.second = std::move(media_data_t(packet.data
                                                        , packet.data + packet.size));
@@ -326,7 +375,7 @@ std::pair<std::int32_t, media_data_t> fetch_media_data()
 
     return std::move(media_data);
 }
-
+*/
 };
 //------------------------------------------------------------------------------------
 struct libav_stream_capturer_context_t
@@ -334,7 +383,7 @@ struct libav_stream_capturer_context_t
     struct libav_stream_t
     {
         stream_info_t   stream_info;
-        media_queue_t   media_queue;
+        frame_queue_t   frame_queue;
         std::mutex      queue_mutex;
 
         libav_stream_t(stream_info_t&& stream_info)
@@ -345,23 +394,23 @@ struct libav_stream_capturer_context_t
 
         libav_stream_t(libav_stream_t&& other) = default;
 
-        void push_data(media_data_t&& media_data)
+        void push_data(frame_t&& frame)
         {
             std::lock_guard<std::mutex> lock(queue_mutex);
 
-            while (media_queue.size() >= max_queue_size)
+            while (frame_queue.size() >= max_queue_size)
             {
-                media_queue.pop();
+                frame_queue.pop();
             }
 
-            media_queue.emplace(std::move(media_data));
+            frame_queue.emplace(std::move(frame));
         }
 
-        media_queue_t fetch_queue()
+        frame_queue_t fetch_queue()
         {
             std::lock_guard<std::mutex> lock(queue_mutex);
 
-            return std::move(media_queue);
+            return std::move(frame_queue);
         }
     };
 
@@ -464,19 +513,20 @@ struct libav_stream_capturer_context_t
         adaptive_timer_t delay_timer;
         // std::size_t frame_counter = 0;
 
+        frame_t frame = {};
 
         while(m_is_running)
         {        
             if (is_open() || open(stream_mask))
             {
-                auto media_data = std::move(m_format_context->fetch_media_data());
+                auto result = m_format_context->fetch_media_data(frame);
 
                 if (!m_is_running)
                 {
                     break;
                 }
 
-                if (!media_data.second.empty())
+                if (result >= 0)
                 {
                     if (m_format_context->total_read_frames == 1)
                     {
@@ -485,22 +535,25 @@ struct libav_stream_capturer_context_t
 
                     error_counter = 0;
 
-                    auto it = m_streams.find(media_data.first);
+                    auto it = m_streams.find(frame.info.stream_id);
 
                     if (it != m_streams.end()
-                            && !media_data.second.empty())
+                            && !frame.media_data.empty())
                     {
                         const stream_info_t& stream_info = it->second.stream_info;
+                        frame.info.codec_info = stream_info.codec_info;
+                        frame.info.media_type = stream_info.media_type;
+                        frame.info.bitrate = stream_info.bitrate;
 
                         if (m_stream_data_handler == nullptr
-                                || !m_stream_data_handler(stream_info
-                                                         , std::move(media_data.second))
+                                || !m_stream_data_handler(frame.info
+                                                         , std::move(frame.media_data))
                                 )
                         {
-                            LOG_D << "Capturer #" << m_capturer_id << ". Fetch data size " << media_data.second.size()
+                            LOG_D << "Capturer #" << m_capturer_id << ". Fetch data size " << frame.media_data.size()
                                   << " for " << stream_info.to_string() LOG_END;
 
-                            it->second.push_data(std::move(media_data.second));
+                            it->second.push_data(std::move(frame));
                         }
 
                         if (m_format_context->type == device_type_t::file)
@@ -516,21 +569,21 @@ struct libav_stream_capturer_context_t
                 }
                 else
                 {
-                    if (media_data.first == -EAGAIN || media_data.first == 0)
+                    if (result == -EAGAIN || result == 0)
                     {
-                        media_data.first = 0;
+                        result = 0;
                         error_counter++;
                     }
                     else
                     {
-                        LOG_W << "Capturer #" << m_capturer_id << ". Error fetch media data, err = " << media_data.first LOG_END;
+                        LOG_W << "Capturer #" << m_capturer_id << ". Error fetch media data, err = " << result LOG_END;
                     }
                     std::this_thread::sleep_for(std::chrono::milliseconds(idle_timeout_ms));
                 }
 
-                if (error_counter > 10 || media_data.first < 0)
+                if (error_counter > 10 || result < 0)
                 {
-                    LOG_E << "Capturer #" << m_capturer_id << ". Stopped, err = " << media_data.first LOG_END;
+                    LOG_E << "Capturer #" << m_capturer_id << ". Stopped, err = " << result LOG_END;
                     close();
                 }
 
@@ -558,18 +611,18 @@ struct libav_stream_capturer_context_t
         }
     }
 
-    media_queue_t fetch_media_queue(int32_t stream_id)
+    frame_queue_t fetch_frame_queue(int32_t stream_id)
     {
-        media_queue_t media_queue;
+        frame_queue_t frame_queue;
 
         auto it = m_streams.find(stream_id);
 
         if (it != m_streams.end())
         {
-            media_queue = std::move(it->second.fetch_queue());
+            frame_queue = std::move(it->second.fetch_queue());
         }
 
-        return std::move(media_queue);
+        return std::move(frame_queue);
     }
 
     void push_event(streaming_event_t capture_event)
@@ -639,16 +692,16 @@ stream_info_list_t libav_stream_capturer::streams() const
     return std::move(stream_info_list);
 }
 
-media_queue_t libav_stream_capturer::fetch_media_queue(int32_t stream_id)
+frame_queue_t libav_stream_capturer::fetch_media_queue(int32_t stream_id)
 {
-    media_queue_t media_queue;
+    frame_queue_t frame_queue;
 
     if (m_libav_stream_capturer_context != nullptr)
     {
-        media_queue = std::move(m_libav_stream_capturer_context->fetch_media_queue(stream_id));
+        frame_queue = std::move(m_libav_stream_capturer_context->fetch_frame_queue(stream_id));
     }
 
-    return std::move(media_queue);
+    return std::move(frame_queue);
 }
 //------------------------------------------------------------------------------------
 
