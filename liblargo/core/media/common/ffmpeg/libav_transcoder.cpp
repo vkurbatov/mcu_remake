@@ -271,7 +271,17 @@ struct libav_codec_context_t
                     av_context->framerate = av_d2q(stream_info.media_info.video_info.fps, 60);
                     av_context->time_base = av_context->framerate;
                     av_context->sample_rate = 90000;
-                    av_context->flags |= AVFMT_GLOBALHEADER;
+                    av_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+                    switch(av_context->codec_id)
+                    {
+                        case AV_CODEC_ID_MPEG2VIDEO:
+                            av_context->max_b_frames = 2;
+                        break;
+                        case AV_CODEC_ID_MPEG1VIDEO:
+                            av_context->mb_decision = 2;
+                        break;
+                    }
 
                     LOG_I << "Transcoder #" << context_id << ". Initialize video context [" <<  stream_info.media_info.video_info.size.width
                           << "x" << stream_info.media_info.video_info.size.height << "@" << stream_info.media_info.video_info.fps

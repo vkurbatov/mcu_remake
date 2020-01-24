@@ -102,7 +102,7 @@ static bool transcoder_test(core::media::video::i_video_frame& video_frame)
         {
             ffmpeg::stream_info_t s_info;
             s_info.codec_info.name = encoder_name;
-            s_info.codec_info.codec_params.bitrate = 1000000;
+            s_info.codec_info.codec_params.bitrate = 2000000;
             s_info.codec_info.codec_params.gop = 12;
             s_info.media_info.media_type = ffmpeg::media_type_t::video;
             s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
