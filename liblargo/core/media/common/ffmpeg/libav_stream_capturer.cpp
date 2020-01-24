@@ -216,7 +216,7 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
 
     bool is_audio_allowed = (stream_mask & stream_mask_t::stream_mask_audio) != stream_mask_empty;
     bool is_video_allowed = (stream_mask & stream_mask_t::stream_mask_video) != stream_mask_empty;
-    bool is_data_allowed = (stream_mask & stream_mask_t::stream_mask_data) != stream_mask_empty;
+    bool is_data_allowed = (stream_mask & stream_mask_t::stream_mask_data) != stream_mask_empty;    
 
     if (is_init)
     {
@@ -235,7 +235,7 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
                         continue;
                     }
 
-                    stream_info.media_type = media_type_t::audio;
+                    stream_info.media_info.media_type = media_type_t::audio;
 
                     stream_info.media_info.audio_info.sample_rate = av_stream->codec->sample_rate;
                     stream_info.media_info.audio_info.channels = av_stream->codec->channels;
@@ -249,19 +249,20 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
                         continue;
                     }
 
-                    stream_info.media_type = media_type_t::video;
+                    stream_info.media_info.media_type = media_type_t::video;
 
                     stream_info.media_info.video_info.size.width = av_stream->codec->width;
                     stream_info.media_info.video_info.size.height = av_stream->codec->height;
 
-                    stream_info.media_info.video_info.fps = av_q2d(av_stream->avg_frame_rate);
+                    stream_info.media_info.video_info.fps = av_q2d(av_stream->avg_frame_rate) + 0.5;
 
                     if (stream_info.media_info.video_info.fps == 0)
                     {
-                        stream_info.media_info.video_info.fps = av_q2d(av_stream->r_frame_rate);
+                        stream_info.media_info.video_info.fps = av_q2d(av_stream->r_frame_rate) + 0.5;
                     }
 
                     stream_info.media_info.video_info.pixel_format = static_cast<pixel_format_t>(av_stream->codec->pix_fmt);
+                    stream_info.codec_info.codec_params.gop = av_stream->codec->gop_size;
                 break;
 
                 case AVMEDIA_TYPE_DATA:
@@ -271,25 +272,27 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
                     {
                         continue;
                     }
-                    stream_info.media_type = media_type_t::data;
+                    stream_info.media_info.media_type = media_type_t::data;
                 break;
                 default:
                     continue;
             }
 
             stream_info.stream_id = av_stream->index;
-            stream_info.codec_info.id = av_stream->codec->codec_id;
-            stream_info.codec_info.name = avcodec_get_name(av_stream->codec->codec_id);
-            stream_info.codec_info.is_encoder = av_codec_is_encoder(av_stream->codec->codec) != 0;
-            stream_info.dts = 0;
-            stream_info.pts = 0;
-            stream_info.bitrate = av_stream->codec->bit_rate;
+            if (av_stream->codec != nullptr)
+            {
+                stream_info.codec_info.id = av_stream->codec->codec_id;
+                stream_info.codec_info.name = stream_info.codec_info.codec_name(stream_info.codec_info.id);
+                stream_info.codec_info.codec_params.bitrate = av_stream->codec->bit_rate;
+                stream_info.codec_info.codec_params.frame_size = av_stream->codec->frame_size;
+            }
 
             if (av_stream->codec->extradata != nullptr
                     && av_stream->codec->extradata_size > 0)
             {
-                stream_info.codec_info.extra_data = std::move(media_data_t(av_stream->codec->extradata
-                                                                           , av_stream->codec->extradata + av_stream->codec->extradata_size));
+                stream_info.extra_data = std::move(stream_info_t::create_extra_data(av_stream->codec->extradata
+                                                                                    , av_stream->codec->extradata_size
+                                                                                    , true));
             }
 
             streams.emplace_back(std::move(stream_info));
@@ -305,17 +308,15 @@ std::int32_t fetch_media_data(frame_t& frame)
 
     if (is_init)
     {
-        packet.size = 0;
         result = av_read_frame(context, &packet);
 
         if (result >= 0 && packet.size > 0)
         {
-            frame.info.stream_id = packet.stream_index;
             frame.info.dts = packet.dts;
             frame.info.dts = packet.pts;
+            frame.info.id = packet.stream_index;
 
             frame.media_data.resize(packet.size);
-
 
             memcpy(frame.media_data.data()
                         , packet.data
@@ -324,15 +325,13 @@ std::int32_t fetch_media_data(frame_t& frame)
             total_read_bytes += packet.size;
             total_read_frames++;
 
-            result = frame.info.stream_id;
+            result = packet.stream_index;
         }
 
         LOG_D << "Context #" << context_id << ". Fetch media data size " << packet.size
               << " from stream #" << result LOG_END;
 
         av_packet_unref(&packet);
-
-        return true;
     }
     else
     {
@@ -342,40 +341,6 @@ std::int32_t fetch_media_data(frame_t& frame)
     return result;
 }
 
-/*
-std::pair<std::int32_t, media_data_t> fetch_media_data()
-{
-    std::pair<std::int32_t, media_data_t> media_data = { -1, media_data_t() };
-
-    if (is_init)
-    {
-        packet.size = 0;
-        media_data.first = av_read_frame(context, &packet);
-
-        if (media_data.first >= 0 && packet.size > 0)
-        {
-
-            media_data.first = packet.stream_index;
-            media_data.second = std::move(media_data_t(packet.data
-                                                       , packet.data + packet.size));
-
-            total_read_bytes += packet.size;
-            total_read_frames++;
-        }
-
-        LOG_D << "Context #" << context_id << ". Fetch media data size " << packet.size
-              << " from stream #" << media_data.first LOG_END;               
-
-        av_packet_unref(&packet);
-    }
-    else
-    {
-        LOG_W << "Context #" << context_id << ". Cant't fetch media data, context not init" LOG_END;
-    }
-
-    return std::move(media_data);
-}
-*/
 };
 //------------------------------------------------------------------------------------
 struct libav_stream_capturer_context_t
@@ -535,18 +500,17 @@ struct libav_stream_capturer_context_t
 
                     error_counter = 0;
 
-                    auto it = m_streams.find(frame.info.stream_id);
+                    auto it = m_streams.find(result);
 
                     if (it != m_streams.end()
                             && !frame.media_data.empty())
                     {
                         const stream_info_t& stream_info = it->second.stream_info;
-                        frame.info.codec_info = stream_info.codec_info;
-                        frame.info.media_type = stream_info.media_type;
-                        frame.info.bitrate = stream_info.bitrate;
+                        frame.info.media_info.media_type = stream_info.media_info.media_type;
+                        frame.info.codec_id = stream_info.codec_info.id;
 
                         if (m_stream_data_handler == nullptr
-                                || !m_stream_data_handler(frame.info
+                                || !m_stream_data_handler(stream_info
                                                          , std::move(frame.media_data))
                                 )
                         {
@@ -558,10 +522,10 @@ struct libav_stream_capturer_context_t
 
                         if (m_format_context->type == device_type_t::file)
                         {
-                            if (stream_info.media_type == media_type_t::video)
+                            if (stream_info.media_info.media_type == media_type_t::video)
                             {
                                 stream_info.media_info.video_info.fps != 0;
-                                delay_timer.wait(1000/stream_info.media_info.video_info.fps);
+                                delay_timer.wait( 1000 / stream_info.media_info.video_info.fps);
                             }
                         }
                     }

@@ -16,8 +16,13 @@ extern "C"
 namespace ffmpeg
 {
 
+const codec_id_t codec_id_h263 = static_cast<codec_id_t>(AV_CODEC_ID_H263);
 const codec_id_t codec_id_h264 = static_cast<codec_id_t>(AV_CODEC_ID_H264);
+const codec_id_t codec_id_h265 = static_cast<codec_id_t>(AV_CODEC_ID_HEVC);
+const codec_id_t codec_id_vp8 = static_cast<codec_id_t>(AV_CODEC_ID_VP8);
+const codec_id_t codec_id_vp9 = static_cast<codec_id_t>(AV_CODEC_ID_VP9);
 const codec_id_t codec_id_mjpeg = static_cast<codec_id_t>(AV_CODEC_ID_MJPEG);
+const codec_id_t codec_id_jpeg = static_cast<codec_id_t>(AV_CODEC_ID_JPEG2000);
 const codec_id_t codec_id_raw_video = static_cast<codec_id_t>(AV_CODEC_ID_RAWVIDEO);
 const codec_id_t codec_id_none = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
 
@@ -36,9 +41,8 @@ std::string error_to_string(int32_t av_error)
 {
     char err[AV_ERROR_MAX_STRING_SIZE] = {};
     av_strerror(av_error, err, AV_ERROR_MAX_STRING_SIZE);
-    return err;
+    return err;               
 }
-
 
 
 //const codec_id_t codec_id_yuv420p = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
@@ -381,35 +385,36 @@ bool video_info_t::blackout(void *slices[]) const
 
 
 media_info_t::media_info_t(const audio_info_t &audio_info)
-    : audio_info(audio_info)
+    : media_type(media_type_t::audio)
+    , audio_info(audio_info)
     , video_info()
 {
 
 }
 
 media_info_t::media_info_t(const video_info_t &video_info)
-    : video_info(video_info)
+    : media_type(media_type_t::video)
+    , video_info(video_info)
 {
 
 }
 
-std::string frame_info_t::to_string() const
+std::string media_info_t::to_string() const
 {
     std::stringstream ss;
-    ss << "stream #" << stream_id << ":";
 
     switch(media_type)
     {
         case media_type_t::audio:
-            ss << "A[" << media_info.audio_info.sample_rate
-               << "/" << media_info.audio_info.bps()
-               << "/" << media_info.audio_info.channels
+            ss << "A[" << audio_info.sample_rate
+               << "/" << audio_info.bps()
+               << "/" << audio_info.channels
                << "]";
         break;
         case media_type_t::video:
-            ss << "V[" << media_info.video_info.size.width
-               << "x" << media_info.video_info.size.height
-               << "@" << media_info.video_info.fps
+            ss << "V[" << video_info.size.width
+               << "x" << video_info.size.height
+               << "@" << video_info.fps
                << "]";
         break;
         default:
@@ -420,9 +425,79 @@ std::string frame_info_t::to_string() const
     return ss.str();
 }
 
+frame_info_t::frame_info_t(const media_info_t &media_info
+                           , int64_t pts
+                           , int64_t dts
+                           , int32_t id
+                           , codec_id_t codec_id)
+    : media_info(media_info)
+    , pts(pts)
+    , dts(dts)
+    , id(id)
+    , codec_id(codec_id)
+{
+
+}
+
+bool frame_info_t::is_encoded() const
+{
+    return codec_id > 0
+            && codec_id != codec_id_raw_video;
+}
+
+std::string frame_info_t::to_string() const
+{
+    return media_info.to_string();
+}
+
+media_data_t stream_info_t::create_extra_data(const void *extra_data
+                                              , std::size_t extra_data_size
+                                              , bool need_padding)
+{
+    if (extra_data != nullptr
+        && extra_data_size > 0)
+    {
+        media_data_t extra_buffer(extra_data_size + (need_padding
+                                                    ? AV_INPUT_BUFFER_PADDING_SIZE
+                                                    : 0)
+                                                    , 0);
+
+        memcpy(extra_buffer.data()
+               , extra_data
+               , extra_data_size);
+
+        return std::move(extra_buffer);
+    }
+
+    return media_data_t();
+}
+
+stream_info_t::stream_info_t(int32_t stream_id
+                             , const codec_info_t &codec_info
+                             , const media_info_t &media_info
+                             , const void *extra_data
+                             , std::size_t extra_data_size
+                             , bool need_extra_padding)
+    : stream_id(stream_id)
+    , codec_info(codec_info)
+    , media_info(media_info)
+    , extra_data(std::move(create_extra_data(extra_data
+                                             , extra_data_size
+                                             , need_extra_padding)))
+{
+
+}
+
 std::string stream_info_t::to_string() const
 {
-    return frame_info_t::to_string().append(":c=" + codec_info.name);
+
+    std::stringstream ss;
+
+    ss << "stream #" << stream_id << ":" << media_info.to_string()
+       << ":c=" << codec_info.name;
+
+    return ss.str();
+
 }
 
 fragment_info_t::fragment_info_t(uint32_t x
@@ -484,25 +559,51 @@ bool fragment_info_t::operator !=(const fragment_info_t &fragment_info) const
     return !operator ==(fragment_info);
 }
 
+std::string codec_info_t::codec_name(codec_id_t id)
+{    
+    return avcodec_get_name(static_cast<AVCodecID>(id));
+}
+
+codec_info_t::codec_info_t(codec_id_t id
+                           , const std::string &name
+                           , const codec_params_t codec_params)
+    : id(id)
+    , name(name)
+    , codec_params(codec_params)
+{
+    if (this->name.empty())
+    {
+        this->name = codec_name(id);
+    }
+}
+
 bool codec_info_t::is_coded() const
 {
     return id > AV_CODEC_ID_NONE
             && id != AV_CODEC_ID_RAWVIDEO;
 }
 
-adaptive_timer_t::adaptive_timer_t()
+std::string codec_info_t::to_string() const
+{
+    return name.empty()
+            ? codec_name(id)
+            : name;
+}
+
+adaptive_timer_t::adaptive_timer_t(std::uint64_t tick_size)
+    : tick_size(tick_size)
 {
     reset();
 }
 
-uint64_t adaptive_timer_t::now()
+uint64_t adaptive_timer_t::now(std::uint32_t tick_size)
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    return tick_size * std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / std::nano::den;
 }
 
 void adaptive_timer_t::reset()
 {
-    time_base = now();
+    time_base = now(tick_size);
 }
 
 bool adaptive_timer_t::wait(std::uint64_t wait_time
@@ -516,9 +617,9 @@ bool adaptive_timer_t::wait(std::uint64_t wait_time
         return true;
     }
 
-    if (is_wait)
+    if (is_wait && tick_size > 0)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(wait_time - elapsed_time));
+        std::this_thread::sleep_for(std::nano::den * std::chrono::nanoseconds(wait_time - elapsed_time) / tick_size);
         time_base += wait_time;
         return true;
     }
@@ -528,7 +629,85 @@ bool adaptive_timer_t::wait(std::uint64_t wait_time
 
 uint64_t adaptive_timer_t::elapsed() const
 {
-    return now() - time_base;
+    return now(tick_size) - time_base;
+}
+
+codec_params_t::codec_params_t(int32_t bitrate
+                               , int32_t gop
+                               , std::int32_t frame_size)
+    : bitrate(bitrate)
+    , gop(gop)
+    , frame_size(frame_size)
+{
+
+}
+
+extended_option_list_t libav_parse_option_list(const std::string& options_string)
+{
+    extended_option_list_t options;
+
+    if (!options_string.empty())
+    {
+        size_t start = 0, end = 0;
+
+        auto trim_space = [](std::string& str)
+        {
+            static const auto whitespaces = " \t\f\v\n\r";
+
+            if (!str.empty())
+            {
+                auto first = str.find_first_not_of(whitespaces);
+
+                if (first != std::string::npos)
+                {
+                    auto last = str.find_last_not_of(whitespaces);
+
+                    if (last != str.size())
+                    {
+                        str = str.substr(first
+                                         , last - first + 1);
+                    }
+                }
+                else
+                {
+                    str.clear();
+                }
+            }
+        };
+
+        while ((end = options_string.find('=', start))
+               != std::string::npos)
+        {
+            extended_option_t option;
+
+            option.first = options_string.substr(start, end - start);
+
+            start = end + 1;
+            end = options_string.find(';', start);
+
+            option.second = options_string.substr(start, end - start);
+
+            trim_space(option.first);
+            trim_space(option.second);
+
+            if (!option.first.empty()
+                    && !option.second.empty())
+            {
+                options.emplace_back(std::move(option));
+            }
+
+            if (end != std::string::npos)
+            {
+                start = end + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    return options;
 }
 
 }

@@ -11,16 +11,12 @@ struct libav_transcoder_context_deleter_t { void operator()(libav_transcoder_con
 
 typedef std::unique_ptr<libav_transcoder_context_t, libav_transcoder_context_deleter_t> libav_transcoder_context_ptr_t;
 
-
-typedef frame_t decoded_frame_t;
-typedef frame_queue_t decoded_queue_t;
-/*struct decoded_frame_t
+enum class transcoder_type_t
 {
-    stream_info_t   info;
-    media_data_t    media_data;
-};*/
-
-//typedef std::queue<decoded_frame_t> decoded_queue_t;
+    unknown,
+    encoder,
+    decoder
+};
 
 class libav_transcoder
 {
@@ -29,17 +25,23 @@ class libav_transcoder
 public:
     libav_transcoder();
 
-    bool open(const stream_info_t& steam_info);
-
+    bool open(const stream_info_t& steam_info
+              , transcoder_type_t transcoder_type
+              , const std::string& options = "");
     bool close();
+    bool is_open() const;
 
-    bool is_open() const;    
+    transcoder_type_t type() const;
 
-    decoded_queue_t decode(const void* data
-                           , std::size_t size);
+    const stream_info_t& config() const;
 
+    frame_queue_t transcode(const void* data
+                            , std::size_t size);
 
-    codec_id_t codec_id() const;
+    bool transcode(const void* data
+                   , std::size_t size
+                   , frame_queue_t& frame_queue);
+
 
 };
 

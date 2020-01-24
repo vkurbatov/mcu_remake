@@ -45,6 +45,7 @@ double dec_delay = 0;
 double delay1 = 0;
 double delay2 = 0;
 double filter_delay = 0;
+double encoder_delay = 0;
 
 double delay_factor = 0.1;
 
@@ -85,6 +86,95 @@ auto last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono
 auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
 
+static bool transcoder_test(core::media::video::i_video_frame& video_frame)
+{
+    static ffmpeg::libav_transcoder encoder;
+    static ffmpeg::libav_transcoder decoder;
+
+    std::string encoder_name = "libx264";
+    std::string decoder_name = "h264";
+
+    const auto& video_format = video_frame.video_format();
+
+    if (video_format.pixel_format == core::media::video::pixel_format_t::yuv420p)
+    {
+        if (!encoder.is_open())
+        {
+            ffmpeg::stream_info_t s_info;
+            s_info.codec_info.name = encoder_name;
+            s_info.codec_info.codec_params.bitrate = 1000000;
+            s_info.codec_info.codec_params.gop = 12;
+            s_info.media_info.media_type = ffmpeg::media_type_t::video;
+            s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
+            s_info.media_info.video_info.fps = 25;// video_format.fps;
+            s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format);
+
+            encoder.open(s_info
+                         , ffmpeg::transcoder_type_t::encoder
+                         //, "libav_thread_count=8"
+                         );
+        }
+
+        if (encoder.is_open())
+        {
+            if (!decoder.is_open())
+            {
+                auto s_info = encoder.config();
+                s_info.codec_info.name = decoder_name;
+
+                decoder.open(s_info, ffmpeg::transcoder_type_t::decoder);
+            }
+
+            if (decoder.is_open())
+            {
+
+                auto tp = std::chrono::high_resolution_clock::now();
+
+                //auto tp = ffmpeg::adaptive_timer_t::now(1000000);
+
+                auto enc_frames = encoder.transcode(video_frame.planes()[0]->data()
+                                                    , video_format.frame_size());
+
+                // tp = ffmpeg::adaptive_timer_t::now(1000000) - tp;
+
+                encoder_delay += (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count() - encoder_delay) * delay_factor;
+
+                auto fsz = video_format.frame_size();
+
+                while (!enc_frames.empty())
+                {
+                    const auto& enc_frame = enc_frames.front();
+                    auto dec_frames = decoder.transcode(enc_frame.media_data.data()
+                                                        , enc_frame.media_data.size());
+
+                    while(!dec_frames.empty())
+                    {
+                        const auto& dec_frame = dec_frames.front();
+
+                        if (dec_frames.size() == 1)
+                        {
+                            if (fsz == dec_frame.media_data.size())
+                            {
+                                std::memcpy(video_frame.planes()[0]->data()
+                                            , dec_frame.media_data.data()
+                                            , dec_frame.media_data.size());
+
+                                return true;
+                            }
+                        }
+
+                        dec_frames.pop();
+                    }
+
+                    enc_frames.pop();
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 video_form::video_form(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::video_form),
@@ -99,7 +189,13 @@ video_form::video_form(QWidget *parent) :
 
     QPainter painter(&dst);
     painter.drawImage(dst.rect(), test_image);
+
+   // auto list = ffmpeg::libav_parse_option_list("  \r  \n  param1  \r  = \n value1  \r ;  \r  param2  \n = 43\n   \r  ");
+    auto list = ffmpeg::libav_parse_option_list("param1=value1;param2=");
+
+    list.clear();
     //painter.drawImage( 0, 0, test_image);
+
 
 
     // test1();
@@ -125,11 +221,13 @@ video_form::video_form(QWidget *parent) :
             }
         }
 */
+
+
         auto process_data = [](const ffmpeg::stream_info_t& stream_info
                           , ffmpeg::media_data_t&& media_data)
         {
 
-            if (stream_info.media_type == ffmpeg::media_type_t::video)
+            if (stream_info.media_info.media_type == ffmpeg::media_type_t::video)
             {
                 auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
@@ -157,21 +255,21 @@ video_form::video_form(QWidget *parent) :
                 else
                 {
                     if (decoder.is_open()
-                            && stream_info.codec_info.id != decoder.codec_id())
+                            && stream_info.codec_info.id != decoder.config().codec_info.id)
                     {
                         decoder.close();
                     }
 
                     if (!decoder.is_open())
                     {
-                        decoder.open(stream_info);
+                        decoder.open(stream_info, ffmpeg::transcoder_type_t::decoder);
                     }
 
                     if (decoder.is_open())
                     {
                         auto tp = std::chrono::high_resolution_clock::now();
 
-                        auto decoded_frames = std::move(decoder.decode(media_data.data(), media_data.size()));
+                        auto decoded_frames = std::move(decoder.transcode(media_data.data(), media_data.size()));
 
                         decoded_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
                         dec_delay += (decoded_delay - dec_delay) * delay_factor;
@@ -180,7 +278,7 @@ video_form::video_form(QWidget *parent) :
 
                         while (!decoded_frames.empty())
                         {
-                            ffmpeg::decoded_frame_t& frame = decoded_frames.front();
+                            ffmpeg::frame_t& frame = decoded_frames.front();
 
                             std::uint32_t d_x = 0;
                             std::uint32_t d_y = 0;
@@ -249,7 +347,7 @@ video_form::video_form(QWidget *parent) :
             ffmpeg::stream_info_t stream_info;
 
             stream_info.codec_info.id = codec;
-            stream_info.media_type = ffmpeg::media_type_t::video;
+            stream_info.media_info.media_type = ffmpeg::media_type_t::video;
             stream_info.stream_id = 0;
             stream_info.media_info.video_info.fps = frame_info.fps;
             stream_info.media_info.video_info.size = { frame_info.size.width, frame_info.size.height };
@@ -441,6 +539,10 @@ void video_form::prepare_image()
 
         auto mid_frame = frame_converter.convert(*input_frame
                                                  , mid_format);
+
+
+
+        transcoder_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
 
         filter_flip.filter(*mid_frame);
@@ -833,7 +935,8 @@ void video_form::paintEvent(QPaintEvent *event)
                      .arg(QString::number(fps))
                      .arg(QString::number(real_fps)));
 
-    painter.drawText(0, 40, QString("%1").arg(QString::number(filter_delay / 1000, 'f', 2)));
+    painter.drawText(0, 40, QString("%1/%2").arg(QString::number(filter_delay / 1000, 'f', 2))
+                                            .arg(QString::number(encoder_delay / 1000, 'f', 2)));
 
 }
 

@@ -30,7 +30,12 @@ extern const pixel_format_t pixel_format_yuv422p;
 extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
 
+extern const codec_id_t codec_id_h263;
 extern const codec_id_t codec_id_h264;
+extern const codec_id_t codec_id_h265;
+extern const codec_id_t codec_id_vp8;
+extern const codec_id_t codec_id_vp9;
+extern const codec_id_t codec_id_jpeg;
 extern const codec_id_t codec_id_mjpeg;
 extern const codec_id_t codec_id_raw_video;
 extern const codec_id_t codec_id_none;
@@ -65,15 +70,6 @@ enum stream_mask_t : std::uint32_t
     stream_mask_data =  (1 << 2),
     stream_mask_only_media = stream_mask_audio | stream_mask_video,
     stream_mask_all = stream_mask_only_media | stream_mask_data
-};
-
-struct codec_info_t
-{
-    codec_id_t                  id;
-    std::string                 name;
-    bool                        is_encoder;
-    media_data_t                extra_data;
-    bool is_coded() const;
 };
 
 typedef std::uint32_t option_type_t;
@@ -122,7 +118,8 @@ struct audio_info_t
     sample_format_t sample_format;
 
     static std::uint32_t bps(sample_format_t sample_format);
-    static std::size_t sample_size(sample_format_t sample_format,  std::uint32_t channels);
+    static std::size_t sample_size(sample_format_t sample_format
+                                   , std::uint32_t channels);
     static std::string format_name(sample_format_t sample_format);
 
     audio_info_t(std::uint32_t sample_rate = 8000
@@ -240,51 +237,111 @@ struct fragment_info_t
 };
 
 
+struct codec_params_t
+{
+    std::int32_t                bitrate;
+    std::int32_t                gop;
+    std::int32_t                frame_size;
+
+    codec_params_t(std::int32_t bitrate = 0
+                   , std::int32_t gop = 0
+                   , std::int32_t frame_size = 0);
+
+};
+
+struct codec_info_t
+{
+    codec_id_t                  id;
+    std::string                 name;
+    codec_params_t              codec_params;
+
+    static std::string codec_name(codec_id_t id);
+
+    codec_info_t(codec_id_t id = codec_id_none
+                 , const std::string& name = ""
+                 , const codec_params_t codec_params = codec_params_t());
+
+    bool is_coded() const;
+    std::string to_string() const;
+};
+
+
 struct media_info_t
 {
+    media_type_t                media_type;
     audio_info_t                audio_info;
     video_info_t                video_info;
 
     media_info_t() = default;
     media_info_t(const audio_info_t& audio_info);
     media_info_t(const video_info_t& video_info);
+
+    std::string to_string() const;
 };
 
 struct frame_info_t
 {
-    std::int32_t                stream_id;
-    media_type_t                media_type;   
     media_info_t                media_info;
-    std::uint32_t               dts;
-    std::uint32_t               pts;
-    virtual std::string to_string() const;
+    std::int64_t                pts;
+    std::int64_t                dts;
+    std::int32_t                id;
+    codec_id_t                  codec_id;
+
+    frame_info_t(const media_info_t& media_info = media_info_t()
+                 , std::int64_t pts = 0
+                 , std::int64_t dts = 0
+                 , std::int32_t id = 0
+                 , codec_id_t codec_id = codec_id_none);
+
+    bool is_encoded() const;
+    std::string to_string() const;
 };
 
-struct stream_info_t: public frame_info_t
+struct stream_info_t
 {
+    std::int32_t                stream_id;
     codec_info_t                codec_info;
-    std::uint32_t               bitrate;
-    std::string to_string() const override;
+    media_info_t                media_info;
+    media_data_t                extra_data;
+
+    static media_data_t create_extra_data(const void* extra_data
+                                          , std::size_t extra_data_size
+                                          , bool need_padding = false);
+
+    stream_info_t(std::int32_t stream_id = 0
+                  , const codec_info_t& codec_info = codec_info_t()
+                  , const media_info_t& media_info = media_info_t()
+                  , const void* extra_data = nullptr
+                  , std::size_t extra_data_size = 0
+                  , bool need_extra_padding = false);
+
+    std::string to_string() const;
 };
 
 struct frame_t
 {
-    stream_info_t   info;
+    frame_info_t    info;
     media_data_t    media_data;
 };
 
 struct adaptive_timer_t
 {
+    std::uint64_t   tick_size;
     std::uint64_t   time_base;
-    adaptive_timer_t();
+    adaptive_timer_t(std::uint64_t tick_size = 1000);
 
-    static std::uint64_t now();
+    static std::uint64_t now(std::uint32_t tick_size = 1000);
 
     void reset();
     bool wait(std::uint64_t wait_time
               , bool is_wait = true);
     std::uint64_t elapsed() const;
 };
+
+typedef std::pair<std::string, std::string> extended_option_t;
+typedef std::vector<extended_option_t> extended_option_list_t;
+
+extended_option_list_t libav_parse_option_list(const std::string& options_string);
 
 typedef std::vector<stream_info_t> stream_info_list_t;
 typedef std::queue<frame_t> frame_queue_t;
