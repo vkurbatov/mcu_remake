@@ -69,6 +69,10 @@ void update_context_info(const AVCodecContext& av_context
 
     stream_info.codec_info.id = av_context.codec->id;
     stream_info.codec_info.name = av_context.codec->name;
+    stream_info.codec_info.codec_params.bitrate = av_context.bit_rate;
+    stream_info.codec_info.codec_params.frame_size = av_context.frame_size;
+    stream_info.codec_info.codec_params.flags1 = av_context.flags;
+    stream_info.codec_info.codec_params.flags2 = av_context.flags2;
 
     if (av_context.codec_type == AVMEDIA_TYPE_AUDIO)
     {
@@ -78,6 +82,7 @@ void update_context_info(const AVCodecContext& av_context
 
         av_frame.channels = av_context.channels;
         av_frame.channel_layout = av_context.channel_layout;
+        av_frame.format = av_context.sample_fmt;
     }
     else
     {
@@ -86,17 +91,20 @@ void update_context_info(const AVCodecContext& av_context
         stream_info.media_info.video_info.pixel_format = av_context.pix_fmt;
         stream_info.media_info.video_info.fps = av_q2d(av_context.time_base) + 0.5;
 
+        stream_info.codec_info.codec_params.gop = av_context.gop_size;
+
         av_frame.width = av_context.width;
         av_frame.height = av_context.height;
         av_frame.sample_aspect_ratio = av_context.time_base;
+        av_frame.format = av_context.pix_fmt;
     }
 
     av_frame.sample_rate = av_context.sample_rate;
-    av_frame.format = av_context.pix_fmt;
+    av_frame.pts = AV_NOPTS_VALUE;
 }
 
 bool set_custom_option(AVCodecContext& av_context
-                          , const extended_option_t& option)
+                          , const option_t& option)
 {
     enum class custom_option_t
     {
@@ -128,7 +136,7 @@ void set_extended_options(AVCodecContext& av_context
                           , AVDictionary *av_options
                           , const std::string& options)
 {
-    for (const auto& opt : libav_parse_option_list(options))
+    for (const auto& opt : parse_option_list(options))
     {
         if (!set_custom_option(av_context
                                , opt))
@@ -165,6 +173,12 @@ AVCodec* get_codec(const codec_info_t& codec_info
 }
 
 }
+
+static bool operator & (transcode_flag_t lfl, transcode_flag_t rfl)
+{
+    return static_cast<std::uint32_t>(lfl) & static_cast<std::uint32_t>(rfl) != 0;
+}
+
 
 static std::uint32_t g_context_id = 0;
 
@@ -259,6 +273,7 @@ struct libav_codec_context_t
                     av_context->channel_layout = av_context->channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
                     av_context->sample_fmt = static_cast<AVSampleFormat>(stream_info.media_info.audio_info.sample_format);
                     av_context->sample_rate = stream_info.media_info.audio_info.sample_rate;
+                    av_context->time_base = { 1, av_context->sample_rate };
 
                     LOG_I << "Transcoder #" << context_id << ". Initialize audio context [" <<  av_context->sample_rate
                           << "/16/" << av_context->channels << "]" LOG_END;
@@ -269,9 +284,9 @@ struct libav_codec_context_t
                     av_context->height = stream_info.media_info.video_info.size.height;
                     av_context->pix_fmt = static_cast<AVPixelFormat>(stream_info.media_info.video_info.pixel_format);
                     av_context->framerate = av_d2q(stream_info.media_info.video_info.fps, 60);
-                    av_context->time_base = av_context->framerate;
+                    av_context->time_base = { 1, stream_info.media_info.video_info.fps };
                     av_context->sample_rate = 90000;
-                    av_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+                    //av_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
                     switch(av_context->codec_id)
                     {
@@ -353,13 +368,14 @@ struct libav_codec_context_t
 
         LOG_T << "Transcoder #" << context_id << ". Fetch PCM16 audio frame with size " << audio_data.size() << " bytes" LOG_END;
 
+        av_packet.pts += av_frame.nb_samples;
+
         return audio_data;
     }
 
     bool set_audio_data(const void *data
                         , std::size_t size)
     {
-
         av_frame.nb_samples = size / audio_info_t::sample_size(av_frame.format, av_frame.channels);
 
         switch(av_frame.format)
@@ -386,6 +402,8 @@ struct libav_codec_context_t
             default:
                 av_frame.nb_samples = 0;
         }
+
+        av_frame.pts += av_frame.nb_samples;
 
         LOG_T << "Transcoder #" << context_id << ". Put PCM16 audio frame with size " << av_frame.linesize[0] << " bytes" LOG_END;
         return av_frame.nb_samples > 0;
@@ -415,6 +433,8 @@ struct libav_codec_context_t
 
         LOG_T << "Transcoder #" << context_id << ". Fetch video frame with size " << video_data.size() << " bytes" LOG_END;
 
+        av_packet.pts ++;
+
         return std::move(video_data);
     }
 
@@ -435,7 +455,10 @@ struct libav_codec_context_t
             //LOG_T << "Transcoder #" << transcoder_id << ". Fetch video frame with size " << frame_size << " bytes" LOG_END;
         }
 
+
         LOG_T << "Transcoder #" << context_id << ". Put video frame with size " << frame_size << " bytes" LOG_END;
+
+        av_frame.pts ++;
 
         return frame_size > 0;
     }
@@ -507,6 +530,7 @@ struct libav_codec_context_t
             if (is_encoder)
             {
                 frame.info.codec_id = av_context->codec_id;
+                frame.info.key_frame = (av_packet.flags & AV_PKT_FLAG_KEY) != 0;
                 frame.media_data = media_data_t(av_packet.data
                                                 , av_packet.data + av_packet.size);
 
@@ -514,7 +538,9 @@ struct libav_codec_context_t
             else
             {
                 frame.info.codec_id = codec_id_none;
+                frame.info.key_frame = av_frame.key_frame;
                 frame.media_data = get_media_data();
+
             }
 
             return !frame.media_data.empty();
@@ -575,13 +601,16 @@ struct libav_codec_context_t
 
     bool encode(const void* data
                 , std::size_t size
-                , frame_queue_t& encoded_frames)
+                , frame_queue_t& encoded_frames
+                , bool is_key_frame)
     {
         std::int32_t result = -1;
 
         if (set_media_data(data
                            , size))
         {
+            av_frame.key_frame = static_cast<std::int32_t>(is_key_frame);
+
             result = avcodec_send_frame(av_context, &av_frame);
 
             if (result >= 0)
@@ -684,7 +713,8 @@ struct libav_transcoder_context_t
 
     bool transcode(const void* data
                    , std::size_t size
-                   , frame_queue_t& frame_queue)
+                   , frame_queue_t& frame_queue
+                   , transcode_flag_t transcode_flags)
     {
         if (m_codec_context != nullptr)
         {
@@ -693,7 +723,8 @@ struct libav_transcoder_context_t
                 case transcoder_type_t::encoder:
                     return m_codec_context->encode(data
                                                    , size
-                                                   , frame_queue);
+                                                   , frame_queue
+                                                   , transcode_flags & transcode_flag_t::key_frame);
                 break;
                 case transcoder_type_t::decoder:
                     return m_codec_context->decode(data
@@ -749,7 +780,9 @@ const stream_info_t &libav_transcoder::config() const
     return m_transcoder_context->m_stream_info;
 }
 
-frame_queue_t libav_transcoder::transcode(const void *data, std::size_t size)
+frame_queue_t libav_transcoder::transcode(const void *data
+                                          , std::size_t size
+                                          , transcode_flag_t transcode_flags)
 {
     LOG_D << "Transcode frame size = " << size LOG_END;
 
@@ -757,20 +790,23 @@ frame_queue_t libav_transcoder::transcode(const void *data, std::size_t size)
 
     m_transcoder_context->transcode(data
                                     , size
-                                    , frame_queue);
+                                    , frame_queue
+                                    , transcode_flags);
 
     return frame_queue;
 }
 
 bool libav_transcoder::transcode(const void *data
                                  , std::size_t size
-                                 , frame_queue_t &frame_queue)
+                                 , frame_queue_t &frame_queue
+                                 , transcode_flag_t transcode_flags)
 {
     LOG_D << "Transcode frame size = " << size LOG_END;
 
     return m_transcoder_context->transcode(data
                                            , size
-                                           , frame_queue);
+                                           , frame_queue
+                                           , transcode_flags);
 }
 
 }

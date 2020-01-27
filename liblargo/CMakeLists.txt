@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 set(TARGET largo)
 
 find_package(PkgConfig)
-find_package(OpenCV REQUIRED core imgproc freetype)
+#find_package(OpenCV REQUIRED core imgproc freetype)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 
@@ -14,7 +14,7 @@ pkg_search_module(AVDEVICE REQUIRED libavdevice)
 pkg_search_module(AVUTIL REQUIRED libavutil)
 pkg_search_module(SWSCALE REQUIRED libswscale>=4.6.100)
 pkg_search_module(V4L2 QUIET libv4l2>=0.8.8)
-pkg_search_module(MAGICK REQUIRED ImageMagick++ >=6.7.7)
+#pkg_search_module(MAGICK REQUIRED ImageMagick++ >=6.7.7)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -35,6 +35,8 @@ set(SOURCES
     "core/media/common/media_frame.cpp"       
     "core/media/common/media_control.cpp"
     "core/media/common/base/frame_base.cpp"
+    "core/media/common/base/time_base.cpp"
+    "core/media/common/base/option_base.cpp"
     "core/media/common/ffmpeg/libav_base.cpp"
     "core/media/common/ffmpeg/libav_transcoder.cpp"
     "core/media/common/ffmpeg/libav_stream_capturer.cpp"
@@ -43,8 +45,8 @@ set(SOURCES
     "core/media/common/v4l2/v4l2_base.cpp"
     "core/media/common/v4l2/v4l2_device.cpp"
     "core/media/common/v4l2/v4l2_api.cpp"
-    "core/media/common/opencv/cv_base.cpp"
-    "core/media/common/magick/magick_base.cpp"
+#    "core/media/common/opencv/cv_base.cpp"
+#    "core/media/common/magick/magick_base.cpp"
     "core/media/common/qt/qt_base.cpp"
     "core/media/common/utils/format_converter.cpp"
     "core/media/audio/audio_resampler.cpp"
@@ -101,6 +103,8 @@ set(PRIVATE_HEADERS
     "core/media/common/media_frame.h"
     "core/media/common/media_control.h"
     "core/media/common/base/frame_base.h"
+    "core/media/common/base/time_base.h"
+    "core/media/common/base/option_base.h"
     "core/media/common/ffmpeg/libav_base.h"
     "core/media/common/ffmpeg/libav_transcoder.h"
     "core/media/common/ffmpeg/libav_stream_capturer.h"
@@ -109,8 +113,8 @@ set(PRIVATE_HEADERS
     "core/media/common/v4l2/v4l2_base.h"
     "core/media/common/v4l2/v4l2_device.h"
     "core/media/common/v4l2/v4l2_api.h"
-    "core/media/common/opencv/cv_base.h"
-    "core/media/common/magick/magick_base.h"
+#    "core/media/common/opencv/cv_base.h"
+#    "core/media/common/magick/magick_base.h"
     "core/media/common/qt/qt_base.h"
     "core/media/common/utils/format_converter.h"
     "core/media/audio/audio_resampler.h"
@@ -219,7 +223,6 @@ target_link_libraries(${TARGET} PRIVATE
     ${MAGCK_LIBRARIES}
     ${Qt5Core_LIBRARIES}
     ${Qt5Widgets_LIBRARIES}
-    swscale
 )
 
 # install(TARGETS ${TARGET} LIBRARY DESTINATION ${INSTALL_LIBRARIES_DIR})

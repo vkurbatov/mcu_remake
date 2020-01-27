@@ -57,64 +57,8 @@ static device_type_t fetch_device_type(const std::string& uri)
     return device_type_t::unknown;
 }
 //------------------------------------------------------------------------------------
-namespace utils
-{
-    device_option_t extract_device_option(const AVOption& av_option)
-    {
-        device_option_t device_option = {};
 
-        if (av_option.name != nullptr)
-        {
-            device_option.name = av_option.name;
-        }
-
-        if (av_option.help != nullptr)
-        {
-            device_option.help = av_option.help;
-        }
-
-        device_option.offset = av_option.offset;
-        device_option.flags = av_option.flags;
-        device_option.min = av_option.min;
-        device_option.max = av_option.max;
-
-        if (av_option.unit != nullptr)
-        {
-            device_option.unit = av_option.unit;
-        }
-
-        device_option.type = static_cast<option_type_t>(av_option.type);
-
-        switch (device_option.option_format())
-        {
-            case option_format_t::numeric:
-                switch (device_option.type)
-                {
-                    case AV_OPT_TYPE_RATIONAL:
-                    case AV_OPT_TYPE_VIDEO_RATE:
-                        device_option.default_value.numeric = av_option.default_val.q.den / av_option.default_val.q.num;
-                    break;
-                    default:
-                        device_option.default_value.numeric = av_option.default_val.i64;
-                }
-            break;
-            case option_format_t::real:
-                device_option.default_value.real = av_option.default_val.dbl;
-            break;
-            case option_format_t::string:
-                if (av_option.default_val.str != nullptr)
-                {
-                    device_option.default_value.string = av_option.default_val.str;
-                }
-            break;
-        }
-
-        return std::move(device_option);
-    }
-}
-//------------------------------------------------------------------------------------
-
-struct libav_format_context_t
+struct libav_input_format_context_t
 {
 struct AVFormatContext*     context;
 struct AVPacket             packet;
@@ -125,7 +69,7 @@ device_type_t               type;
 
 bool                        is_init;
 
-libav_format_context_t()
+libav_input_format_context_t()
     : context(nullptr)
     , context_id(0)
     , total_read_bytes(0)
@@ -140,7 +84,7 @@ libav_format_context_t()
 
     av_init_packet(&packet);
 }
-~libav_format_context_t()
+~libav_input_format_context_t()
 {
     LOG_T << "Context #" << context_id << ". Destroy" LOG_END;
 
@@ -285,6 +229,8 @@ stream_info_list_t get_streams(stream_mask_t stream_mask)
                 stream_info.codec_info.name = stream_info.codec_info.codec_name(stream_info.codec_info.id);
                 stream_info.codec_info.codec_params.bitrate = av_stream->codec->bit_rate;
                 stream_info.codec_info.codec_params.frame_size = av_stream->codec->frame_size;
+                stream_info.codec_info.codec_params.flags1 = av_stream->codec->flags;
+                stream_info.codec_info.codec_params.flags2 = av_stream->codec->flags2;
             }
 
             if (av_stream->codec->extradata != nullptr
@@ -315,6 +261,7 @@ std::int32_t fetch_media_data(frame_t& frame)
             frame.info.dts = packet.dts;
             frame.info.dts = packet.pts;
             frame.info.id = packet.stream_index;
+            frame.info.key_frame = (packet.flags & AV_PKT_FLAG_KEY) != 0;
 
             frame.media_data.resize(packet.size);
 
@@ -385,7 +332,7 @@ struct libav_stream_capturer_context_t
 
     std::thread                                         m_stream_thread;
     std::map<std::int32_t,libav_stream_t>               m_streams;
-    std::unique_ptr<libav_format_context_t>             m_format_context;
+    std::unique_ptr<libav_input_format_context_t>             m_format_context;
 
     std::mutex                                          m_queue_mutex; 
     std::atomic_bool                                    m_is_running;
@@ -421,7 +368,7 @@ struct libav_stream_capturer_context_t
     {
         if (m_format_context == nullptr)
         {
-            m_format_context.reset(new libav_format_context_t());
+            m_format_context.reset(new libav_input_format_context_t());
 
             if (m_format_context->init(m_uri) >= 0)
             {

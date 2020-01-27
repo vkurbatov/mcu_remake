@@ -2,6 +2,8 @@
 #define FFMPEG_LIBAV_BASE_H
 
 #include "../base/frame_base.h"
+#include "../base/time_base.h"
+#include "../base/option_base.h"
 
 #include <string>
 #include <vector>
@@ -85,31 +87,10 @@ enum class option_format_t
 using frame_point_t = base::frame_point_t;
 using frame_size_t = base::frame_size_t;
 using frame_rect_t = base::frame_rect_t;
-
-struct device_option_t
-{
-    std::string         name;
-    std::string         help;
-    std::int32_t        offset;
-    option_type_t       type;
-
-    struct
-    {
-        std::int64_t    numeric;
-        double          real;
-        std::string     string;
-    }                   default_value;
-
-    double              min;
-    double              max;
-    std::int32_t        flags;
-    std::string         unit;
-
-    static option_format_t option_format(option_type_t type);
-    option_format_t option_format() const;
-};
-
-typedef std::vector<device_option_t> device_option_list_t;
+using adaptive_timer_t = base::adaptive_timer_t;
+using option_t = base::option_t;
+using option_list_t = base::option_list_t;
+const auto parse_option_list = base::parse_option_list;
 
 struct audio_info_t
 {
@@ -242,10 +223,14 @@ struct codec_params_t
     std::int32_t                bitrate;
     std::int32_t                gop;
     std::int32_t                frame_size;
+    std::uint32_t               flags1;
+    std::uint32_t               flags2;
 
     codec_params_t(std::int32_t bitrate = 0
                    , std::int32_t gop = 0
-                   , std::int32_t frame_size = 0);
+                   , std::int32_t frame_size = 0
+                   , std::uint32_t flags1 = 0
+                   , std::uint32_t flags2 = 0);
 
 };
 
@@ -286,12 +271,14 @@ struct frame_info_t
     std::int64_t                dts;
     std::int32_t                id;
     codec_id_t                  codec_id;
+    bool                        key_frame;
 
     frame_info_t(const media_info_t& media_info = media_info_t()
                  , std::int64_t pts = 0
                  , std::int64_t dts = 0
                  , std::int32_t id = 0
-                 , codec_id_t codec_id = codec_id_none);
+                 , codec_id_t codec_id = codec_id_none
+                 , bool key_frame = false);
 
     bool is_encoded() const;
     std::string to_string() const;
@@ -323,25 +310,6 @@ struct frame_t
     frame_info_t    info;
     media_data_t    media_data;
 };
-
-struct adaptive_timer_t
-{
-    std::uint64_t   tick_size;
-    std::uint64_t   time_base;
-    adaptive_timer_t(std::uint64_t tick_size = 1000);
-
-    static std::uint64_t now(std::uint32_t tick_size = 1000);
-
-    void reset();
-    bool wait(std::uint64_t wait_time
-              , bool is_wait = true);
-    std::uint64_t elapsed() const;
-};
-
-typedef std::pair<std::string, std::string> extended_option_t;
-typedef std::vector<extended_option_t> extended_option_list_t;
-
-extended_option_list_t libav_parse_option_list(const std::string& options_string);
 
 typedef std::vector<stream_info_t> stream_info_list_t;
 typedef std::queue<frame_t> frame_queue_t;

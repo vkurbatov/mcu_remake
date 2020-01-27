@@ -45,53 +45,9 @@ std::string error_to_string(int32_t av_error)
 }
 
 
-//const codec_id_t codec_id_yuv420p = static_cast<codec_id_t>(AV_CODEC_ID_NONE);
-
-
-option_format_t  device_option_t::option_format(option_type_t type)
-{
-    switch(static_cast<AVOptionType>(type))
-    {
-        case AV_OPT_TYPE_FLAGS:
-        case AV_OPT_TYPE_INT:
-        case AV_OPT_TYPE_INT64:
-        case AV_OPT_TYPE_BOOL:
-        case AV_OPT_TYPE_RATIONAL:
-        case AV_OPT_TYPE_BINARY:
-        case AV_OPT_TYPE_UINT64:
-        case AV_OPT_TYPE_CONST:
-            return option_format_t::numeric;
-        break;
-
-        case AV_OPT_TYPE_DOUBLE:
-        case AV_OPT_TYPE_FLOAT:
-            return option_format_t::real;
-        break;
-
-        case AV_OPT_TYPE_STRING:
-        case AV_OPT_TYPE_IMAGE_SIZE:
-        case AV_OPT_TYPE_PIXEL_FMT:
-        case AV_OPT_TYPE_SAMPLE_FMT:
-        case AV_OPT_TYPE_VIDEO_RATE:
-        case AV_OPT_TYPE_COLOR:
-        case AV_OPT_TYPE_CHANNEL_LAYOUT:
-        case AV_OPT_TYPE_DURATION:
-        case AV_OPT_TYPE_DICT:
-            return option_format_t::string;
-        break;
-    }
-
-    return option_format_t::unknown;
-}
-
-option_format_t device_option_t::option_format() const
-{
-    return option_format(type);
-}
-
 uint32_t audio_info_t::bps(sample_format_t sample_format)
 {
-    return av_get_bytes_per_sample(static_cast<AVSampleFormat>(sample_format));
+    return av_get_bytes_per_sample(static_cast<AVSampleFormat>(sample_format)) * 8;
 }
 
 std::size_t audio_info_t::sample_size(sample_format_t sample_format, uint32_t channels)
@@ -429,12 +385,14 @@ frame_info_t::frame_info_t(const media_info_t &media_info
                            , int64_t pts
                            , int64_t dts
                            , int32_t id
-                           , codec_id_t codec_id)
+                           , codec_id_t codec_id
+                           , bool key_frame)
     : media_info(media_info)
     , pts(pts)
     , dts(dts)
     , id(id)
     , codec_id(codec_id)
+    , key_frame(key_frame)
 {
 
 }
@@ -579,8 +537,8 @@ codec_info_t::codec_info_t(codec_id_t id
 
 bool codec_info_t::is_coded() const
 {
-    return id > AV_CODEC_ID_NONE
-            && id != AV_CODEC_ID_RAWVIDEO;
+    return id > codec_id_none
+            && id != codec_id_raw_video;
 }
 
 std::string codec_info_t::to_string() const
@@ -590,124 +548,18 @@ std::string codec_info_t::to_string() const
             : name;
 }
 
-adaptive_timer_t::adaptive_timer_t(std::uint64_t tick_size)
-    : tick_size(tick_size)
-{
-    reset();
-}
-
-uint64_t adaptive_timer_t::now(std::uint32_t tick_size)
-{
-    return tick_size * std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / std::nano::den;
-}
-
-void adaptive_timer_t::reset()
-{
-    time_base = now(tick_size);
-}
-
-bool adaptive_timer_t::wait(std::uint64_t wait_time
-                            , bool is_wait)
-{
-    auto elapsed_time = elapsed();
-
-    if (elapsed_time >= wait_time)
-    {
-        time_base += wait_time;
-        return true;
-    }
-
-    if (is_wait && tick_size > 0)
-    {
-        std::this_thread::sleep_for(std::nano::den * std::chrono::nanoseconds(wait_time - elapsed_time) / tick_size);
-        time_base += wait_time;
-        return true;
-    }
-
-    return false;
-}
-
-uint64_t adaptive_timer_t::elapsed() const
-{
-    return now(tick_size) - time_base;
-}
-
-codec_params_t::codec_params_t(int32_t bitrate
-                               , int32_t gop
-                               , std::int32_t frame_size)
+codec_params_t::codec_params_t(std::int32_t bitrate
+                               , std::int32_t gop
+                               , std::int32_t frame_size
+                               , std::uint32_t flags1
+                               , std::uint32_t flags2)
     : bitrate(bitrate)
     , gop(gop)
     , frame_size(frame_size)
+    , flags1(flags1)
+    , flags2(flags2)
 {
 
-}
-
-extended_option_list_t libav_parse_option_list(const std::string& options_string)
-{
-    extended_option_list_t options;
-
-    if (!options_string.empty())
-    {
-        size_t start = 0, end = 0;
-
-        auto trim_space = [](std::string& str)
-        {
-            static const auto whitespaces = " \t\f\v\n\r";
-
-            if (!str.empty())
-            {
-                auto first = str.find_first_not_of(whitespaces);
-
-                if (first != std::string::npos)
-                {
-                    auto last = str.find_last_not_of(whitespaces);
-
-                    if (last != str.size())
-                    {
-                        str = str.substr(first
-                                         , last - first + 1);
-                    }
-                }
-                else
-                {
-                    str.clear();
-                }
-            }
-        };
-
-        while ((end = options_string.find('=', start))
-               != std::string::npos)
-        {
-            extended_option_t option;
-
-            option.first = options_string.substr(start, end - start);
-
-            start = end + 1;
-            end = options_string.find(';', start);
-
-            option.second = options_string.substr(start, end - start);
-
-            trim_space(option.first);
-            trim_space(option.second);
-
-            if (!option.first.empty()
-                    && !option.second.empty())
-            {
-                options.emplace_back(std::move(option));
-            }
-
-            if (end != std::string::npos)
-            {
-                start = end + 1;
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    return options;
 }
 
 }

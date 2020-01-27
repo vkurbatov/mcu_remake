@@ -9,6 +9,7 @@
 #include "rgb_video_buffer.h"
 #include "core/media/common/ffmpeg/libav_converter.h"
 #include "core/media/common/ffmpeg/libav_stream_capturer.h"
+#include "core/media/common/ffmpeg/libav_stream_publisher.h"
 #include "core/media/common/ffmpeg/libav_transcoder.h"
 
 #include "core/media/common/v4l2/v4l2_device.h"
@@ -86,6 +87,129 @@ auto last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono
 auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
 
+static void publisher_test(core::media::video::i_video_frame& video_frame)
+{
+    static ffmpeg::libav_stream_publisher rtmp_publisher;
+    static ffmpeg::libav_transcoder video_encoder;
+    static ffmpeg::libav_transcoder audio_encoder;
+
+    static auto samples_per_frame = 32000 / 25;
+    static auto audio_samples_counter = 0;
+
+    static ffmpeg::stream_info_list_t stream_list;
+
+    std::vector<float> null_sound(1024);
+
+
+    std::string uri = "rtmp://x.rtmp.youtube.com/live2/hvdy-kdtf-uv28-1zev";
+
+    const auto& video_format = video_frame.video_format();
+
+    if (!video_encoder.is_open())
+    {
+        ffmpeg::stream_info_t s_info;
+        s_info.codec_info.name = "libx264";
+        s_info.codec_info.codec_params.bitrate = 64000;
+        s_info.codec_info.codec_params.gop = 12;
+        s_info.media_info.media_type = ffmpeg::media_type_t::video;
+        s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
+        s_info.media_info.video_info.fps = 25;// video_format.fps;
+        s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format);
+
+        video_encoder.open(s_info
+                           , ffmpeg::transcoder_type_t::encoder
+                           );
+
+        if (video_encoder.is_open())
+        {
+            s_info.codec_info.id = video_encoder.config().codec_info.id;
+            stream_list.push_back(s_info);
+        }
+    }
+
+    if (video_encoder.is_open())
+    {
+        if (!audio_encoder.is_open())
+        {
+            ffmpeg::stream_info_t s_info;
+            s_info.codec_info.name = "aac";
+            s_info.codec_info.codec_params.bitrate = 128000;
+            s_info.codec_info.codec_params.frame_size = 1024;
+            s_info.media_info.media_type = ffmpeg::media_type_t::audio;
+            s_info.media_info.audio_info.channels = 1;
+            s_info.media_info.audio_info.sample_rate = 32000;
+            s_info.media_info.audio_info.sample_format = 3 /*FLT*/;
+
+            audio_encoder.open(s_info
+                               , ffmpeg::transcoder_type_t::encoder
+                               );
+
+            if ( audio_encoder.is_open())
+            {
+                s_info.codec_info.id = audio_encoder.config().codec_info.id;
+                stream_list.push_back(s_info);
+            }
+        }
+    }
+
+    if (video_encoder.is_open()
+            && audio_encoder.is_open())
+    {
+        if (!rtmp_publisher.is_opened())
+        {
+            rtmp_publisher.open(uri
+                                 , stream_list);
+
+        }
+
+        if (rtmp_publisher.is_opened())
+        {
+            auto video_enc_frames = video_encoder.transcode(video_frame.planes()[0]->data()
+                                                      , video_format.frame_size());
+
+            while (!video_enc_frames.empty())
+            {
+                auto video_enc_frame = video_enc_frames.front();
+
+                rtmp_publisher.push_frame(0
+                                          , video_enc_frame.media_data.data()
+                                          , video_enc_frame.media_data.size()
+                                          , video_enc_frame.info.key_frame);
+
+                audio_samples_counter += samples_per_frame;
+
+                video_enc_frames.pop();
+            }
+
+            while (audio_samples_counter > samples_per_frame)
+            {
+
+                for (auto& s : null_sound)
+                {
+                    s = static_cast<float>(32767) / static_cast<float>(rand());
+                }
+
+
+                auto audio_enc_frames = audio_encoder.transcode(null_sound.data()
+                                                               , 1024 * 4);
+
+                while(!audio_enc_frames.empty())
+                {
+                    auto audio_enc_frame = audio_enc_frames.front();
+                    rtmp_publisher.push_frame(1
+                                              , audio_enc_frame.media_data.data()
+                                              , audio_enc_frame.media_data.size());
+                    audio_enc_frames.pop();
+                }
+
+                audio_samples_counter -= 1024;
+            }
+
+        }
+    }
+
+};
+
 static bool transcoder_test(core::media::video::i_video_frame& video_frame)
 {
     static ffmpeg::libav_transcoder encoder;
@@ -102,7 +226,7 @@ static bool transcoder_test(core::media::video::i_video_frame& video_frame)
         {
             ffmpeg::stream_info_t s_info;
             s_info.codec_info.name = encoder_name;
-            s_info.codec_info.codec_params.bitrate = 2000000;
+            s_info.codec_info.codec_params.bitrate = 1000000;
             s_info.codec_info.codec_params.gop = 12;
             s_info.media_info.media_type = ffmpeg::media_type_t::video;
             s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
@@ -191,7 +315,7 @@ video_form::video_form(QWidget *parent) :
     painter.drawImage(dst.rect(), test_image);
 
    // auto list = ffmpeg::libav_parse_option_list("  \r  \n  param1  \r  = \n value1  \r ;  \r  param2  \n = 43\n   \r  ");
-    auto list = ffmpeg::libav_parse_option_list("param1=value1;param2=");
+    auto list = ffmpeg::parse_option_list("param1=value1;param2=");
 
     list.clear();
     //painter.drawImage( 0, 0, test_image);
@@ -542,8 +666,9 @@ void video_form::prepare_image()
 
 
 
-        transcoder_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
+        //transcoder_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
+        publisher_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
         filter_flip.filter(*mid_frame);
 

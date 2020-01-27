@@ -29,7 +29,8 @@ public:
 
     bool push_frame(std::int32_t stream_id
                     , const void* data
-                    , std::size_t size);
+                    , std::size_t size
+                    , bool key_frame = false);
 
 };
 

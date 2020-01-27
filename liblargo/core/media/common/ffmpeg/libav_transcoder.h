@@ -18,6 +18,12 @@ enum class transcoder_type_t
     decoder
 };
 
+enum class transcode_flag_t : std::uint32_t
+{
+    none = 0,
+    key_frame = 1
+};
+
 class libav_transcoder
 {
     libav_transcoder_context_ptr_t     m_transcoder_context;
@@ -36,11 +42,13 @@ public:
     const stream_info_t& config() const;
 
     frame_queue_t transcode(const void* data
-                            , std::size_t size);
+                            , std::size_t size
+                            , transcode_flag_t transcode_flags = transcode_flag_t::none);
 
     bool transcode(const void* data
                    , std::size_t size
-                   , frame_queue_t& frame_queue);
+                   , frame_queue_t& frame_queue
+                   , transcode_flag_t transcode_flags = transcode_flag_t::none);
 
 
 };
