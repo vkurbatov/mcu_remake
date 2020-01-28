@@ -98,18 +98,19 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
     static ffmpeg::stream_info_list_t stream_list;
 
-    std::vector<float> null_sound(1024);
+    std::vector<std::uint16_t> null_sound(1024);
 
+    bool is_audio = true;
 
-    std::string uri = "rtmp://x.rtmp.youtube.com/live2/hvdy-kdtf-uv28-1zev";
+    std::string uri = "rtmp://x.rtmp.youtube.com/live2/aww3-1y5s-vbtg-4ehy";
 
     const auto& video_format = video_frame.video_format();
 
     if (!video_encoder.is_open())
     {
         ffmpeg::stream_info_t s_info;
-        s_info.codec_info.name = "libx264";
-        s_info.codec_info.codec_params.bitrate = 64000;
+        s_info.codec_info.id = ffmpeg::codec_id_h264;
+        s_info.codec_info.codec_params.bitrate = 1000000;
         s_info.codec_info.codec_params.gop = 12;
         s_info.media_info.media_type = ffmpeg::media_type_t::video;
         s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
@@ -122,7 +123,9 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
         if (video_encoder.is_open())
         {
-            s_info.codec_info.id = video_encoder.config().codec_info.id;
+            //s_info.codec_info = video_encoder.config().codec_info;
+            s_info.extra_data = video_encoder.config().extra_data;
+            // s_info.codec_info.id = video_encoder.config().codec_info.id;
             stream_list.push_back(s_info);
         }
     }
@@ -147,7 +150,11 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
             if ( audio_encoder.is_open())
             {
                 s_info.codec_info.id = audio_encoder.config().codec_info.id;
-                stream_list.push_back(s_info);
+
+                if (is_audio)
+                {
+                    stream_list.push_back(s_info);
+                }
             }
         }
     }
@@ -164,8 +171,11 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
         if (rtmp_publisher.is_opened())
         {
+            static auto video_frames = 0;
             auto video_enc_frames = video_encoder.transcode(video_frame.planes()[0]->data()
                                                       , video_format.frame_size());
+
+            video_frames++;
 
             while (!video_enc_frames.empty())
             {
@@ -183,22 +193,27 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
             while (audio_samples_counter > samples_per_frame)
             {
-
+/*
                 for (auto& s : null_sound)
                 {
-                    s = static_cast<float>(32767) / static_cast<float>(rand());
-                }
+                    s = video_frames;
+                }*/
 
 
                 auto audio_enc_frames = audio_encoder.transcode(null_sound.data()
-                                                               , 1024 * 4);
+                                                               , 1024 * 2);
 
                 while(!audio_enc_frames.empty())
                 {
                     auto audio_enc_frame = audio_enc_frames.front();
-                    rtmp_publisher.push_frame(1
-                                              , audio_enc_frame.media_data.data()
-                                              , audio_enc_frame.media_data.size());
+
+                    if (is_audio)
+                    {
+                        rtmp_publisher.push_frame(1
+                                                  , audio_enc_frame.media_data.data()
+                                                  , audio_enc_frame.media_data.size()
+                                                  );
+                    }
                     audio_enc_frames.pop();
                 }
 

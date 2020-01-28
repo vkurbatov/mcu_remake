@@ -19,30 +19,9 @@ extern "C"
 
 namespace ffmpeg
 {
-/*
-struct libav_stream_context
-{
-    struct AVStream* av_stream;
-
-    libav_stream_context(AVFormatContext* format_context
-                         , AVCodecID codec_id)
-        : av_stream(avformat_new_stream(format_context
-                                        , avcodec_find_encoder(codec_id)))
-    {
-
-    }
-
-    ~libav_stream_context()
-    {
-
-    }
-};
-*/
-
 struct libav_output_format_context_t
 {
     struct AVFormatContext*     context;
-    struct AVOutputFormat*      output_format;
     stream_info_list_t          streams;
     bool                        is_init;
     std::string                 uri;
@@ -53,18 +32,28 @@ struct libav_output_format_context_t
         , is_init(false)
         , uri(uri)
     {
+
         is_init = avformat_alloc_output_context2(&context
                                                  , nullptr
                                                  , format_name.c_str()
                                                  , uri.c_str()) >= 0;
 
-        output_format = context->oformat;
     }
 
     ~libav_output_format_context_t()
     {
         if (context != nullptr)
         {
+            if (is_init)
+            {
+                av_write_trailer(context);
+            }
+
+            for (auto i = 0; i < context->nb_streams; i++)
+            {
+                context->streams[i]->codecpar->extradata = nullptr;
+                context->streams[i]->codecpar->extradata_size = 0;
+            }
             avformat_free_context(context);
         }
     }
@@ -86,7 +75,7 @@ struct libav_output_format_context_t
 
                 if ((context->oformat->flags & AVFMT_GLOBALHEADER) != 0)
                 {
-                    strm.codec_info.codec_params.flags1 |= CODEC_FLAG_GLOBAL_HEADER;
+                    strm.codec_info.codec_params.set_global_header(true);
                 }
 
                 av_stream->id = strm.stream_id;
@@ -94,58 +83,50 @@ struct libav_output_format_context_t
                 av_stream->codecpar->codec_id = static_cast<AVCodecID>(strm.codec_info.id);
                 av_stream->codecpar->frame_size = strm.codec_info.codec_params.frame_size;
 
-                if (!strm.extra_data.empty())
-                {
-                    av_stream->codecpar->extradata = strm.extra_data.data();
-                    av_stream->codecpar->extradata_size = strm.extra_data.size();
-                }
-
-                /*avcodec_parameters_from_context(av_stream->codecpar
-                                                , av_stream->codec);*/
-
                 av_stream->codecpar->codec_type = codec->type;
 
                 switch (codec->type)
                 {
                     case AVMEDIA_TYPE_AUDIO:
-                        output_format->audio_codec = av_stream->codecpar->codec_id;
-                        context->audio_codec = codec;
-                        context->audio_codec_id = output_format->audio_codec;
-                        av_stream->codecpar->sample_rate = stream_info.media_info.audio_info.sample_rate;
-                        av_stream->codecpar->format = stream_info.media_info.audio_info.sample_format;
-                        av_stream->codecpar->channels = stream_info.media_info.audio_info.channels;
-                        av_stream->codecpar->channel_layout = av_stream->codecpar->channels > 1
-                                                                ? AV_CH_LAYOUT_STEREO
-                                                                : AV_CH_LAYOUT_MONO;
+                        av_format_set_audio_codec(context
+                                                  , codec);
 
-                        av_stream->time_base = { 1, av_stream->codecpar->sample_rate };/*av_d2q(stream_info.media_info.audio_info.sample_rate
-                                                      , 48000);*/
+                        context->oformat->audio_codec = av_stream->codecpar->codec_id;
 
-                        av_stream->pts.val = 32000;
+                        stream_info.media_info >> *(av_stream->codecpar);
+
+                        av_stream->time_base = { 1, av_stream->codecpar->sample_rate };
 
 
                     break;
                     case AVMEDIA_TYPE_VIDEO:
-                        output_format->video_codec = av_stream->codecpar->codec_id;
-                        context->video_codec = codec;
-                        context->video_codec_id = output_format->audio_codec;
 
-                        av_stream->codecpar->width  = stream_info.media_info.video_info.size.width;
-                        av_stream->codecpar->height  = stream_info.media_info.video_info.size.height;
-                        av_stream->codecpar->format = stream_info.media_info.video_info.pixel_format;
-                        av_stream->codecpar->color_range = AVCOL_RANGE_MPEG;
-                        av_stream->codecpar->sample_rate = 90000;
-                        /*av_stream->codecpar->sample_aspect_ratio = av_d2q(stream_info.media_info.video_info.fps
-                                                                          , 60);*/
-                        av_stream->time_base = { 1, stream_info.media_info.video_info.fps };//av_stream->codecpar->sample_aspect_ratio;
+                        av_format_set_video_codec(context
+                                                  , codec);
+
+                        stream_info.media_info >> *(av_stream->codecpar);
+
+                        av_stream->time_base = { 1, stream_info.media_info.video_info.fps };
+
+                        if ((strm.codec_info.codec_params.is_global_header())
+                                && strm.extra_data.empty())
+                        {
+                            strm.extra_data = strm.extract_extra_data();
+                        }
 
                     break;
                     case AVMEDIA_TYPE_DATA:
-                        output_format->data_codec = av_stream->codecpar->codec_id;
+                        context->oformat->data_codec = av_stream->codecpar->codec_id;
                     break;
                     case AVMEDIA_TYPE_SUBTITLE:
-                        output_format->subtitle_codec = av_stream->codecpar->codec_id;
+                        context->oformat->subtitle_codec = av_stream->codecpar->codec_id;
                     break;
+                }
+
+                if (!strm.extra_data.empty())
+                {
+                    av_stream->codecpar->extradata = strm.extra_data.data();
+                    av_stream->codecpar->extradata_size = strm.extra_data.size() - AV_INPUT_BUFFER_PADDING_SIZE;
                 }
 
                 av_stream->pts.den = av_stream->time_base.den;
@@ -161,9 +142,9 @@ struct libav_output_format_context_t
 
     bool finish()
     {
-        av_dump_format(context, 0, uri.c_str(), 1);
+        // av_dump_format(context, 0, uri.c_str(), 1);
 
-        if ((output_format->flags & AVFMT_NOFILE) == 0
+        if ((context->oformat->flags & AVFMT_NOFILE) == 0
                 && avio_open(&context->pb, uri.c_str(), AVIO_FLAG_WRITE) < 0)
         {
             return false;
@@ -189,34 +170,62 @@ struct libav_output_format_context_t
         {
             AVPacket av_packet = {};
 
+            auto& av_stream = *context->streams[stream_id];
+
+            static std::int64_t audio_pts = 0;
+            static std::int64_t video_pts = 0;
+
             if (key_frame)
             {
                 av_packet.flags |= AV_PKT_FLAG_KEY;
+            }
+
+            if (audio_pts == 0)
+            {
+                //audio_pts = AV_P;
+                //video_pts = av_stream.pts;
             }
 
             av_packet.stream_index = stream_id;
             av_packet.data = const_cast<std::uint8_t*>(static_cast<const std::uint8_t*>(data));
             av_packet.size = size;
 
-            av_packet.pts = context->streams[stream_id]->pts.val;
-
-            if (context->streams[stream_id]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            if (av_stream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
             {
-                context->streams[stream_id]->pts.val += context->streams[stream_id]->codecpar->frame_size;
+                // context->streams[stream_id]->pts.val += context->streams[stream_id]->codecpar->frame_size;
+                av_packet.duration = 1024;
+                av_packet.pts = audio_pts;
+                av_packet_rescale_ts(&av_packet
+                                     , { av_stream.pts.num, av_stream.pts.den }
+                                     , av_stream.time_base);
+
+
+                // av_packet.duration = (av_stream.codecpar->frame_size * 1000) / av_stream.time_base.den;
+                /*av_packet_rescale_ts(&av_packet
+                                     , av_stream.time_base
+                                     , av_stream.time_base);*/
+
+                audio_pts += av_stream.codecpar->frame_size;
             }
             else
             {
-                context->streams[stream_id]->pts.val ++;
+                // context->streams[stream_id]->pts.val ++;
+                av_packet.duration = 0;
+                av_packet.pts = video_pts;
+
+                av_packet_rescale_ts(&av_packet
+                                     , { av_stream.pts.num, av_stream.pts.den }
+                                     , av_stream.time_base);
+                video_pts++;
             }
 
-            // av_packet.pts = context->streams[stream_id]->codecpar->frame_size;
+            av_packet.dts = av_packet.pts;
 
-            LOG_D << "WRITE PACKET SIZE: " << av_packet.size LOG_END;
+           LOG_D << "WRITE STREAM [" << stream_id << "] PACKET SIZE: " << size << ". pts = " << av_packet.pts << ", flags = " << av_packet.flags LOG_END;
 
-            return av_interleaved_write_frame(context, &av_packet) >= 0;
-/*
-            return av_write_frame(context
-                                  , &av_packet) >= 0;*/
+            auto ret = av_interleaved_write_frame(context, &av_packet);
+
+            return ret >= 0;
         }
 
         return false;

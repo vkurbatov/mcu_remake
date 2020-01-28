@@ -60,6 +60,8 @@ void merge_transcoder_params(AVCodecContext& av_context
     MERGE_PARAM(av_context.bit_rate, codec_params.bitrate);
     MERGE_PARAM(av_context.gop_size, codec_params.gop);
     MERGE_PARAM(av_context.frame_size, codec_params.frame_size);
+    av_context.flags |= codec_params.flags1;
+    av_context.flags2 |= codec_params.flags2;
 }
 
 void update_context_info(const AVCodecContext& av_context
@@ -97,6 +99,16 @@ void update_context_info(const AVCodecContext& av_context
         av_frame.height = av_context.height;
         av_frame.sample_aspect_ratio = av_context.time_base;
         av_frame.format = av_context.pix_fmt;
+    }
+
+    if (av_context.extradata != nullptr
+            && av_context.extradata_size > 0)
+    {
+        stream_info.extra_data.resize(av_context.extradata_size + AV_INPUT_BUFFER_PADDING_SIZE, 0);
+
+        std::memcpy(stream_info.extra_data.data()
+                    , av_context.extradata
+                    , av_context.extradata_size);
     }
 
     av_frame.sample_rate = av_context.sample_rate;
@@ -269,24 +281,14 @@ struct libav_codec_context_t
 
                 if (av_context->codec_type == AVMEDIA_TYPE_AUDIO)
                 {
-                    av_context->channels = stream_info. media_info.audio_info.channels;
-                    av_context->channel_layout = av_context->channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
-                    av_context->sample_fmt = static_cast<AVSampleFormat>(stream_info.media_info.audio_info.sample_format);
-                    av_context->sample_rate = stream_info.media_info.audio_info.sample_rate;
-                    av_context->time_base = { 1, av_context->sample_rate };
+                    stream_info.media_info >> *(av_context);
 
                     LOG_I << "Transcoder #" << context_id << ". Initialize audio context [" <<  av_context->sample_rate
                           << "/16/" << av_context->channels << "]" LOG_END;
                 }
                 else
                 {
-                    av_context->width = stream_info.media_info.video_info.size.width;
-                    av_context->height = stream_info.media_info.video_info.size.height;
-                    av_context->pix_fmt = static_cast<AVPixelFormat>(stream_info.media_info.video_info.pixel_format);
-                    av_context->framerate = av_d2q(stream_info.media_info.video_info.fps, 60);
-                    av_context->time_base = { 1, stream_info.media_info.video_info.fps };
-                    av_context->sample_rate = 90000;
-                    //av_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+                    stream_info.media_info >> *(av_context);
 
                     switch(av_context->codec_id)
                     {
@@ -625,7 +627,7 @@ struct libav_codec_context_t
 
                         if (fill_frame_info(encoded_frame
                                             , true))
-                        {
+                        {                            
                             frame_counter++;
                             encoded_frames.push(std::move(encoded_frame));
                         }

@@ -16,6 +16,7 @@ extern "C"
 namespace ffmpeg
 {
 
+const codec_id_t codec_id_flv1 = static_cast<codec_id_t>(AV_CODEC_ID_FLV1);
 const codec_id_t codec_id_h263 = static_cast<codec_id_t>(AV_CODEC_ID_H263);
 const codec_id_t codec_id_h264 = static_cast<codec_id_t>(AV_CODEC_ID_H264);
 const codec_id_t codec_id_h265 = static_cast<codec_id_t>(AV_CODEC_ID_HEVC);
@@ -35,7 +36,6 @@ const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT
 const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
-
 
 std::string error_to_string(int32_t av_error)
 {
@@ -355,6 +355,58 @@ media_info_t::media_info_t(const video_info_t &video_info)
 
 }
 
+AVCodecContext &media_info_t::operator >>(AVCodecContext &av_context) const
+{
+    switch (media_type)
+    {
+        case media_type_t::audio:
+            av_context.sample_fmt = static_cast<AVSampleFormat>(audio_info.sample_format);
+            av_context.sample_rate = audio_info.sample_rate;
+            av_context.channels = audio_info.channels;
+            av_context.channel_layout = av_context.channels > 1
+                    ? AV_CH_LAYOUT_STEREO
+                    : AV_CH_LAYOUT_MONO;
+            av_context.time_base = { 1, av_context.sample_rate };
+        break;
+
+        case media_type_t::video:
+            av_context.width = video_info.size.width;
+            av_context.height = video_info.size.height;
+            av_context.framerate = av_d2q(video_info.fps, 60);
+            av_context.pix_fmt = static_cast<AVPixelFormat>(video_info.pixel_format);
+            av_context.time_base = { 1, video_info.fps };
+            av_context.sample_rate = 90000;
+        break;
+    }
+
+    return av_context;
+}
+
+AVCodecParameters &media_info_t::operator >>(AVCodecParameters &av_codecpar) const
+{
+    switch (media_type)
+    {
+        case media_type_t::audio:
+            av_codecpar.format = audio_info.sample_format;
+            av_codecpar.sample_rate = audio_info.sample_rate;
+            av_codecpar.channels = audio_info.channels;
+            av_codecpar.channel_layout = av_codecpar.channels > 1
+                    ? AV_CH_LAYOUT_STEREO
+                    : AV_CH_LAYOUT_MONO;
+        break;
+
+        case media_type_t::video:
+            av_codecpar.width = video_info.size.width;
+            av_codecpar.height = video_info.size.height;
+            av_codecpar.sample_aspect_ratio = av_d2q(video_info.fps, 60);
+            av_codecpar.format = video_info.pixel_format;
+            av_codecpar.sample_rate = 90000;
+        break;
+    }
+
+    return av_codecpar;
+}
+
 std::string media_info_t::to_string() const
 {
     std::stringstream ss;
@@ -458,6 +510,44 @@ std::string stream_info_t::to_string() const
 
 }
 
+media_data_t stream_info_t::extract_extra_data() const
+{
+    auto codec = avcodec_find_encoder(static_cast<AVCodecID>(codec_info.id));
+
+    if (codec != nullptr)
+    {
+        auto codec_context = avcodec_alloc_context3(codec);
+
+        if (codec_context != nullptr)
+        {
+
+            codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+            codec_context->bit_rate = codec_info.codec_params.bitrate;
+            media_info >> (*codec_context);
+
+            if (avcodec_open2(codec_context
+                              , codec
+                              , nullptr) >= 0)
+            {
+                if (codec_context->extradata != nullptr
+                        && codec_context->extradata_size > 0)
+                {
+                    media_data_t extra_data(codec_context->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE, 0);
+                    memcpy(extra_data.data()
+                           , codec_context->extradata
+                           , codec_context->extradata_size);
+
+                    return extra_data;
+                }
+            }
+
+            avcodec_free_context(&codec_context);
+        }
+    }
+
+    return media_data_t();
+}
+
 fragment_info_t::fragment_info_t(uint32_t x
                                  , uint32_t y
                                  , uint32_t width
@@ -529,7 +619,7 @@ codec_info_t::codec_info_t(codec_id_t id
     , name(name)
     , codec_params(codec_params)
 {
-    if (this->name.empty())
+    if (this->name.empty() && id != codec_id_none)
     {
         this->name = codec_name(id);
     }
@@ -560,6 +650,18 @@ codec_params_t::codec_params_t(std::int32_t bitrate
     , flags2(flags2)
 {
 
+}
+
+bool codec_params_t::is_global_header() const
+{
+    return (flags1 & CODEC_FLAG_GLOBAL_HEADER) != 0;
+}
+
+void codec_params_t::set_global_header(bool enable)
+{
+    flags1 = enable
+            ? flags1 | CODEC_FLAG_GLOBAL_HEADER
+            : flags1 & ~CODEC_FLAG_GLOBAL_HEADER;
 }
 
 }

@@ -11,6 +11,9 @@
 #include <memory>
 #include <functional>
 
+struct AVCodecContext;
+struct AVCodecParameters;
+
 namespace ffmpeg
 {
 
@@ -32,6 +35,7 @@ extern const pixel_format_t pixel_format_yuv422p;
 extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
 
+extern const codec_id_t codec_id_flv1;
 extern const codec_id_t codec_id_h263;
 extern const codec_id_t codec_id_h264;
 extern const codec_id_t codec_id_h265;
@@ -232,6 +236,9 @@ struct codec_params_t
                    , std::uint32_t flags1 = 0
                    , std::uint32_t flags2 = 0);
 
+    bool is_global_header() const;
+    void set_global_header(bool enable);
+
 };
 
 struct codec_info_t
@@ -248,6 +255,7 @@ struct codec_info_t
 
     bool is_coded() const;
     std::string to_string() const;
+
 };
 
 
@@ -260,6 +268,9 @@ struct media_info_t
     media_info_t() = default;
     media_info_t(const audio_info_t& audio_info);
     media_info_t(const video_info_t& video_info);
+
+    AVCodecContext& operator >> (AVCodecContext& av_context) const;
+    AVCodecParameters& operator >> (AVCodecParameters& av_codecpar) const;
 
     std::string to_string() const;
 };
@@ -302,7 +313,9 @@ struct stream_info_t
                   , std::size_t extra_data_size = 0
                   , bool need_extra_padding = false);
 
+
     std::string to_string() const;
+    media_data_t extract_extra_data() const;
 };
 
 struct frame_t
