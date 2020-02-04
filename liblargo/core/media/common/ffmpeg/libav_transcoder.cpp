@@ -1,4 +1,5 @@
 #include "libav_transcoder.h"
+#include "libav_utils.h"
 
 #include <cstring>
 
@@ -52,18 +53,6 @@ void pcm16_to_float(const void* pcm_buffer
     }
 }
 
-#define MERGE_PARAM(left, right) if ((right) > 0) (left) = (right); else (right) = (left)
-
-void merge_transcoder_params(AVCodecContext& av_context
-                             , codec_params_t& codec_params)
-{
-    MERGE_PARAM(av_context.bit_rate, codec_params.bitrate);
-    MERGE_PARAM(av_context.gop_size, codec_params.gop);
-    MERGE_PARAM(av_context.frame_size, codec_params.frame_size);
-    av_context.flags |= codec_params.flags1;
-    av_context.flags2 |= codec_params.flags2;
-}
-
 void update_context_info(const AVCodecContext& av_context
                          , stream_info_t& stream_info
                          , AVFrame& av_frame)
@@ -76,22 +65,16 @@ void update_context_info(const AVCodecContext& av_context
     stream_info.codec_info.codec_params.flags1 = av_context.flags;
     stream_info.codec_info.codec_params.flags2 = av_context.flags2;
 
+    stream_info.media_info << av_context;
+
     if (av_context.codec_type == AVMEDIA_TYPE_AUDIO)
     {
-        stream_info.media_info.audio_info.channels = av_context.channels;
-        stream_info.media_info.audio_info.sample_format = av_context.sample_fmt;
-        stream_info.media_info.audio_info.sample_rate = av_context.sample_rate;
-
         av_frame.channels = av_context.channels;
         av_frame.channel_layout = av_context.channel_layout;
         av_frame.format = av_context.sample_fmt;
     }
     else
     {
-        stream_info.media_info.video_info.size.width = av_context.width;
-        stream_info.media_info.video_info.size.height = av_context.height;
-        stream_info.media_info.video_info.pixel_format = av_context.pix_fmt;
-        stream_info.media_info.video_info.fps = av_q2d(av_context.time_base) + 0.5;
 
         stream_info.codec_info.codec_params.gop = av_context.gop_size;
 
@@ -305,8 +288,9 @@ struct libav_codec_context_t
                           << ":" << av_get_pix_fmt_name(av_context->pix_fmt) << "]" LOG_END;
                 }
 
-                utils::merge_transcoder_params(*av_context
-                                               , stream_info.codec_info.codec_params);
+                utils::merge_codec_params(*av_context
+                                           , stream_info.codec_info.codec_params);
+
                 av_init_packet(&av_packet);
 
                 AVDictionary *av_options = nullptr;

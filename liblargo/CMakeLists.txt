@@ -14,7 +14,12 @@ pkg_search_module(AVDEVICE REQUIRED libavdevice)
 pkg_search_module(AVUTIL REQUIRED libavutil)
 pkg_search_module(SWSCALE REQUIRED libswscale>=4.6.100)
 pkg_search_module(V4L2 QUIET libv4l2>=0.8.8)
+find_library(VISCA_LIBRARIES libvisca.a)
+find_library(VNC_LIBRARIES libvncclient.a)
+#pkg_search_module(VNC REQUIRED vncclient)
 #pkg_search_module(MAGICK REQUIRED ImageMagick++ >=6.7.7)
+
+message("VNC_LIB = ${VNC_LIBRARIES}")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -37,14 +42,25 @@ set(SOURCES
     "core/media/common/base/frame_base.cpp"
     "core/media/common/base/time_base.cpp"
     "core/media/common/base/option_base.cpp"
+    "core/media/common/base/string_base.cpp"
     "core/media/common/ffmpeg/libav_base.cpp"
     "core/media/common/ffmpeg/libav_transcoder.cpp"
     "core/media/common/ffmpeg/libav_stream_capturer.cpp"
     "core/media/common/ffmpeg/libav_stream_publisher.cpp"
     "core/media/common/ffmpeg/libav_converter.cpp"
+    "core/media/common/ffmpeg/libav_utils.cpp"
     "core/media/common/v4l2/v4l2_base.cpp"
     "core/media/common/v4l2/v4l2_device.cpp"
     "core/media/common/v4l2/v4l2_api.cpp"
+    "core/media/common/visca/visca_base.cpp"
+    "core/media/common/visca/visca_device.cpp"
+    "core/media/common/visca/visca_proto.cpp"
+    "core/media/common/visca/visca_test.cpp"
+    "core/media/common/serial/serial_base.cpp"
+    "core/media/common/serial/serial_api.cpp"
+    "core/media/common/serial/serial_device.cpp"
+    "core/media/common/vnc/vnc_base.cpp"
+    "core/media/common/vnc/vnc_device.cpp"
 #    "core/media/common/opencv/cv_base.cpp"
 #    "core/media/common/magick/magick_base.cpp"
     "core/media/common/qt/qt_base.cpp"
@@ -105,14 +121,25 @@ set(PRIVATE_HEADERS
     "core/media/common/base/frame_base.h"
     "core/media/common/base/time_base.h"
     "core/media/common/base/option_base.h"
+    "core/media/common/base/string_base.h"
     "core/media/common/ffmpeg/libav_base.h"
     "core/media/common/ffmpeg/libav_transcoder.h"
     "core/media/common/ffmpeg/libav_stream_capturer.h"
     "core/media/common/ffmpeg/libav_stream_publisher.h"
     "core/media/common/ffmpeg/libav_converter.h"
+    "core/media/common/ffmpeg/libav_utils.h"
     "core/media/common/v4l2/v4l2_base.h"
     "core/media/common/v4l2/v4l2_device.h"
     "core/media/common/v4l2/v4l2_api.h"
+    "core/media/common/visca/visca_base.h"
+    "core/media/common/visca/visca_device.h"
+    "core/media/common/visca/visca_proto.h"
+    "core/media/common/visca/visca_test.h"
+    "core/media/common/serial/serial_base.h"
+    "core/media/common/serial/serial_api.h"
+    "core/media/common/serial/serial_device.h"
+    "core/media/common/vnc/vnc_base.h"
+    "core/media/common/vnc/vnc_device.h"
 #    "core/media/common/opencv/cv_base.h"
 #    "core/media/common/magick/magick_base.h"
     "core/media/common/qt/qt_base.h"
@@ -199,8 +226,12 @@ set(PUBLIC_HEADERS
 
 include_directories(
     ${V4L2_INCLUDE_DIRS}
-    ${MAGICK_INCLUDE_DIRS}
+#    ${MAGICK_INCLUDE_DIRS}
 )
+
+link_directories(
+    "/home/user/ivcscodec/visca/libvisca-1.1.1/visca/.libs/"
+    )
 
 add_library(${TARGET}
     ${SOURCES}
@@ -212,15 +243,18 @@ target_link_libraries(${TARGET} PRIVATE
     pthread
     rt
     asound
+
     ${AVCODEC_LIBRARIES}
     ${AVFORMAT_LIBRARIES}
     ${AVDEVICE_LIBRARIES}
     ${AVFILTER_LIBRARIES}
     ${SWSCALE_LIBRARIES}
     ${AVUTIL_LIBRARIES}
-    ${V4L2_LIBRARIES}
-    ${OpenCV_LIBS}
-    ${MAGCK_LIBRARIES}
+ #   ${V4L2_LIBRARIES}
+    ${VISCA_LIBRARIES}
+    ${VNC_LIBRARIES}
+#    ${OpenCV_LIBS}
+#    ${MAGCK_LIBRARIES}
     ${Qt5Core_LIBRARIES}
     ${Qt5Widgets_LIBRARIES}
 )

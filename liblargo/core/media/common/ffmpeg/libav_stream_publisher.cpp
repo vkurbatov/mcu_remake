@@ -1,4 +1,5 @@
 #include "libav_stream_publisher.h"
+#include "libav_utils.h"
 
 #include <thread>
 #include <mutex>
@@ -19,24 +20,41 @@ extern "C"
 
 namespace ffmpeg
 {
+
+static const char* fetch_stream_name(device_type_t device_type)
+{
+    static const char* format_table[] =
+    {
+        nullptr     // unknown,
+        , "rtsp"    // rtsp,
+        , "flv"     // rtmp,
+        , "rtp"     // rtp,
+        , "v4l2"    // camera,
+        , nullptr     // http,
+        , "mpeg"     // file,
+    };
+
+    return format_table[static_cast<std::int32_t>(device_type)];
+}
+
 struct libav_output_format_context_t
 {
     struct AVFormatContext*     context;
     stream_info_list_t          streams;
     bool                        is_init;
     std::string                 uri;
+    device_type_t               device_type;
 
-    libav_output_format_context_t(const std::string& format_name
-                           , const std::string& uri)
+    libav_output_format_context_t(const std::string& uri
+                                  , const stream_info_list_t& stream_list)
         : context(nullptr)
         , is_init(false)
         , uri(uri)
+        , device_type(utils::fetch_device_type(uri))
     {
 
-        is_init = avformat_alloc_output_context2(&context
-                                                 , nullptr
-                                                 , format_name.c_str()
-                                                 , uri.c_str()) >= 0;
+        is_init = init(uri
+                       , stream_list);
 
     }
 
@@ -49,13 +67,61 @@ struct libav_output_format_context_t
                 av_write_trailer(context);
             }
 
+
             for (auto i = 0; i < context->nb_streams; i++)
             {
                 context->streams[i]->codecpar->extradata = nullptr;
                 context->streams[i]->codecpar->extradata_size = 0;
+
+                if (context->streams[i]->codec != nullptr)
+                {
+                    avcodec_free_context(&context->streams[i]->codec);
+                }
+                av_freep(&context->streams[i]);
             }
+
+            if ((context->oformat->flags & AVFMT_NOFILE) == 0)
+            {
+                avio_close(context->pb);
+            }
+
             avformat_free_context(context);
         }
+    }
+
+    bool init(const std::string& uri
+              , const stream_info_list_t& stream_list)
+    {
+
+        auto format = av_guess_format(nullptr
+                                      , uri.c_str()
+                                      , nullptr);
+
+        if (device_type == device_type_t::file)
+        {
+            format = nullptr;
+        }
+
+        avformat_alloc_output_context2(&context
+                                        , format
+                                        , format == nullptr ? fetch_stream_name(device_type) : nullptr
+                                        , uri.c_str());
+
+        if (context != nullptr)
+        {
+            for(const auto& strm: stream_list)
+            {
+                add_stream(strm);
+            }
+
+            if (context->nb_streams > 0)
+            {
+                return finish_init();
+            }
+        }
+
+
+        return false;
     }
 
     bool add_stream(const stream_info_t& stream_info)
@@ -85,6 +151,9 @@ struct libav_output_format_context_t
 
                 av_stream->codecpar->codec_type = codec->type;
 
+                av_stream->pts.val = 0;
+                av_stream->time_base = { 1, video_sample_rate };
+
                 switch (codec->type)
                 {
                     case AVMEDIA_TYPE_AUDIO:
@@ -97,7 +166,6 @@ struct libav_output_format_context_t
 
                         av_stream->time_base = { 1, av_stream->codecpar->sample_rate };
 
-
                     break;
                     case AVMEDIA_TYPE_VIDEO:
 
@@ -107,11 +175,13 @@ struct libav_output_format_context_t
                         stream_info.media_info >> *(av_stream->codecpar);
 
                         av_stream->time_base = { 1, stream_info.media_info.video_info.fps };
+                        av_stream->sample_aspect_ratio = av_stream->codecpar->sample_aspect_ratio;
+                        av_stream->r_frame_rate = av_stream->codecpar->sample_aspect_ratio;
 
                         if ((strm.codec_info.codec_params.is_global_header())
                                 && strm.extra_data.empty())
                         {
-                            strm.extra_data = strm.extract_extra_data();
+                            strm.extra_data = utils::extract_global_header(strm);
                         }
 
                     break;
@@ -126,7 +196,7 @@ struct libav_output_format_context_t
                 if (!strm.extra_data.empty())
                 {
                     av_stream->codecpar->extradata = strm.extra_data.data();
-                    av_stream->codecpar->extradata_size = strm.extra_data.size() - AV_INPUT_BUFFER_PADDING_SIZE;
+                    av_stream->codecpar->extradata_size = strm.extra_data.size();// - AV_INPUT_BUFFER_PADDING_SIZE;
                 }
 
                 av_stream->pts.den = av_stream->time_base.den;
@@ -140,25 +210,22 @@ struct libav_output_format_context_t
         return false;
     }
 
-    bool finish()
+    bool finish_init()
     {
-        // av_dump_format(context, 0, uri.c_str(), 1);
+        av_dump_format(context, 0, uri.c_str(), 1);
 
-        if ((context->oformat->flags & AVFMT_NOFILE) == 0
-                && avio_open(&context->pb, uri.c_str(), AVIO_FLAG_WRITE) < 0)
+        if ((context->oformat->flags & AVFMT_NOFILE) == 0)
         {
-            return false;
+            if (avio_open(&context->pb, uri.c_str(), AVIO_FLAG_WRITE) < 0)
+            {
+                return false;
+            }
         }
 
         auto res = avformat_write_header(context
                                          , nullptr);
 
-        if (res < 0)
-        {
-            return false;
-        }
-
-        return true;
+        return res >= 0;
     }
 
     bool push_frame(std::int32_t stream_id
@@ -172,18 +239,9 @@ struct libav_output_format_context_t
 
             auto& av_stream = *context->streams[stream_id];
 
-            static std::int64_t audio_pts = 0;
-            static std::int64_t video_pts = 0;
-
             if (key_frame)
             {
                 av_packet.flags |= AV_PKT_FLAG_KEY;
-            }
-
-            if (audio_pts == 0)
-            {
-                //audio_pts = AV_P;
-                //video_pts = av_stream.pts;
             }
 
             av_packet.stream_index = stream_id;
@@ -192,36 +250,30 @@ struct libav_output_format_context_t
 
             if (av_stream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
             {
-                // context->streams[stream_id]->pts.val += context->streams[stream_id]->codecpar->frame_size;
-                av_packet.duration = 1024;
-                av_packet.pts = audio_pts;
+                av_packet.duration = av_stream.codecpar->frame_size;
+                av_packet.pts = av_packet.duration * av_stream.nb_frames;
                 av_packet_rescale_ts(&av_packet
                                      , { av_stream.pts.num, av_stream.pts.den }
                                      , av_stream.time_base);
 
 
-                // av_packet.duration = (av_stream.codecpar->frame_size * 1000) / av_stream.time_base.den;
-                /*av_packet_rescale_ts(&av_packet
-                                     , av_stream.time_base
-                                     , av_stream.time_base);*/
 
-                audio_pts += av_stream.codecpar->frame_size;
+                // av_stream.pts.val += av_stream.codecpar->frame_size;
             }
             else
             {
-                // context->streams[stream_id]->pts.val ++;
-                av_packet.duration = 0;
-                av_packet.pts = video_pts;
+                av_packet.pts = av_stream.nb_frames;
 
                 av_packet_rescale_ts(&av_packet
                                      , { av_stream.pts.num, av_stream.pts.den }
                                      , av_stream.time_base);
-                video_pts++;
+
+                // av_stream.pts.val ++; //= av_stream.nb_frames;
             }
 
-            av_packet.dts = av_packet.pts;
+            av_packet.dts = AV_NOPTS_VALUE;//
 
-           LOG_D << "WRITE STREAM [" << stream_id << "] PACKET SIZE: " << size << ". pts = " << av_packet.pts << ", flags = " << av_packet.flags LOG_END;
+            LOG_D << "WRITE STREAM [" << stream_id << "] PACKET SIZE: " << size << ". pts = " << av_packet.pts << ", flags = " << av_packet.flags LOG_END;
 
             auto ret = av_interleaved_write_frame(context, &av_packet);
 
@@ -246,26 +298,16 @@ struct libav_stream_publisher_context_t
               , const stream_info_list_t& stream_list)
     {
 
-        m_format_context.reset(new libav_output_format_context_t("flv"
-                                                                 , uri));
+        m_format_context.reset(new libav_output_format_context_t(uri
+                                                                 , stream_list));
 
         if (m_format_context->is_init)
         {
-            for(const auto& strm: stream_list)
-            {
-                m_format_context->add_stream(strm);
-            }
-
-            if (!m_format_context->streams.empty())
-            {
-                if (m_format_context->finish())
-                {
-                    return true;
-                }
-            }
+            return true;
         }
 
         m_format_context.reset();
+
         return false;
     }
 

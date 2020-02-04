@@ -9,11 +9,11 @@ namespace v4l2
 struct v4l2_device_context_t;
 struct v4l2_device_context_deleter_t { void operator()(v4l2_device_context_t* v4l2_device_context_ptr); };
 
-typedef std::unique_ptr<v4l2_device_context_t, v4l2_device_context_deleter_t> libav_stream_capturer_context_ptr_t;
+typedef std::unique_ptr<v4l2_device_context_t, v4l2_device_context_deleter_t> v4l2_device_context_ptr_t;
 
 class v4l2_device
 {
-    libav_stream_capturer_context_ptr_t m_v4l2_device_capturer_context;
+    v4l2_device_context_ptr_t           m_v4l2_device_context;
     stream_data_handler_t               m_stream_data_handler;
     stream_event_handler_t              m_stream_event_handler;
 public:    
@@ -31,7 +31,8 @@ public:
     bool set_format(const frame_info_t& format);
 
     control_list_t get_control_list() const;
-    void set_control(std::uint32_t control_id, std::int32_t value);
+    bool set_control(std::uint32_t control_id, std::int32_t value);
+    std::int32_t get_control(std::uint32_t control_id, std::int32_t default_value = 0);
 
 
     frame_queue_t fetch_media_queue();

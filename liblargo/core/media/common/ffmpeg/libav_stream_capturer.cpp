@@ -1,4 +1,5 @@
 #include "libav_stream_capturer.h"
+#include "libav_utils.h"
 
 #include <thread>
 #include <mutex>
@@ -22,40 +23,6 @@ namespace ffmpeg
 const std::size_t max_queue_size = 1000;
 const std::size_t idle_timeout_ms = 10;
 
-enum class device_type_t
-{
-    unknown,
-    rtsp,
-    rtmp,
-    rtp,
-    camera,
-    file
-};
-//------------------------------------------------------------------------------------
-static device_type_t fetch_device_type(const std::string& uri)
-{
-    static const std::string device_names_table[] = { "", "rtsp://", "rtmp://", "rtp://", "v4l2://", "file://" };
-
-    if (uri.find("/") == 0)
-    {
-        return device_type_t::file;
-    }
-
-    auto i = 0;
-    for (const auto& device_name : device_names_table)
-    {
-        if (i > 0)
-        {
-            if (uri.find(device_name.c_str()) == 0)
-            {
-                return static_cast<device_type_t>(i);
-            }
-        }
-        i++;
-    }
-
-    return device_type_t::unknown;
-}
 //------------------------------------------------------------------------------------
 
 struct libav_input_format_context_t
@@ -106,7 +73,7 @@ std::int32_t init(const std::string& uri)
 
     auto c_uri = uri.c_str();
 
-    auto device_type = fetch_device_type(uri);
+    auto device_type = utils::fetch_device_type(uri);
 
     if (!is_init)
     {
@@ -332,9 +299,9 @@ struct libav_stream_capturer_context_t
 
     std::thread                                         m_stream_thread;
     std::map<std::int32_t,libav_stream_t>               m_streams;
-    std::unique_ptr<libav_input_format_context_t>             m_format_context;
+    std::unique_ptr<libav_input_format_context_t>       m_format_context;
 
-    std::mutex                                          m_queue_mutex; 
+    std::mutex                                          m_mutex;
     std::atomic_bool                                    m_is_running;
 
     std::uint32_t                                       m_capturer_id;
@@ -366,6 +333,8 @@ struct libav_stream_capturer_context_t
 
     bool open(stream_mask_t stream_mask)
     {
+        std::lock_guard<std::mutex> lg(m_mutex);
+
         if (m_format_context == nullptr)
         {
             m_format_context.reset(new libav_input_format_context_t());
@@ -405,6 +374,8 @@ struct libav_stream_capturer_context_t
 
     bool close()
     {
+        std::lock_guard<std::mutex> lg(m_mutex);
+
         if (m_format_context != nullptr)
         {
             m_format_context.reset(nullptr);
@@ -524,6 +495,8 @@ struct libav_stream_capturer_context_t
 
     frame_queue_t fetch_frame_queue(int32_t stream_id)
     {
+        std::lock_guard<std::mutex> lg(m_mutex);
+
         frame_queue_t frame_queue;
 
         auto it = m_streams.find(stream_id);

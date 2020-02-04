@@ -38,6 +38,10 @@ private slots:
 
     void on_cbAspectRatio_currentIndexChanged(int index);
 
+protected:
+    void keyPressEvent(QKeyEvent *key_event);
+    void keyReleaseEvent(QKeyEvent *key_event);
+
 private:
     Ui::video_form *ui;
     video_surface m_surface;

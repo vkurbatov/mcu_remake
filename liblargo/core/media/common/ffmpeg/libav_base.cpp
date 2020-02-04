@@ -355,58 +355,6 @@ media_info_t::media_info_t(const video_info_t &video_info)
 
 }
 
-AVCodecContext &media_info_t::operator >>(AVCodecContext &av_context) const
-{
-    switch (media_type)
-    {
-        case media_type_t::audio:
-            av_context.sample_fmt = static_cast<AVSampleFormat>(audio_info.sample_format);
-            av_context.sample_rate = audio_info.sample_rate;
-            av_context.channels = audio_info.channels;
-            av_context.channel_layout = av_context.channels > 1
-                    ? AV_CH_LAYOUT_STEREO
-                    : AV_CH_LAYOUT_MONO;
-            av_context.time_base = { 1, av_context.sample_rate };
-        break;
-
-        case media_type_t::video:
-            av_context.width = video_info.size.width;
-            av_context.height = video_info.size.height;
-            av_context.framerate = av_d2q(video_info.fps, 60);
-            av_context.pix_fmt = static_cast<AVPixelFormat>(video_info.pixel_format);
-            av_context.time_base = { 1, video_info.fps };
-            av_context.sample_rate = 90000;
-        break;
-    }
-
-    return av_context;
-}
-
-AVCodecParameters &media_info_t::operator >>(AVCodecParameters &av_codecpar) const
-{
-    switch (media_type)
-    {
-        case media_type_t::audio:
-            av_codecpar.format = audio_info.sample_format;
-            av_codecpar.sample_rate = audio_info.sample_rate;
-            av_codecpar.channels = audio_info.channels;
-            av_codecpar.channel_layout = av_codecpar.channels > 1
-                    ? AV_CH_LAYOUT_STEREO
-                    : AV_CH_LAYOUT_MONO;
-        break;
-
-        case media_type_t::video:
-            av_codecpar.width = video_info.size.width;
-            av_codecpar.height = video_info.size.height;
-            av_codecpar.sample_aspect_ratio = av_d2q(video_info.fps, 60);
-            av_codecpar.format = video_info.pixel_format;
-            av_codecpar.sample_rate = 90000;
-        break;
-    }
-
-    return av_codecpar;
-}
-
 std::string media_info_t::to_string() const
 {
     std::stringstream ss;
@@ -508,44 +456,6 @@ std::string stream_info_t::to_string() const
 
     return ss.str();
 
-}
-
-media_data_t stream_info_t::extract_extra_data() const
-{
-    auto codec = avcodec_find_encoder(static_cast<AVCodecID>(codec_info.id));
-
-    if (codec != nullptr)
-    {
-        auto codec_context = avcodec_alloc_context3(codec);
-
-        if (codec_context != nullptr)
-        {
-
-            codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
-            codec_context->bit_rate = codec_info.codec_params.bitrate;
-            media_info >> (*codec_context);
-
-            if (avcodec_open2(codec_context
-                              , codec
-                              , nullptr) >= 0)
-            {
-                if (codec_context->extradata != nullptr
-                        && codec_context->extradata_size > 0)
-                {
-                    media_data_t extra_data(codec_context->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE, 0);
-                    memcpy(extra_data.data()
-                           , codec_context->extradata
-                           , codec_context->extradata_size);
-
-                    return extra_data;
-                }
-            }
-
-            avcodec_free_context(&codec_context);
-        }
-    }
-
-    return media_data_t();
 }
 
 fragment_info_t::fragment_info_t(uint32_t x

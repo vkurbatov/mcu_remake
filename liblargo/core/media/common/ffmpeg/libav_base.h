@@ -11,9 +11,6 @@
 #include <memory>
 #include <functional>
 
-struct AVCodecContext;
-struct AVCodecParameters;
-
 namespace ffmpeg
 {
 
@@ -45,6 +42,9 @@ extern const codec_id_t codec_id_jpeg;
 extern const codec_id_t codec_id_mjpeg;
 extern const codec_id_t codec_id_raw_video;
 extern const codec_id_t codec_id_none;
+
+const std::uint32_t video_sample_rate = 90000;
+const std::uint32_t max_fps = 60;
 //extern const codec_id_t codec_id_yuv420p;
 
 const std::size_t max_planes = 4;
@@ -66,6 +66,17 @@ enum class streaming_event_t
     stop,
     open,
     close
+};
+
+enum class device_type_t
+{
+    unknown,
+    rtsp,
+    rtmp,
+    rtp,
+    camera,
+    http,
+    file,
 };
 
 enum stream_mask_t : std::uint32_t
@@ -269,9 +280,6 @@ struct media_info_t
     media_info_t(const audio_info_t& audio_info);
     media_info_t(const video_info_t& video_info);
 
-    AVCodecContext& operator >> (AVCodecContext& av_context) const;
-    AVCodecParameters& operator >> (AVCodecParameters& av_codecpar) const;
-
     std::string to_string() const;
 };
 
@@ -315,7 +323,6 @@ struct stream_info_t
 
 
     std::string to_string() const;
-    media_data_t extract_extra_data() const;
 };
 
 struct frame_t

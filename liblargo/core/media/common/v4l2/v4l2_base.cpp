@@ -5,7 +5,15 @@ namespace v4l2
 {
 
 const pixel_format_t pixel_format_h264 = V4L2_PIX_FMT_H264;
+const pixel_format_t pixel_format_jpeg = V4L2_PIX_FMT_JPEG;
 const pixel_format_t pixel_format_mjpeg = V4L2_PIX_FMT_MJPEG;
+
+const std::uint32_t ctrl_tilt_absolute = V4L2_CID_TILT_ABSOLUTE;
+const std::uint32_t ctrl_pan_absolute = V4L2_CID_PAN_ABSOLUTE;
+const std::uint32_t ctrl_zoom_absolute = V4L2_CID_ZOOM_ABSOLUTE;
+const std::uint32_t ctrl_pan_speed = V4L2_CID_PAN_SPEED;
+const std::uint32_t ctrl_tilt_speed = V4L2_CID_TILT_SPEED;
+
 
 frame_size_t::frame_size_t(uint32_t width
                            , uint32_t height)

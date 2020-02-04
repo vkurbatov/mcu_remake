@@ -21,12 +21,15 @@
 #include "media/common/opencv/cv_base.h"
 #include "media/common/magick/magick_base.h"
 #include "media/common/qt/qt_base.h"
+#include "media/common/visca/visca_device.h"
 
 #include "media/video/filters/video_filter_overlay.h"
 #include "media/video/filters/video_layer_text.h"
 #include "media/video/filters/video_layer_image.h"
 #include "media/video/filters/video_layer_figure.h"
 
+
+#include <iostream>
 #include <cstring>
 #include <mutex>
 #include <chrono>
@@ -50,6 +53,8 @@ double encoder_delay = 0;
 
 double delay_factor = 0.1;
 
+
+visca::visca_device visca_device;
 
 ffmpeg::libav_converter converter(ffmpeg::scaling_method_t::default_method);
 std::unique_ptr<ffmpeg::libav_stream_capturer> rtsp_capturer;
@@ -89,11 +94,16 @@ auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::c
 
 static void publisher_test(core::media::video::i_video_frame& video_frame)
 {
+
+
+    return;
+
+    static std::uint32_t fps = 30;
     static ffmpeg::libav_stream_publisher rtmp_publisher;
     static ffmpeg::libav_transcoder video_encoder;
     static ffmpeg::libav_transcoder audio_encoder;
 
-    static auto samples_per_frame = 32000 / 25;
+    static auto samples_per_frame = 32000 / fps;
     static auto audio_samples_counter = 0;
 
     static ffmpeg::stream_info_list_t stream_list;
@@ -104,6 +114,10 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
     std::string uri = "rtmp://x.rtmp.youtube.com/live2/aww3-1y5s-vbtg-4ehy";
 
+    // std::string uri = "/home/user/pub_file.mpeg";
+    // std::string uri = "http://127.0.0.1:1234/feed1.ffm";
+    //std::string uri = "/tmp/feed1.ffm";
+
     const auto& video_format = video_frame.video_format();
 
     if (!video_encoder.is_open())
@@ -111,10 +125,11 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
         ffmpeg::stream_info_t s_info;
         s_info.codec_info.id = ffmpeg::codec_id_h264;
         s_info.codec_info.codec_params.bitrate = 1000000;
+        // s_info.codec_info.codec_params.set_global_header(true);
         s_info.codec_info.codec_params.gop = 12;
         s_info.media_info.media_type = ffmpeg::media_type_t::video;
         s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
-        s_info.media_info.video_info.fps = 25;// video_format.fps;
+        s_info.media_info.video_info.fps = fps;// video_format.fps;
         s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format);
 
         video_encoder.open(s_info
@@ -138,6 +153,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
             s_info.codec_info.name = "aac";
             s_info.codec_info.codec_params.bitrate = 128000;
             s_info.codec_info.codec_params.frame_size = 1024;
+            s_info.codec_info.codec_params.set_global_header(true);
             s_info.media_info.media_type = ffmpeg::media_type_t::audio;
             s_info.media_info.audio_info.channels = 1;
             s_info.media_info.audio_info.sample_rate = 32000;
@@ -319,6 +335,10 @@ video_form::video_form(QWidget *parent) :
     ui(new Ui::video_form),
     m_surface(this)
 {
+
+    visca_device.open("/dev/ttyUSB0");
+
+    // auto visca_open_flag = visca::open_device("/dev/ttyUSB0");
 
     QImage test_image("/home/user/ivcscodec/mcu_remake/resources/test_image.png");
     test_image = test_image.convertToFormat(QImage::Format_RGB888);
@@ -930,7 +950,7 @@ void video_form::prepare_image()
 
 void video_form::on_pushButton_clicked()
 {
-    auto& device = rtsp_capturer; //v4l2_capturer;
+    auto& device = v4l2_capturer;
 
     if (device->is_opened())
     {
@@ -939,14 +959,14 @@ void video_form::on_pushButton_clicked()
     else
     {
         // std::string uri = "/home/user/h264.avi";
-        std::string uri = "/home/user/test_file.mp4";
+        // std::string uri = "/home/user/test_file.mp4";
         // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
         // std::string uri = "/home/user/ivcscodec/loading.gif";
         // std::string uri = "v4l2://dev/video0";
-
+        std::string uri = "/dev/video4";
         device->open(uri);
 
-        /*
+
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         auto formats = device->get_supported_formats();
 
@@ -983,7 +1003,6 @@ void video_form::on_pushButton_clicked()
 
             ui->cbControlList->addItem(item_string);
         }
-        */
     }
 
     ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");
@@ -1114,7 +1133,7 @@ void video_form::on_cbControlList_activated(int index)
         v4l2::control_t& ctrl = controls[index];
         ui->slControl->setMaximum(ctrl.range.max);
         ui->slControl->setMinimum(ctrl.range.min);
-        ui->slControl->setValue(ctrl.current_value);
+        ui->slControl->setValue(v4l2_capturer->get_control(ctrl.id));
     }
 }
 
@@ -1171,4 +1190,74 @@ void video_form::test1()
 void video_form::on_cbAspectRatio_currentIndexChanged(int index)
 {
     aspect_ratio_method = static_cast<core::media::video::aspect_ratio_mode_t>(index);
+}
+
+void video_form::keyPressEvent(QKeyEvent *key_event)
+{
+
+    /*
+    , m_pan_limits(-2448.0, 2448.0)
+    , m_tilt_limits(-432.0, 1296.0)
+    , m_zoom_limits(0.0, 16384.0)
+    */
+
+    if (!key_event->isAutoRepeat())
+    {
+        // auto ctrls = v4l2_capturer->get_control_list();
+
+        switch (key_event->key())
+        {
+            case Qt::Key_A:
+                v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, -612000);
+                // visca_device.set_pan(-2448);
+            break;
+            case Qt::Key_S:
+                v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, -108000);
+                // visca_device.set_tilt(-432);
+            break;
+            case Qt::Key_D:
+                v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, 612000);
+                // visca_device.set_pan(2448);
+            break;
+            case Qt::Key_W:
+                v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, 324000);
+                // visca_device.set_tilt(1296);
+            break;
+            case Qt::Key_PageUp:
+                v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 16384);
+                // visca_device.set_zoom(16384);
+            break;
+            case Qt::Key_PageDown:
+                v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 0);
+                // visca_device.set_zoom(0);
+            break;
+        }
+        std::cout << "Key press: " << key_event->key() << std::endl;
+    }
+}
+
+void video_form::keyReleaseEvent(QKeyEvent *key_event)
+{
+
+    if (!key_event->isAutoRepeat())
+    {
+        switch (key_event->key())
+        {
+            case Qt::Key_A:
+            case Qt::Key_D:
+                v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 0);
+            break;
+            case Qt::Key_S:
+            case Qt::Key_W:
+                v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 0);
+                // visca_device.pan_tilt_stop();
+            break;
+            case Qt::Key_PageUp:
+            case Qt::Key_PageDown:
+                v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, v4l2_capturer->get_control(v4l2::ctrl_zoom_absolute));
+                //visca_device.zoom_stop();
+            break;
+        }
+        std::cout << "Key release: " << key_event->key() << std::endl;
+    }
 }

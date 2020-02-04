@@ -7,7 +7,6 @@
 #include <mutex>
 #include <map>
 
-
 namespace v4l2
 {
 
@@ -141,6 +140,7 @@ struct v4l2_device_context_t
 
     std::atomic_bool                    m_running;
     std::atomic_bool                    m_established;
+    std::unique_ptr<v4l2_object_t>      m_device;
 
 
     v4l2_device_context_t(stream_data_handler_t stream_data_handler
@@ -212,6 +212,34 @@ struct v4l2_device_context_t
         return std::move(control_list);
     }
 
+    bool open_device(std::string uri
+                     , std::uint32_t buffer_count
+                     , frame_info_t& frame_info)
+    {
+        std::lock_guard<std::mutex> lg(m_mutex);
+        m_device.reset(new v4l2_object_t(uri
+                                     , frame_info
+                                     , buffer_count));
+
+
+        if (m_device->fetch_frame_info(frame_info))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            auto formats = m_device->fetch_supported_format_list();
+            auto controls = m_device->fetch_control_list();
+
+            // formats.push_back(frame_info_t({ 800, 600 }, 15, pixel_format_h264));
+            m_format_list = std::move(formats);
+            m_control_list = std::move(controls);
+
+
+            return true;
+        }
+
+        return false;
+    }
+
+
     void stream_proc(std::string uri
                      , std::uint32_t buffer_count)
     {
@@ -219,30 +247,14 @@ struct v4l2_device_context_t
 
         while (m_running)
         {
-            std::unique_ptr<v4l2_object_t> device(new v4l2_object_t(uri
-                                                                    , m_frame_info
-                                                                    , buffer_count));
-
-
-            frame_info_t frame_info;
             std::uint32_t frame_time = 50;
-            if (device->fetch_frame_info(frame_info))
+
+
+            if ( open_device(uri
+                             , buffer_count
+                             , m_frame_info))
             {
-                m_frame_info = frame_info;
-
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    auto formats = device->fetch_supported_format_list();
-                    auto controls = device->fetch_control_list();
-
-                    // formats.push_back(frame_info_t({ 800, 600 }, 15, pixel_format_h264));
-
-                    std::lock_guard<std::mutex> lg(m_mutex);
-                    m_format_list = std::move(formats);
-                    m_control_list = std::move(controls);
-
-                }
-
+                frame_info_t frame_info = m_frame_info;
                 frame_time = frame_info.fps == 0 ? 100 : (1000 / frame_info.fps);
                 push_event(streaming_event_t::open);
 
@@ -252,27 +264,9 @@ struct v4l2_device_context_t
                       && m_frame_info == frame_info)
                 {
 
-                    if (!m_control_queue.empty())
-                    {
-                        std::lock_guard<std::mutex> lg(m_mutex);
-                        while(!m_control_queue.empty())
-                        {
-                            auto it = m_control_list.find(m_control_queue.front().first);
-
-                            if (it != m_control_list.end())
-                            {
-                                if (device->set_control(m_control_queue.front().first
-                                                    , m_control_queue.front().second))
-                                {
-                                    it->second.current_value = m_control_queue.front().second;
-                                }
-                            }
-
-                            m_control_queue.pop();
-                        }
-                    }
-
-                    auto frame_data = std::move(device->fetch_frame_data(frame_time * 2));
+                    m_mutex.lock();
+                    auto frame_data = std::move(m_device->fetch_frame_data(frame_time * 2));
+                    m_mutex.unlock();
 
                     if (!frame_data.empty())
                     {
@@ -282,13 +276,16 @@ struct v4l2_device_context_t
                                 || m_stream_data_handler(frame_info
                                                          , std::move(frame_data)) == false)
                         {
-                            std::lock_guard<std::mutex> lg(m_mutex);
+                            m_mutex.lock();
+
                             m_frame_queue.emplace(frame_info, std::move(frame_data));
 
                             while (m_frame_queue.size() > max_frame_queue)
                             {
                                 m_frame_queue.pop();
                             }
+
+                            m_mutex.unlock();
                         }
                     }
                     else
@@ -303,8 +300,9 @@ struct v4l2_device_context_t
                             break;
                          }
                     }
+
                 }
-                //auto device->
+
                 m_established = false;
                 push_event(streaming_event_t::close);
             }
@@ -314,6 +312,10 @@ struct v4l2_device_context_t
             }
         }
 
+        {
+            std::lock_guard<std::mutex> lg(m_mutex);
+            m_device.reset();
+        }
         push_event(streaming_event_t::stop);
     }
 
@@ -331,15 +333,46 @@ struct v4l2_device_context_t
         return std::move(m_frame_queue);
     }
 
-    void set_control(std::uint32_t control_id, std::int32_t value)
+    bool set_control(std::uint32_t control_id, std::int32_t value)
     {
         std::lock_guard<std::mutex> lg(m_mutex);
-        m_control_queue.emplace(control_id, value);
 
-        while(!m_control_queue.empty() > 10)
+        if (m_device != nullptr)
         {
-            m_control_queue.pop();
+            if (m_device->set_control(control_id, value))
+            {
+                auto it = m_control_list.find(control_id);
+
+                if (it != m_control_list.end())
+                {
+                    it->second.current_value = value;
+                }
+
+                return true;
+            }
         }
+
+        return false;
+    }
+
+    std::int32_t get_control(std::uint32_t control_id, std::int32_t default_value)
+    {
+        std::lock_guard<std::mutex> lg(m_mutex);
+
+        if (m_device != nullptr)
+        {
+            if (m_device->get_control(control_id, default_value))
+            {
+                auto it = m_control_list.find(control_id);
+
+                if (it != m_control_list.end())
+                {
+                    it->second.current_value = default_value;
+                }
+            }
+        }
+
+        return default_value;
     }
 };
 //------------------------------------------------------------------------------------------
@@ -350,7 +383,7 @@ void v4l2_device_context_deleter_t::operator()(v4l2_device_context_t *v4l2_devic
 //---------------------------------------------------------------------------------------------
 v4l2_device::v4l2_device(stream_data_handler_t stream_data_handler
         , stream_event_handler_t stream_event_handler)
-    : m_v4l2_device_capturer_context(new v4l2_device_context_t(stream_data_handler
+    : m_v4l2_device_context(new v4l2_device_context_t(stream_data_handler
                                                                , stream_event_handler))
 {
 
@@ -359,53 +392,62 @@ v4l2_device::v4l2_device(stream_data_handler_t stream_data_handler
 bool v4l2_device::open(const std::string &uri
                        , std::uint32_t buffer_count)
 {
-    return m_v4l2_device_capturer_context->open(uri
+    return m_v4l2_device_context->open(uri
                                                 , buffer_count);
 }
 
 bool v4l2_device::close()
 {
-    return m_v4l2_device_capturer_context->close();
+    return m_v4l2_device_context->close();
 }
 
 bool v4l2_device::is_opened() const
 {
-    return m_v4l2_device_capturer_context->is_opened();
+    return m_v4l2_device_context->is_opened();
 }
 
 bool v4l2_device::is_established() const
 {
-    return m_v4l2_device_capturer_context->is_established();
+    return m_v4l2_device_context->is_established();
 }
 
 format_list_t v4l2_device::get_supported_formats() const
 {
-    return std::move(m_v4l2_device_capturer_context->get_supported_formats());
+    return std::move(m_v4l2_device_context->get_supported_formats());
 }
 
 const frame_info_t &v4l2_device::get_format() const
 {
-    return m_v4l2_device_capturer_context->m_frame_info;
+    return m_v4l2_device_context->m_frame_info;
 }
 
 bool v4l2_device::set_format(const frame_info_t &format)
 {
-    m_v4l2_device_capturer_context->m_frame_info = format;
+    m_v4l2_device_context->m_frame_info = format;
 }
 
 control_list_t v4l2_device::get_control_list() const
 {
-    return std::move(m_v4l2_device_capturer_context->get_control_list());
+    return std::move(m_v4l2_device_context->get_control_list());
 }
 
-void v4l2_device::set_control(uint32_t control_id, int32_t value)
+bool v4l2_device::set_control(uint32_t control_id
+                              , int32_t value)
 {
-    m_v4l2_device_capturer_context->set_control(control_id, value);
+    return m_v4l2_device_context->set_control(control_id
+                                              , value);
+}
+
+int32_t v4l2_device::get_control(uint32_t control_id
+                                 , int32_t default_value)
+{
+    return m_v4l2_device_context->get_control(control_id
+                                              , default_value);
 }
 
 frame_queue_t v4l2_device::fetch_media_queue()
 {
-    return std::move(m_v4l2_device_capturer_context->fetch_media_queue());
+    return std::move(m_v4l2_device_context->fetch_media_queue());
 }
 
 }
