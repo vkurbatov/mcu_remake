@@ -5,6 +5,43 @@
 namespace vnc
 {
 
+vnc_server_config_t vnc_server_config_t::from_uri(const std::string &uri)
+{
+    vnc_server_config_t vnc_server_config;
+
+    if (uri.find("vnc://") == 0)
+    {
+        auto begin = 6;
+        auto end = uri.find('@', begin);
+
+        if (end != std::string::npos)
+        {
+            vnc_server_config.password = uri.substr(begin
+                                                    , end - begin);
+            begin = end + 1;
+        }
+
+        end = uri.find(':', begin);
+
+        if (end != std::string::npos)
+        {
+            vnc_server_config.host = uri.substr(begin, end - begin);
+            vnc_server_config.port = atoi(uri.substr(end + 1).c_str());
+        }
+        else
+        {
+            vnc_server_config.host = uri.substr(begin);
+        }
+
+        if (vnc_server_config.port == 0)
+        {
+            vnc_server_config.port = default_port;
+        }
+    }
+
+    return vnc_server_config;
+}
+
 vnc_server_config_t::vnc_server_config_t(const std::string &host
                                          , const std::string &password
                                          , uint32_t port)

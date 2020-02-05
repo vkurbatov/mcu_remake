@@ -11,13 +11,23 @@
 namespace vnc
 {
 
+const std::string default_host = "localhost";
 const std::uint32_t default_port = 5900;
 const std::string default_password = "";
-const std::uint32_t default_bpp = 24;
+const std::uint32_t default_bpp = 32;
+const std::uint32_t default_fps = 25;
 
 using frame_size_t = base::frame_size_t;
 
 typedef std::vector<std::uint8_t> frame_data_t;
+
+enum class io_result_t
+{
+    complete,
+    timeout,
+    not_ready,
+    error,
+};
 
 struct vnc_server_config_t
 {
@@ -25,7 +35,9 @@ struct vnc_server_config_t
     std::string     password;
     std::uint32_t   port;
 
-    vnc_server_config_t(const std::string& host
+    static vnc_server_config_t from_uri(const std::string& uri);
+
+    vnc_server_config_t(const std::string& host = default_host
                         , const std::string& password = default_password
                         , std::uint32_t port = default_port);
 

@@ -32,8 +32,17 @@ const pixel_format_t default_pixel_format = static_cast<pixel_format_t>(AV_PIX_F
 const sample_format_t default_sample_format = static_cast<sample_format_t>(AV_SAMPLE_FMT_S16);
 
 const pixel_format_t pixel_format_none = static_cast<pixel_format_t>(AV_PIX_FMT_NONE);
+
+const pixel_format_t pixel_format_bgr8 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR8);
+const pixel_format_t pixel_format_rgb8 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB8);
+const pixel_format_t pixel_format_bgr15 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR555);
+const pixel_format_t pixel_format_rgb15 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB555);
+const pixel_format_t pixel_format_bgr16 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR565);
+const pixel_format_t pixel_format_rgb16 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB565);
 const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR24);
 const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
+const pixel_format_t pixel_format_bgr32 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR32);
+const pixel_format_t pixel_format_rgb32 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR32);
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
 

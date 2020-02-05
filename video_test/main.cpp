@@ -28,7 +28,6 @@ int main(int argc, char* argv[])
 
 
 
-
     // visca::test2();
 
     QApplication app(argc, argv);

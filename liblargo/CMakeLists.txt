@@ -14,12 +14,9 @@ pkg_search_module(AVDEVICE REQUIRED libavdevice)
 pkg_search_module(AVUTIL REQUIRED libavutil)
 pkg_search_module(SWSCALE REQUIRED libswscale>=4.6.100)
 pkg_search_module(V4L2 QUIET libv4l2>=0.8.8)
-find_library(VISCA_LIBRARIES libvisca.a)
-find_library(VNC_LIBRARIES libvncclient.a)
+
 #pkg_search_module(VNC REQUIRED vncclient)
 #pkg_search_module(MAGICK REQUIRED ImageMagick++ >=6.7.7)
-
-message("VNC_LIB = ${VNC_LIBRARIES}")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -243,7 +240,8 @@ target_link_libraries(${TARGET} PRIVATE
     pthread
     rt
     asound
-
+    vncclient
+    #${VNC_LIBRARIES}
     ${AVCODEC_LIBRARIES}
     ${AVFORMAT_LIBRARIES}
     ${AVDEVICE_LIBRARIES}
@@ -251,8 +249,6 @@ target_link_libraries(${TARGET} PRIVATE
     ${SWSCALE_LIBRARIES}
     ${AVUTIL_LIBRARIES}
  #   ${V4L2_LIBRARIES}
-    ${VISCA_LIBRARIES}
-    ${VNC_LIBRARIES}
 #    ${OpenCV_LIBS}
 #    ${MAGCK_LIBRARIES}
     ${Qt5Core_LIBRARIES}

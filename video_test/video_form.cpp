@@ -22,6 +22,7 @@
 #include "media/common/magick/magick_base.h"
 #include "media/common/qt/qt_base.h"
 #include "media/common/visca/visca_device.h"
+#include "media/common/vnc/vnc_device.h"
 
 #include "media/video/filters/video_filter_overlay.h"
 #include "media/video/filters/video_layer_text.h"
@@ -59,6 +60,7 @@ visca::visca_device visca_device;
 ffmpeg::libav_converter converter(ffmpeg::scaling_method_t::default_method);
 std::unique_ptr<ffmpeg::libav_stream_capturer> rtsp_capturer;
 std::unique_ptr<v4l2::v4l2_device> v4l2_capturer;
+std::unique_ptr<vnc::vnc_device> vnc_device;
 ffmpeg::libav_transcoder decoder;
 std::mutex  mutex;
 std::atomic_bool image_change(false);
@@ -474,6 +476,50 @@ video_form::video_form(QWidget *parent) :
             return false;
         };
 
+        auto vnc_data_handler = [this, &process_data](vnc::frame_t&& frame)
+        {
+            ffmpeg::stream_info_t stream_info;
+            stream_info.codec_info.id = ffmpeg::codec_id_none;
+            stream_info.media_info.media_type = ffmpeg::media_type_t::video;
+            stream_info.stream_id = 0;
+            stream_info.media_info.video_info.fps = 25;
+            stream_info.media_info.video_info.size = frame.frame_size;
+
+            switch (frame.bpp)
+            {
+                case 8:
+                    stream_info.media_info.video_info.pixel_format = ffmpeg::pixel_format_bgr8;
+                break;
+                case 15:
+                    stream_info.media_info.video_info.pixel_format = ffmpeg::pixel_format_bgr15;
+                break;
+                case 16:
+                    stream_info.media_info.video_info.pixel_format = ffmpeg::pixel_format_bgr16;
+                break;
+                case 24:
+                    stream_info.media_info.video_info.pixel_format = ffmpeg::pixel_format_bgr24;
+                break;
+                case 32:
+                    stream_info.media_info.video_info.pixel_format = ffmpeg::pixel_format_bgr32;
+                break;
+            }
+
+            if (process_data(stream_info
+                             , std::move(frame.frame_data)))
+            {
+                if (image_change == false)
+                {
+                    image_change = true;
+                    QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
+                }
+            }
+
+            return true;
+
+
+        };
+
+        vnc_device.reset(new vnc::vnc_device(vnc_data_handler));
 
         auto rtsp_data_handler = [this, &process_data](const ffmpeg::stream_info_t& stream_info
                 , ffmpeg::media_data_t&& media_data)
@@ -950,7 +996,7 @@ void video_form::prepare_image()
 
 void video_form::on_pushButton_clicked()
 {
-    auto& device = v4l2_capturer;
+    auto& device = vnc_device;//v4l2_capturer;
 
     if (device->is_opened())
     {
@@ -963,10 +1009,12 @@ void video_form::on_pushButton_clicked()
         // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
         // std::string uri = "/home/user/ivcscodec/loading.gif";
         // std::string uri = "v4l2://dev/video0";
-        std::string uri = "/dev/video4";
+        // std::string uri = "/dev/video4";
+        std::string uri = "vnc://123123123@10.11.4.213:5901";
+
         device->open(uri);
 
-
+/*
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         auto formats = device->get_supported_formats();
 
@@ -1003,6 +1051,7 @@ void video_form::on_pushButton_clicked()
 
             ui->cbControlList->addItem(item_string);
         }
+        */
     }
 
     ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");

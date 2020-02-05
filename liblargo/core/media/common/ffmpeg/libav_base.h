@@ -24,8 +24,16 @@ const pixel_format_t unknown_pixel_format = -1;
 const sample_format_t unknown_sample_format = -1;
 
 extern const pixel_format_t pixel_format_none;
+extern const pixel_format_t pixel_format_bgr8;
+extern const pixel_format_t pixel_format_rgb8;
+extern const pixel_format_t pixel_format_bgr15;
+extern const pixel_format_t pixel_format_rgb15;
+extern const pixel_format_t pixel_format_bgr16;
+extern const pixel_format_t pixel_format_rgb16;
 extern const pixel_format_t pixel_format_bgr24;
 extern const pixel_format_t pixel_format_rgb24;
+extern const pixel_format_t pixel_format_bgr32;
+extern const pixel_format_t pixel_format_rgb32;
 extern const pixel_format_t pixel_format_yuv420p;
 extern const pixel_format_t pixel_format_yuv422p;
 
