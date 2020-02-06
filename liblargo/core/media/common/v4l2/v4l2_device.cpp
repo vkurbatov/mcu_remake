@@ -216,6 +216,11 @@ struct v4l2_device_context_t
                      , std::uint32_t buffer_count
                      , frame_info_t& frame_info)
     {
+        if (uri.find("v4l2://") == 0)
+        {
+            uri = uri.substr(6);
+        }
+
         std::lock_guard<std::mutex> lg(m_mutex);
         m_device.reset(new v4l2_object_t(uri
                                      , frame_info

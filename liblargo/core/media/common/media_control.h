@@ -10,60 +10,49 @@ namespace core
 namespace media
 {
 
-enum class control_type_t
+enum class control_value_type_t
 {
-    range,
-    list,
+    number,
+    real,
+    string,
     flag
 };
 
-typedef std::vector<std::string> control_list_t;
+typedef std::int64_t numeric_value_t;
+typedef double real_value_t;
+typedef std::string string_value_t;
+typedef bool flag_value_t;
 
-typedef std::int32_t control_value_t;
-
-const control_value_t default_min_value = 0;
-const control_value_t default_max_value = 100;
-const control_value_t default_value = default_min_value;
-
-struct control_limits_t
+struct value_data_t
 {
-    control_value_t min_value;
-    control_value_t max_value;
+    std::vector<std::uint8_t> data;
 
-    control_limits_t(control_value_t min_value = default_min_value
-                     , control_value_t max_value = default_max_value);
+    template<typename T>
+    value_data_t(const T& value);
 
-    const control_value_t& operator()(control_value_t& value) const;
-    control_value_t range() const;
-    bool is_flag() const;
-    bool is_in_range(const control_value_t& value) const;
-};
+    template<typename T>
+    value_data_t& operator=(const T& value);
 
-struct media_control_t
-{
-    std::string         name;
-    control_limits_t    limits;
-    control_list_t      control_list;
-    control_value_t           value;
-
-    media_control_t(std::string name
-                   , const control_limits_t& limits = control_limits_t()
-                   , const control_list_t& control_list = control_list_t()
-                   , control_value_t value = default_value);
-
-
-    bool set_value(const std::string& new_value);
-    bool set_value(control_value_t new_value);
-    std::string to_string() const;
-
-    control_type_t type() const;
-    bool check_value(control_value_t checked_value) const;
-    bool check_value(const std::string& new_value) const;
-    bool is_valid() const;
+    template<typename T>
+    T get(const T& default_value = {}) const;
 
 };
 
-typedef std::vector<media_control_t> media_control_list;
+struct control_value_t
+{
+    control_value_type_t type;
+
+    value_data_t value_data;
+    template<typename T>
+    control_value_t(const T& value);
+
+    template<typename T>
+    control_value_t& operator=(const T& value);
+
+    template<typename T>
+    T get(const T& default_value = {}) const;
+
+};
 
 }
 

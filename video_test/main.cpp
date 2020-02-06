@@ -16,7 +16,7 @@ extern "C"
 #include <libavfilter/avfilter.h>
 }
 
-#include "media/common/visca/visca_test.h"
+#include "media/common/base/variant_value.h"
 
 int main(int argc, char* argv[])
 {  
@@ -26,9 +26,7 @@ int main(int argc, char* argv[])
     avfilter_register_all();
     av_register_all();
 
-
-
-    // visca::test2();
+    base::test();
 
     QApplication app(argc, argv);
 

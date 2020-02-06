@@ -1010,8 +1010,8 @@ void video_form::on_pushButton_clicked()
         // std::string uri = "/home/user/ivcscodec/loading.gif";
         // std::string uri = "v4l2://dev/video0";
         // std::string uri = "/dev/video4";
-        std::string uri = "vnc://123123123@10.11.4.213:5901";
-
+        // std::string uri = "vnc://123123123@10.11.4.213:5901";
+        std::string uri = "vnc://123456@10.12.2.86:5900";
         device->open(uri);
 
 /*
@@ -1252,6 +1252,8 @@ void video_form::keyPressEvent(QKeyEvent *key_event)
 
     if (!key_event->isAutoRepeat())
     {
+        vnc_device->send_key_event(key_event->nativeScanCode()
+                                   , true);
         // auto ctrls = v4l2_capturer->get_control_list();
 
         switch (key_event->key())
@@ -1290,6 +1292,9 @@ void video_form::keyReleaseEvent(QKeyEvent *key_event)
 
     if (!key_event->isAutoRepeat())
     {
+        vnc_device->send_key_event(key_event->nativeVirtualKey()
+                                   , false);
+
         switch (key_event->key())
         {
             case Qt::Key_A:

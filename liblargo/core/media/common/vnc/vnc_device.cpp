@@ -27,28 +27,12 @@ namespace vnc
 {
 
 std::uint32_t owner_tag = 0xADAF;
-const std::size_t max_queue_size = 100;
+const std::size_t max_frame_queue_size = 100;
+const std::size_t max_key_state_queue_size = 10;
 
 
-void rfb_logging(const char* fmt, ...)
-{
-    std::array<char, 1024> buffer = {0};
-
-    va_list args;
-    va_start(args, fmt);
-    int written = vsnprintf(&buffer[0], 1024, fmt, args);
-    va_end(args);
-
-    std::string out_str(&buffer[0]);
-    size_t nl_pos = out_str.find('\n');
-
-    if (nl_pos != std::string::npos)
-    {
-        out_str[nl_pos] = ' ';
-    }
-
-    std::cout << "vnc_client: \t" << out_str << std::endl;
-}
+typedef std::pair<std::uint32_t, bool> key_state_t;
+typedef std::queue<key_state_t> key_state_queue_t;
 
 static bool connect(rfbClient& rfb_client)
 {
@@ -72,6 +56,7 @@ static bool connect(rfbClient& rfb_client)
         }
         else
         {
+
             if (!ConnectToRFBServer(&rfb_client
                                     , rfb_client.serverHost
                                     , rfb_client.serverPort))
@@ -236,7 +221,7 @@ struct vnc_client_t
             rfb_client->frameBuffer = nullptr;
             rfb_client->programName = nullptr;
             rfb_client->serverHost = const_cast<char*>(config.host.c_str());
-            rfb_client->serverPort = config.port;           
+            rfb_client->serverPort = config.port;            
 
             rfbClientSetClientData(rfb_client
                                    , &owner_tag
@@ -245,6 +230,18 @@ struct vnc_client_t
             return connect(*rfb_client)
                     && set_scale_setting(*rfb_client);
 
+        }
+
+        return false;
+    }
+
+    bool send_key_state(const key_state_t& key_state)
+    {
+        if (is_init)
+        {
+            return SendKeyEvent(rfb_client
+                                , key_state.first
+                                , rfbBool(key_state.second));
         }
 
         return false;
@@ -261,6 +258,7 @@ struct vnc_client_t
             if(result > 0
                     && HandleRFBServerMessage(rfb_client))
             {
+                std::lock_guard<std::mutex> lg(mutex);
                 frame = this->frame;
 
                 return io_result_t::complete;
@@ -274,6 +272,7 @@ struct vnc_client_t
     }
 };
 
+
 struct vnc_device_context_t
 {
     frame_handler_t                 m_frame_handler;
@@ -286,11 +285,14 @@ struct vnc_device_context_t
 
     std::unique_ptr<vnc_client_t>   m_client;
     frame_queue_t                   m_frame_queue;
+    key_state_queue_t               m_key_state_queue;
+    bool                            m_key_send;
 
     vnc_device_context_t(frame_handler_t frame_handler)
         : m_frame_handler(frame_handler)
         , m_running(false)
         , m_established(false)
+        , m_key_send(false)
     {
 
     }
@@ -329,7 +331,7 @@ struct vnc_device_context_t
             std::lock_guard<std::mutex> lg(m_mutex);
             m_frame_queue.emplace(std::move(frame));
 
-            while (m_frame_queue.size() > max_queue_size)
+            while (m_frame_queue.size() > max_frame_queue_size)
             {
                 m_frame_queue.pop();
             }
@@ -340,6 +342,21 @@ struct vnc_device_context_t
     {
         std::lock_guard<std::mutex> lg(m_mutex);
         return std::move(m_frame_queue);
+    }
+
+    void send_key_event(uint32_t virtual_key
+                        , bool is_down)
+    {
+        std::lock_guard<std::mutex> lg(m_mutex);
+        m_key_state_queue.emplace(virtual_key
+                                  , is_down);
+
+        if (m_key_state_queue.size() > max_key_state_queue_size)
+        {
+            m_key_state_queue.pop();
+        }
+
+        m_key_send = true;
     }
 
     void stream_proc(const vnc_server_config_t &server_config
@@ -359,6 +376,18 @@ struct vnc_device_context_t
                     while (m_running
                            && is_complete == false)
                     {
+
+                        if (m_key_send)
+                        {
+                            std::lock_guard<std::mutex> lg(m_mutex);
+                            while (!m_key_state_queue.empty())
+                            {
+                                vnc_client->send_key_state(m_key_state_queue.front());
+                                m_key_state_queue.pop();
+                            }
+                            m_key_send = false;
+                        }
+
                         frame_t frame;
                         auto io_result = vnc_client->fetch_frame(frame
                                                                  , frame_time * 2);
@@ -392,7 +421,7 @@ struct vnc_device_context_t
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
         }
-    }
+    }    
 };
 
 void vnc_device_context_deleter_t::operator()(vnc_device_context_t *vnc_device_context_ptr)
@@ -433,6 +462,13 @@ bool vnc_device::is_opened() const
 bool vnc_device::is_established() const
 {
     return m_vnc_device_context->m_established;
+}
+
+void vnc_device::send_key_event(uint32_t virtual_key
+                                , bool is_down)
+{
+    return m_vnc_device_context->send_key_event(virtual_key
+                                                , is_down);
 }
 
 frame_queue_t vnc_device::fetch_frame_queue()

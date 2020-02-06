@@ -25,7 +25,8 @@ vnc_server_config_t vnc_server_config_t::from_uri(const std::string &uri)
 
         if (end != std::string::npos)
         {
-            vnc_server_config.host = uri.substr(begin, end - begin);
+            vnc_server_config.host = uri.substr(begin
+                                                , end - begin);
             vnc_server_config.port = atoi(uri.substr(end + 1).c_str());
         }
         else

@@ -29,6 +29,9 @@ public:
     bool is_opened() const;
     bool is_established() const;
 
+    void send_key_event(std::uint32_t virtual_key
+                        , bool is_down);
+
     frame_queue_t fetch_frame_queue();
 
 };

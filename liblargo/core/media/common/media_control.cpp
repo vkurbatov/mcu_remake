@@ -1,4 +1,5 @@
 #include "media_control.h"
+#include <cstring>
 
 namespace core
 {
@@ -6,158 +7,105 @@ namespace core
 namespace media
 {
 
-
-control_limits_t::control_limits_t(control_value_t min_value
-                                   , control_value_t max_value)
-    : min_value(min_value)
-    , max_value(max_value)
+template<typename Tin, typename Tout>
+Tout convert(const Tin& value)
 {
-
+    return static_cast<Tout>(value);
 }
 
-const control_value_t& control_limits_t::operator()(control_value_t &value) const
+template<typename Tin>
+std::string convert(const Tin& value)
 {
-    return std::min(max_value, std::max(min_value, value));
-}
-
-control_value_t control_limits_t::range() const
-{
-    return max_value - min_value;
-}
-
-bool control_limits_t::is_flag() const
-{
-    return min_value == 0
-            && (max_value == 0
-                || max_value == 1);
-}
-
-bool control_limits_t::is_in_range(const control_value_t &value) const
-{
-    return value >= min_value
-            && value <= max_value;
-}
-
-media_control_t::media_control_t(std::string name
-                                 , const control_limits_t &limits
-                                 , const control_list_t &control_list
-                                 , control_value_t value)
-    : name(name)
-    , limits(limits)
-    , control_list(control_list)
-    , value(this->limits(value))
-{
-
-}
-
-bool media_control_t::set_value(const std::string &new_value)
-{
-    if (type() == control_type_t::list)
-    {
-        auto i = 0;
-        for (const auto& item : control_list)
-        {
-            if (item == new_value)
-            {
-                value = i;
-                return true;
-            }
-        }
-    }
-    else
-    {
-        try
-        {
-            auto v = std::stoi(new_value);
-            if (limits.is_in_range(v))
-            {
-                value = v;
-                return true;
-            }
-        }
-        catch(...)
-        {
-            //
-        }
-    }
-
-    return false;
-}
-
-bool media_control_t::set_value(control_value_t new_value)
-{
-    if (check_value(new_value))
-    {
-        value = new_value;
-        return true;
-    }
-
-    return false;
-}
-
-std::string media_control_t::to_string() const
-{
-    if (is_valid()
-            && type() == control_type_t::list)
-    {
-        return control_list[value];
-    }
-
     return std::to_string(value);
 }
 
-control_type_t media_control_t::type() const
+template<>
+string_value_t convert(const string_value_t& value)
 {
-    control_type_t control_type = limits.is_flag()
-            ? control_type_t::flag
-            : control_type_t::range;
-
-    if (control_list.size() > 1)
-    {
-        control_type = control_type_t::list;
-    }
-
-    return control_type;
+    return value;
 }
 
-bool media_control_t::check_value(control_value_t checked_value) const
+template<typename T>
+value_data_t::value_data_t(const T &value)
 {
-    return (type() == control_type_t::list
-            && checked_value >= 0
-            && checked_value < control_list.size())
-            || limits.is_in_range(checked_value);
+    operator =(value);
 }
 
-bool media_control_t::check_value(const std::string &new_value) const
+template<typename T>
+value_data_t &value_data_t::operator=(const T &value)
 {
-    if (type() == control_type_t::list)
-    {
-        for (const auto& item : control_list)
-        {
-            if (item == new_value)
-            {
-                return true;
-            }
-        }
-    }
-    else
-    {
-        try
-        {
-            return limits.is_in_range(std::stoi(new_value));
-        }
-        catch(...)
-        {
-            //
-        }
-    }
-
-    return false;
+    data.resize(sizeof(T));
+    reinterpret_cast<T&>(*data.data()) = value;
+    return *this;
 }
 
-bool media_control_t::is_valid() const
+template<>
+value_data_t &value_data_t::operator=(const std::string &value)
 {
-    return check_value(value);
+    data.resize(value.size());
+    std::memcpy(data.data()
+                , value.data()
+                , value.size());
+
+    return *this;
+}
+
+template<typename T>
+T value_data_t::get(const T &default_value) const
+{
+    if (data.size() != 0)
+    {
+        return reinterpret_cast<const T&>(*data.data());
+    }
+
+    return default_value;
+}
+
+template<>
+std::string value_data_t::get(const std::string &/*default_value*/) const
+{
+    std::string result;
+
+    result.resize(data.size());
+
+    std::memcpy(&result[0]
+                , data.data()
+                , data.size());
+
+    return result;
+}
+
+//----------------------------------------------------------------------------
+template<>
+control_value_t::control_value_t(const numeric_value_t &value)
+    : value_data(value)
+{
+
+}
+
+template<>
+control_value_t::control_value_t(const real_value_t &value)
+    : value_data(value)
+{
+
+}
+template<>
+control_value_t::control_value_t(const string_value_t &value)
+    : value_data(value)
+{
+
+}
+template<>
+control_value_t::control_value_t(const flag_value_t &value)
+    : value_data(value)
+{
+
+}
+
+template<>
+control_value_t &control_value_t::operator=(const numeric_value_t &value)
+{
+
 }
 
 }

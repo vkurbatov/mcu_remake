@@ -16,13 +16,17 @@ class i_media_device_control
 public:
     virtual ~i_media_device_control() {}
 
+    /*
     virtual media_control_list controls() const = 0;
 
     virtual bool set_control(const std::string& control_name
-                             , const std::string& control_value) const = 0;
+                             , const std::string& control_value) = 0;
 
     virtual bool set_control(const std::string& control_name
-                             , control_value_t control_value) const = 0;
+                             , control_value_t control_value) = 0;
+
+    virtual bool get_control(const std::string& control_name
+                             , control_value_t control_value) const = 0;*/
 
 };
 
