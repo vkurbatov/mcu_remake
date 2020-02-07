@@ -37,6 +37,8 @@
 #include <atomic>
 #include <thread>
 
+#include <QVariant>
+
 ffmpeg::scaling_method_t scaling_method = ffmpeg::scaling_method_t::default_method;
 core::media::video::aspect_ratio_mode_t aspect_ratio_method = core::media::video::aspect_ratio_mode_t::scale;
 
@@ -337,6 +339,15 @@ video_form::video_form(QWidget *parent) :
     ui(new Ui::video_form),
     m_surface(this)
 {
+
+    QVariant var1(53425);
+    QVariant var2("vds");
+
+    bool f1 = var1 > var2;
+    bool f2 = var2 > var1;
+    bool f3 = var1 < var2;
+    bool f4 = var2 < var1;
+    bool f5 = var1 == var2;
 
     visca_device.open("/dev/ttyUSB0");
 
