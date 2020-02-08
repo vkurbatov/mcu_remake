@@ -16,7 +16,7 @@ extern "C"
 #include <libavfilter/avfilter.h>
 }
 
-#include "media/common/base/variant.h"
+#include "media/common/media_control_parameter.h"
 
 int main(int argc, char* argv[])
 {  
@@ -26,7 +26,9 @@ int main(int argc, char* argv[])
     avfilter_register_all();
     av_register_all();
 
-    base::test();
+    //base::test();
+
+    core::media::control_parameter_test();
 
     QApplication app(argc, argv);
 

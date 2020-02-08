@@ -34,6 +34,8 @@ class variant
 
 public:
 
+    variant();
+
     template<typename T>
     variant(const T& value);
 
