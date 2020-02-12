@@ -1005,10 +1005,16 @@ void video_form::prepare_image()
     image_change = false;
 }
 
+#define IS_V4L2 1
+
 void video_form::on_pushButton_clicked()
 {
-    auto& device = vnc_device;//v4l2_capturer;
 
+#if IS_V4L2
+    auto& device = v4l2_capturer;
+#else
+    auto& device = vnc_device;
+#endif
     if (device->is_opened())
     {
         device->close();
@@ -1020,12 +1026,13 @@ void video_form::on_pushButton_clicked()
         // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
         // std::string uri = "/home/user/ivcscodec/loading.gif";
         // std::string uri = "v4l2://dev/video0";
-        // std::string uri = "/dev/video4";
+        std::string uri = "/dev/video4";
         // std::string uri = "vnc://123123123@10.11.4.213:5901";
-        std::string uri = "vnc://123456@10.12.2.86:5900";
+        //std::string uri = "vnc://123456@10.12.2.86:5900";
         device->open(uri);
 
-/*
+
+#if IS_V4L2
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         auto formats = device->get_supported_formats();
 
@@ -1062,9 +1069,8 @@ void video_form::on_pushButton_clicked()
 
             ui->cbControlList->addItem(item_string);
         }
-        */
+#endif
     }
-
     ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");
     return;
 
@@ -1263,26 +1269,30 @@ void video_form::keyPressEvent(QKeyEvent *key_event)
 
     if (!key_event->isAutoRepeat())
     {
-        vnc_device->send_key_event(key_event->nativeScanCode()
-                                   , true);
+        /*vnc_device->send_key_event(key_event->nativeScanCode()
+                                   , true);*/
         // auto ctrls = v4l2_capturer->get_control_list();
 
         switch (key_event->key())
         {
             case Qt::Key_A:
-                v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, -612000);
+                //v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, -612000);
+                v4l2_capturer->set_control(v4l2::ctrl_pan_speed, -10);
                 // visca_device.set_pan(-2448);
             break;
             case Qt::Key_S:
-                v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, -108000);
+                // v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, -108000);
+                v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, -10);
                 // visca_device.set_tilt(-432);
             break;
             case Qt::Key_D:
-                v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, 612000);
+                // v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, 612000);
+                v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 10);
                 // visca_device.set_pan(2448);
             break;
             case Qt::Key_W:
-                v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, 324000);
+                //v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, 324000);
+                v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 10);
                 // visca_device.set_tilt(1296);
             break;
             case Qt::Key_PageUp:
@@ -1303,8 +1313,8 @@ void video_form::keyReleaseEvent(QKeyEvent *key_event)
 
     if (!key_event->isAutoRepeat())
     {
-        vnc_device->send_key_event(key_event->nativeVirtualKey()
-                                   , false);
+        /*vnc_device->send_key_event(key_event->nativeVirtualKey()
+                                   , false);*/
 
         switch (key_event->key())
         {

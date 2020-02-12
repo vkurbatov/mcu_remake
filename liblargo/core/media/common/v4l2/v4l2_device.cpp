@@ -7,6 +7,9 @@
 #include <mutex>
 #include <map>
 
+#define WBS_MODULE_NAME "v4l2:device"
+#include <core-tools/logging.h>
+
 namespace v4l2
 {
 
@@ -80,15 +83,18 @@ struct v4l2_object_t
 
     bool set_fps(std::uint32_t fps)
     {
+
         return v4l2::set_fps(handle
                              , fps);
     }
 
     bool set_frame_info(const frame_info_t& frame_info)
     {
+
         return set_frame_format(frame_info.size
                                 , frame_info.pixel_format)
                 && set_fps(frame_info.fps);
+
     }
 
     control_map_t fetch_control_list()
@@ -194,7 +200,7 @@ struct v4l2_device_context_t
 
     format_list_t get_supported_formats() const
     {
-        std::lock_guard<std::mutex> lg(m_mutex);
+        std::lock_guard<std::mutex> lg(m_mutex);        
         return m_format_list;
     }
 
@@ -222,6 +228,7 @@ struct v4l2_device_context_t
         }
 
         std::lock_guard<std::mutex> lg(m_mutex);
+        m_device.reset();
         m_device.reset(new v4l2_object_t(uri
                                      , frame_info
                                      , buffer_count));
@@ -255,7 +262,7 @@ struct v4l2_device_context_t
             std::uint32_t frame_time = 50;
 
 
-            if ( open_device(uri
+            if (open_device(uri
                              , buffer_count
                              , m_frame_info))
             {
@@ -269,9 +276,19 @@ struct v4l2_device_context_t
                       && m_frame_info == frame_info)
                 {
 
+                    auto l_tp = std::chrono::high_resolution_clock::now();
+
+                    LOG_D << "Fetch frame lock" LOG_END;
+
                     m_mutex.lock();
                     auto frame_data = std::move(m_device->fetch_frame_data(frame_time * 2));
                     m_mutex.unlock();
+
+                    auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - l_tp).count();
+
+                    LOG_D << "Fetch frame unlock = " << dt LOG_END;
+
+                    // LOG_D << "Fetch frame delay = " << dt LOG_END;
 
                     if (!frame_data.empty())
                     {
@@ -280,17 +297,8 @@ struct v4l2_device_context_t
                         if (m_stream_data_handler == nullptr
                                 || m_stream_data_handler(frame_info
                                                          , std::move(frame_data)) == false)
-                        {
-                            m_mutex.lock();
-
-                            m_frame_queue.emplace(frame_info, std::move(frame_data));
-
-                            while (m_frame_queue.size() > max_frame_queue)
-                            {
-                                m_frame_queue.pop();
-                            }
-
-                            m_mutex.unlock();
+                        {                       
+                            push_media_queue(frame_t(frame_info, std::move(frame_data)));
                         }
                     }
                     else
@@ -338,9 +346,29 @@ struct v4l2_device_context_t
         return std::move(m_frame_queue);
     }
 
-    bool set_control(std::uint32_t control_id, std::int32_t value)
+    void push_media_queue(frame_t&& frame)
     {
         std::lock_guard<std::mutex> lg(m_mutex);
+        m_frame_queue.emplace(std::move(frame));
+
+        while (m_frame_queue.size() > max_frame_queue)
+        {
+            m_frame_queue.pop();
+        }
+    }
+
+    bool set_control(std::uint32_t control_id, std::int32_t value)
+    {
+
+        auto l_tp = std::chrono::high_resolution_clock::now();
+
+        LOG_D << "Set before lock" LOG_END;
+
+        std::lock_guard<std::mutex> lg(m_mutex);
+
+        auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - l_tp).count();
+
+        LOG_D << "Set after unlock = " << dt LOG_END;
 
         if (m_device != nullptr)
         {

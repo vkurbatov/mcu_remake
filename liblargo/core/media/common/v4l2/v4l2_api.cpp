@@ -183,9 +183,9 @@ int32_t xioctl(handle_t handle
             continue;
         }
 
-        auto timeout = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - tp).count();
+        auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - tp).count();
 
-        if (timeout >= try_timeout)
+        if (dt >= try_timeout)
         {
             break;
         }
@@ -318,18 +318,18 @@ bool set_frame_format(handle_t handle
     video_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     video_fmt.fmt.pix.width = frame_size.width;
     video_fmt.fmt.pix.height = frame_size.height;
-    video_fmt.fmt.pix.pixelformat = pixel_format;
+    video_fmt.fmt.pix.pixelformat = pixel_format;   
 
     return xioctl(handle, VIDIOC_S_FMT, &video_fmt) >= 0;
 }
 
 bool set_fps(handle_t handle
              , uint32_t fps)
-{
+{    
     struct v4l2_streamparm stream_parm = {};
     stream_parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    stream_parm.parm.capture.timeperframe.numerator = 1;
-    stream_parm.parm.capture.timeperframe.denominator = fps;
+    stream_parm.parm.capture.timeperframe.numerator = 1000;
+    stream_parm.parm.capture.timeperframe.denominator = fps * 1000;
 
     return xioctl(handle, VIDIOC_S_PARM, &stream_parm) >= 0;
 }
@@ -343,7 +343,7 @@ mapped_buffer_t map(handle_t handle, std::size_t buffer_count)
     struct v4l2_requestbuffers reqbuf = {};
     reqbuf.count = buffer_count;
     reqbuf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    reqbuf.memory = V4L2_MEMORY_MMAP;
+    reqbuf.memory = V4L2_MEMORY_MMAP;   
 
     if (xioctl(handle, VIDIOC_REQBUFS, &reqbuf) >= 0)
     {
@@ -356,7 +356,7 @@ mapped_buffer_t map(handle_t handle, std::size_t buffer_count)
             struct v4l2_buffer buffer = {};
             buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buffer.memory = V4L2_MEMORY_MMAP;
-            buffer.index = idx;
+            buffer.index = idx;         
 
             if (xioctl(handle, VIDIOC_QUERYBUF, &buffer) >= 0)
             {
