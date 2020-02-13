@@ -41,6 +41,16 @@ struct media_format_t
 
 };
 
+struct external_media_info_t
+{
+    const void*     data;
+    std::size_t     size;
+    std::string     specific_options;
+    external_media_info_t(void* data = nullptr
+                          , std::size_t size = 0
+                          , const std::string& specific_options = "");
+};
+
 }
 
 }

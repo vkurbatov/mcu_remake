@@ -24,6 +24,16 @@ std::string media_format_t::to_string() const
     return names[static_cast<std::uint32_t>(media_type)];
 }
 
+external_media_info_t::external_media_info_t(void *data
+                                             , std::size_t size
+                                             , const std::string &specific_options)
+    : data(data)
+    , size(size)
+    , specific_options(specific_options)
+{
+
+}
+
 }
 
 }

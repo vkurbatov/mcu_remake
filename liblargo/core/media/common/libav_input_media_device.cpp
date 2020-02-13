@@ -19,6 +19,8 @@ static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_
                                        , { stream_info.media_info.video_info.size.width, stream_info.media_info.video_info.size.height }
                                        , stream_info.media_info.video_info.fps);
 
+    video_format.extra_data = stream_info.extra_data;
+
     return video::video_frame::create(video_format
                                       , media_buffer::create(std::move(media_data)));
 }
@@ -39,6 +41,7 @@ libav_input_media_device::libav_input_media_device(i_media_sink &media_sink)
 
             if (frame != nullptr)
             {
+
                 media_sink.on_frame(*frame);
             }
         }

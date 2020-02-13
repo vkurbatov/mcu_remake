@@ -1,7 +1,6 @@
 #ifndef I_MEDIA_SINK_H
 #define I_MEDIA_SINK_H
 
-#include <cstdint>
 #include <memory>
 
 namespace core
@@ -11,6 +10,8 @@ namespace media
 {
 
 class i_media_frame;
+
+
 
 class i_media_sink
 {

@@ -475,7 +475,10 @@ struct visca_device_context_t
 
         if (m_port.open(uri))
         {
-            m_is_init = set_address(m_address) | get_id(m_id);
+            set_address(m_address);
+            get_id(m_id);
+
+            m_is_init = true;
 
             /*if (!m_is_init)
             {
