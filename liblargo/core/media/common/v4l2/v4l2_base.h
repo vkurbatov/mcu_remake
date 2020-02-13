@@ -26,6 +26,7 @@ extern const std::uint32_t ctrl_pan_absolute;
 extern const std::uint32_t ctrl_zoom_absolute;
 extern const std::uint32_t ctrl_pan_speed;
 extern const std::uint32_t ctrl_tilt_speed;
+extern const std::uint32_t ctrl_zoom_speed;
 
 typedef std::uint32_t pixel_format_t;
 const pixel_format_t pixel_format_unknown = 0;

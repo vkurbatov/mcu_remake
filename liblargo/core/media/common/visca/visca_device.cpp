@@ -455,6 +455,7 @@ struct visca_device_context_t
     std::uint8_t            m_address;
     visca_channel_t         m_channel;
     bool                    m_is_init;
+    std::uint16_t           m_id;
 
 
     visca_device_context_t(const visca_config_t& config)
@@ -462,6 +463,8 @@ struct visca_device_context_t
         , m_channel(m_port
                     , m_config)
         , m_address(1)
+        , m_id(0)
+        , m_is_init(false)
     {
 
     }
@@ -472,12 +475,12 @@ struct visca_device_context_t
 
         if (m_port.open(uri))
         {
-            m_is_init = set_address(m_address);
+            m_is_init = set_address(m_address) | get_id(m_id);
 
-            if (!m_is_init)
+            /*if (!m_is_init)
             {
                 m_port.close();
-            }
+            }*/
         }
 
         return m_is_init;

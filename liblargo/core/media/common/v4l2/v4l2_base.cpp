@@ -13,6 +13,7 @@ const std::uint32_t ctrl_pan_absolute = V4L2_CID_PAN_ABSOLUTE;
 const std::uint32_t ctrl_zoom_absolute = V4L2_CID_ZOOM_ABSOLUTE;
 const std::uint32_t ctrl_pan_speed = V4L2_CID_PAN_SPEED;
 const std::uint32_t ctrl_tilt_speed = V4L2_CID_TILT_SPEED;
+const std::uint32_t ctrl_zoom_speed = V4L2_CID_ZOOM_CONTINUOUS;
 
 
 frame_size_t::frame_size_t(uint32_t width

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <mutex>
 #include <map>
+#include <future>
 
 #define WBS_MODULE_NAME "v4l2:device"
 #include <core-tools/logging.h>
@@ -14,6 +15,123 @@ namespace v4l2
 {
 
 const std::size_t max_frame_queue = 10;
+
+struct command_controller_t
+{
+
+    struct request_t
+    {
+        std::uint32_t               control_id;
+        std::int32_t                value;
+        bool                        is_set;
+
+        std::promise<std::int32_t>  promise;
+
+        request_t(std::uint32_t control_id
+                  , std::int32_t value)
+            : control_id(control_id)
+            , value(value)
+            , is_set(true)
+        {
+
+        }
+
+        request_t(std::uint32_t control_id)
+            : control_id(control_id)
+            , value(0)
+            , is_set(false)
+        {
+
+        }
+
+        void set_result(std::int32_t value = 0)
+        {
+            promise.set_value(value);
+        }
+
+        bool get_result(std::uint32_t& value
+                        , std::uint32_t timeout)
+        {
+            auto future = promise.get_future();
+
+            if (future.wait_for(std::chrono::milliseconds(timeout)) == std::future_status::ready)
+            {
+                value = future.get();
+                return true;
+            }
+
+            return false;
+        }
+    };
+
+    typedef std::queue<request_t> request_queue_t;
+
+    std::atomic_bool            is_request;
+    std::mutex                  mutex;
+    request_queue_t             request_queue;
+
+
+
+    command_controller_t()
+        : is_request(false)
+    {
+
+    }
+
+    bool set_control(std::uint32_t control_id
+                     , std::int32_t value
+                     , std::uint32_t timeout)
+    {
+        request_t request(control_id
+                          , value);
+
+        auto future = request.promise.get_future();
+
+        {
+            std::lock_guard<std::mutex> lg(mutex);
+            request_queue.emplace(std::move(request));
+            is_request = true;
+        }
+
+        return future.wait_for(std::chrono::milliseconds(timeout)) == std::future_status::ready;
+    }
+
+    bool get_control(std::uint32_t control_id
+                     , std::int32_t& value
+                     , std::uint32_t timeout)
+    {
+        request_t request(control_id);
+
+        auto future = request.promise.get_future();
+
+        {
+            std::lock_guard<std::mutex> lg(mutex);
+            request_queue.emplace(std::move(request));
+            is_request = true;
+        }
+
+        auto result = future.wait_for(std::chrono::milliseconds(timeout)) == std::future_status::ready;
+
+        if (result)
+        {
+            value = future.get();
+        }
+
+        return result;
+    }
+
+    request_queue_t fetch_request_queue()
+    {
+        if (is_request)
+        {
+            std::lock_guard<std::mutex> lg(mutex);
+            is_request = false;
+            return std::move(request_queue);
+        }
+
+        return request_queue_t();
+    }
+};
 
 struct v4l2_object_t
 {
@@ -143,6 +261,7 @@ struct v4l2_device_context_t
     frame_queue_t                       m_frame_queue;
 
     control_queue_t                     m_control_queue;
+    command_controller_t                m_command_controller;
 
     std::atomic_bool                    m_running;
     std::atomic_bool                    m_established;
@@ -274,21 +393,9 @@ struct v4l2_device_context_t
 
                 while(m_running
                       && m_frame_info == frame_info)
-                {
-
-                    auto l_tp = std::chrono::high_resolution_clock::now();
-
-                    LOG_D << "Fetch frame lock" LOG_END;
-
-                    m_mutex.lock();
+                {        
+                    command_process(*m_device);
                     auto frame_data = std::move(m_device->fetch_frame_data(frame_time * 2));
-                    m_mutex.unlock();
-
-                    auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - l_tp).count();
-
-                    LOG_D << "Fetch frame unlock = " << dt LOG_END;
-
-                    // LOG_D << "Fetch frame delay = " << dt LOG_END;
 
                     if (!frame_data.empty())
                     {
@@ -332,6 +439,32 @@ struct v4l2_device_context_t
         push_event(streaming_event_t::stop);
     }
 
+    void command_process(v4l2_object_t& v4l2_object)
+    {
+        auto requests = m_command_controller.fetch_request_queue();
+
+        while(!requests.empty())
+        {
+            auto& request = requests.front();
+
+            if (request.is_set)
+            {
+                v4l2_object.set_control(request.control_id
+                                        , request.value);
+                request.set_result();
+            }
+            else
+            {
+                v4l2_object.get_control(request.control_id
+                                        , request.value);
+
+                request.set_result(request.value);
+            }
+
+            requests.pop();
+        }
+    }
+
     void push_event(streaming_event_t capture_event)
     {
         if (m_stream_event_handler != nullptr)
@@ -360,6 +493,11 @@ struct v4l2_device_context_t
     bool set_control(std::uint32_t control_id, std::int32_t value)
     {
 
+        return m_command_controller.set_control(control_id
+                                                , value
+                                                , 100);
+
+/*
         auto l_tp = std::chrono::high_resolution_clock::now();
 
         LOG_D << "Set before lock" LOG_END;
@@ -385,11 +523,17 @@ struct v4l2_device_context_t
             }
         }
 
-        return false;
+        return false;*/
     }
 
     std::int32_t get_control(std::uint32_t control_id, std::int32_t default_value)
     {
+        m_command_controller.get_control(control_id
+                                         , default_value
+                                         , 100);
+
+        return default_value;
+        /*
         std::lock_guard<std::mutex> lg(m_mutex);
 
         if (m_device != nullptr)
@@ -405,7 +549,7 @@ struct v4l2_device_context_t
             }
         }
 
-        return default_value;
+        return default_value;*/
     }
 };
 //------------------------------------------------------------------------------------------

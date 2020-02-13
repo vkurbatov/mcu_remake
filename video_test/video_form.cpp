@@ -1277,31 +1277,33 @@ void video_form::keyPressEvent(QKeyEvent *key_event)
         {
             case Qt::Key_A:
                 //v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, -612000);
-                v4l2_capturer->set_control(v4l2::ctrl_pan_speed, -10);
-                // visca_device.set_pan(-2448);
+                // v4l2_capturer->set_control(v4l2::ctrl_pan_speed, -10);
+                visca_device.set_pan(-2448);
             break;
             case Qt::Key_S:
                 // v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, -108000);
-                v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, -10);
-                // visca_device.set_tilt(-432);
+                // v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, -10);
+                visca_device.set_tilt(-432);
             break;
             case Qt::Key_D:
                 // v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, 612000);
-                v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 10);
-                // visca_device.set_pan(2448);
+                // v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 10);
+                visca_device.set_pan(2448);
             break;
             case Qt::Key_W:
                 //v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, 324000);
-                v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 10);
-                // visca_device.set_tilt(1296);
+                // v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 10);
+                visca_device.set_tilt(1296);
             break;
             case Qt::Key_PageUp:
-                v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 16384);
-                // visca_device.set_zoom(16384);
+                // v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 16384);
+                // v4l2_capturer->set_control(v4l2::ctrl_zoom_speed, +10);
+                visca_device.set_zoom(16384);
             break;
             case Qt::Key_PageDown:
-                v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 0);
-                // visca_device.set_zoom(0);
+                // v4l2_capturer->set_control(v4l2::ctrl_zoom_speed, -1);
+                // v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 0);
+                visca_device.set_zoom(0);
             break;
         }
         std::cout << "Key press: " << key_event->key() << std::endl;
@@ -1320,17 +1322,19 @@ void video_form::keyReleaseEvent(QKeyEvent *key_event)
         {
             case Qt::Key_A:
             case Qt::Key_D:
-                v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 0);
+                //v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 0);
+                visca_device.pan_tilt_stop();
             break;
             case Qt::Key_S:
             case Qt::Key_W:
-                v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 0);
-                // visca_device.pan_tilt_stop();
+                //v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 0);
+                visca_device.pan_tilt_stop();
             break;
             case Qt::Key_PageUp:
             case Qt::Key_PageDown:
-                v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, v4l2_capturer->get_control(v4l2::ctrl_zoom_absolute));
-                //visca_device.zoom_stop();
+                // v4l2_capturer->set_control(v4l2::ctrl_zoom_speed, 0);
+                // v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, v4l2_capturer->get_control(v4l2::ctrl_zoom_absolute));
+                visca_device.zoom_stop();
             break;
         }
         std::cout << "Key release: " << key_event->key() << std::endl;
