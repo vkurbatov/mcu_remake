@@ -18,6 +18,17 @@ bool media_format_t::is_valid() const
             || planes() > 0;
 }
 
+bool media_format_t::operator ==(const media_format_t &media_format)
+{
+    return media_type == media_format.media_type
+            && extra_data.size() == media_format.extra_data.size();
+}
+
+bool media_format_t::operator !=(const media_format_t &media_format)
+{
+    return !operator == (media_format);
+}
+
 std::string media_format_t::to_string() const
 {
     static std::string names[] = { "audio", "video", "data" };

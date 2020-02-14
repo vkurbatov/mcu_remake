@@ -30,16 +30,28 @@ media_plane_list_t media_frame::planes() const
 
     if (m_media_buffer != nullptr)
     {
-        auto i = 0;
-        auto offset = 0;
-        for (const auto& sz : media_format().plane_sizes())
+        if (media_format().is_encoded())
         {
             plane_list.emplace_back(new media_plane(m_media_buffer
-                                                    , i
-                                                    , offset
-                                                    , sz));
-            i++;
-            offset += sz;
+                                                , 0
+                                                , 0
+                                                , m_media_buffer->size()));
+        }
+        else
+        {
+            auto i = 0;
+            auto offset = 0;
+
+
+            for (const auto& sz : media_format().plane_sizes())
+            {
+                plane_list.emplace_back(new media_plane(m_media_buffer
+                                                        , i
+                                                        , offset
+                                                        , sz));
+                i++;
+                offset += sz;
+            }
         }
 
     }

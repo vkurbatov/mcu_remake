@@ -22,6 +22,8 @@ public:
     virtual const void* data(std::int32_t offset = 0) const = 0;
     virtual void* data(std::int32_t offset = 0) = 0;
     virtual std::size_t size() const = 0;
+    virtual void swap(media_data_t&& media_data) = 0;
+    virtual media_data_t release() = 0;
     //virtual const plane_sizes_t& plane_sizes() const = 0;
 };
 
@@ -29,8 +31,6 @@ class i_swapped_media_buffer : virtual public i_media_buffer
 {
 public:
     virtual ~i_swapped_media_buffer() {}
-    virtual void swap(media_data_t&& media_data) = 0;
-    virtual media_data_t release() = 0;
 
 };
 

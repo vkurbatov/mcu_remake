@@ -29,6 +29,9 @@
 #include "media/video/filters/video_layer_image.h"
 #include "media/video/filters/video_layer_figure.h"
 
+#include "media/common/libav_input_media_device.h"
+#include "media/common/media_frame_transcoder.h"
+
 
 #include <iostream>
 #include <cstring>
@@ -55,7 +58,6 @@ double filter_delay = 0;
 double encoder_delay = 0;
 
 double delay_factor = 0.1;
-
 
 visca::visca_device visca_device;
 
@@ -92,8 +94,40 @@ std::uint32_t   frame_count = 0;
 std::uint32_t   real_fps = 0;
 std::uint32_t   real_frame_count = 0;
 
+
 auto last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
+
+typedef std::function<bool(const core::media::i_media_frame& frame)> frame_handler_t;
+
+class test_sink : public core::media::i_media_sink
+{
+    frame_handler_t m_frame_handler;
+
+    // i_media_sink interface
+public:
+    test_sink(frame_handler_t frame_handler = nullptr)
+        : m_frame_handler(frame_handler)
+    {
+
+    }
+    void set_handler(frame_handler_t frame_handler)
+    {
+        m_frame_handler = frame_handler;
+    }
+
+    bool on_frame(const core::media::i_media_frame &frame) override
+    {
+        if (m_frame_handler != nullptr)
+        {
+            return m_frame_handler(frame);
+        }
+    }
+};
+test_sink sink;
+
+core::media::libav_input_media_device input_device(sink);
+std::unique_ptr<core::media::media_frame_transcoder> frame_transcoder;
 
 
 static void publisher_test(core::media::video::i_video_frame& video_frame)
@@ -394,6 +428,74 @@ video_form::video_form(QWidget *parent) :
         }
 */
 
+
+        auto frame_handler = [this](const core::media::i_media_frame& frame) ->
+        bool
+        {
+            auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
+
+            if (frame.media_format().is_encoded())
+            {
+                if (frame_transcoder == nullptr)
+                {
+                    frame_transcoder.reset(new core::media::media_frame_transcoder(frame.media_format()));
+                }
+
+                core::media::media_frame_queue_t frames;
+
+                auto tp = std::chrono::high_resolution_clock::now();
+
+                if (frame_transcoder->transcode(frame
+                                                , frames))
+                {
+                    decoded_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
+                    dec_delay += (decoded_delay - dec_delay) * delay_factor;
+
+                    mutex.lock();
+
+                    while(!frames.empty())
+                    {
+                        const auto& decoded_frame = frames.front();
+
+                        auto video_format = static_cast<const core::media::video::video_format_t&>(decoded_frame->media_format());
+
+                        last_fragment_info = ffmpeg::fragment_info_t(0
+                                                                     , 0
+                                                                     , video_format.size.width
+                                                                     , video_format.size.height
+                                                                     , video_format.size.width
+                                                                     , video_format.size.height
+                                                                     , core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format)
+                                                                     );
+
+                        last_frame_buffer = std::move(decoded_frame->release()->release());
+
+                        frames.pop();
+                    }
+
+                    real_frame_count++;
+
+                    if (current_seconds != real_last_seconds)
+                    {
+                        real_fps = real_frame_count;
+                        real_frame_count = 0;
+                        real_last_seconds = current_seconds;
+                    }
+
+                    mutex.unlock();
+
+                    if (image_change == false)
+                    {
+                        image_change = true;
+                        // QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        sink.set_handler(frame_handler);
 
         auto process_data = [](const ffmpeg::stream_info_t& stream_info
                           , ffmpeg::media_data_t&& media_data)
@@ -1010,6 +1112,24 @@ void video_form::prepare_image()
 void video_form::on_pushButton_clicked()
 {
 
+    auto& device = input_device;
+
+    std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
+
+    if (device.is_open())
+    {
+        device.close();
+    }
+    else
+    {
+        device.open(uri);
+    }
+
+    ui->pushButton->setText(device.is_open() ? "Stop" : "Start");
+
+    return;
+
+    /*
 #if IS_V4L2
     auto& device = v4l2_capturer;
 #else
@@ -1072,7 +1192,7 @@ void video_form::on_pushButton_clicked()
 #endif
     }
     ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");
-    return;
+    return;*/
 
     QSize size_src(1280, 720);
     QSize size_dst(1280, 720);
@@ -1339,4 +1459,9 @@ void video_form::keyReleaseEvent(QKeyEvent *key_event)
         }
         std::cout << "Key release: " << key_event->key() << std::endl;
     }
+}
+
+void video_form::on_pushButton_2_clicked()
+{
+    on_update();
 }

@@ -97,16 +97,22 @@ video_format_t::video_format_t(pixel_format_t pixel_format
 
 }
 
-bool video_format_t::operator ==(const video_format_t &video_format)
+bool video_format_t::operator ==(const media_format_t &media_format)
 {
-    return pixel_format == video_format.pixel_format
-            && size == video_format.size
-            && fps == video_format.fps;
+    if (media_format_t::operator==(media_format))
+    {
+        auto video_format = static_cast<const video_format_t&>(media_format);
+        return pixel_format == video_format.pixel_format
+                && size == video_format.size
+                && fps == video_format.fps;
+    }
+
+    return false;
 }
 
-bool video_format_t::operator !=(const video_format_t &video_format)
+bool video_format_t::operator !=(const media_format_t &media_format)
 {
-    return !operator ==(video_format);
+    return !operator ==(media_format);
 }
 
 bool video_format_t::is_planar() const
@@ -159,6 +165,11 @@ std::string video_format_t::to_string() const
     return to_string(pixel_format
                      , size
                      , fps);
+}
+
+std::unique_ptr<media_format_t> video_format_t::clone() const
+{
+    return std::unique_ptr<media_format_t>(new video_format_t(*this));
 }
 
 

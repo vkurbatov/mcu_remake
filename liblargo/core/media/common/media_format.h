@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace core
 {
@@ -37,9 +38,15 @@ struct media_format_t
     virtual plane_sizes_t plane_sizes() const = 0;
     virtual bool is_valid() const;
 
+    virtual bool operator ==(const media_format_t& media_format);
+    virtual bool operator !=(const media_format_t& media_format);
+
     virtual std::string to_string() const;
 
+    virtual std::unique_ptr<media_format_t> clone() const = 0;
+
 };
+
 
 struct external_media_info_t
 {

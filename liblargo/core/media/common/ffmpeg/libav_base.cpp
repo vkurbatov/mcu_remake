@@ -364,6 +364,32 @@ media_info_t::media_info_t(const video_info_t &video_info)
 
 }
 
+bool media_info_t::operator==(const media_info_t &media_info) const
+{
+    if (media_type == media_info.media_type)
+    {
+        switch(media_type)
+        {
+            case media_type_t::video:
+                 return video_info == media_info.video_info;
+            break;
+            case media_type_t::audio:
+                return audio_info == media_info.audio_info;
+            break;
+            case media_type_t::data:
+                return true;
+            break;
+        }
+    }
+
+    return false;
+}
+
+bool media_info_t::operator!=(const media_info_t &media_info) const
+{
+
+}
+
 std::string media_info_t::to_string() const
 {
     std::stringstream ss;

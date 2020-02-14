@@ -2,6 +2,7 @@
 #define I_MEDIA_FRAME_TRANSCODER_H
 
 #include "i_media_frame.h"
+#include <queue>
 
 namespace core
 {
@@ -9,14 +10,13 @@ namespace core
 namespace media
 {
 
+typedef std::queue<media_frame_ptr_t> media_frame_queue_t;
+
 class i_media_frame_transcoder
 {
 public:
     virtual bool transcode(const i_media_frame& input_frame
-                           , i_media_frame& output_frame) = 0;
-
-    virtual media_frame_ptr_t transcode(const i_media_frame& input_frame
-                                        , media_format_t& output_format) = 0;
+                           , media_frame_queue_t& frame_queue) = 0;
 };
 
 }

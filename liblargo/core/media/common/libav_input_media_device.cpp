@@ -25,11 +25,8 @@ static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_
                                       , media_buffer::create(std::move(media_data)));
 }
 
-libav_input_media_device::libav_input_media_device(i_media_sink &media_sink)
+libav_input_media_device::libav_input_media_device(i_media_sink& media_sink)
 {
-    // bool(const stream_info_t& stream_info
-    // , media_data_t&& media_data
-
     auto data_handler = [&media_sink](const ffmpeg::stream_info_t& stream_info
                                                  , ffmpeg::media_data_t&& media_data) ->
     bool
@@ -41,7 +38,6 @@ libav_input_media_device::libav_input_media_device(i_media_sink &media_sink)
 
             if (frame != nullptr)
             {
-
                 media_sink.on_frame(*frame);
             }
         }

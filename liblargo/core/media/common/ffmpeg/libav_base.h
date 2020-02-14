@@ -288,6 +288,9 @@ struct media_info_t
     media_info_t(const audio_info_t& audio_info);
     media_info_t(const video_info_t& video_info);
 
+    bool operator==(const media_info_t& media_info) const;
+    bool operator!=(const media_info_t& media_info) const;
+
     std::string to_string() const;
 };
 

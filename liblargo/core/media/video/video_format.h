@@ -88,8 +88,8 @@ struct video_format_t : public media_format_t
                    , frame_size_t size = default_frame_size
                    , std::uint32_t fps = default_fps);
 
-    bool operator ==(const video_format_t& video_format);
-    bool operator !=(const video_format_t& video_format);
+    bool operator ==(const media_format_t& media_format) override;
+    bool operator !=(const media_format_t& media_format) override;
 
     bool is_planar() const override;
     bool is_encoded() const override;
@@ -102,6 +102,8 @@ struct video_format_t : public media_format_t
     frame_size_t plane_size(std::uint32_t plane_idx) const;
 
     std::string to_string() const override;
+
+    std::unique_ptr<media_format_t> clone() const override;
 };
 
 }
