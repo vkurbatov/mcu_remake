@@ -249,7 +249,7 @@ struct v4l2_device_context_t
 {    
     typedef std::queue<std::pair<std::uint32_t, std::int32_t>> control_queue_t;
 
-    stream_data_handler_t               m_stream_data_handler;
+    frame_handler_t                     m_frame_handler;
     stream_event_handler_t              m_stream_event_handler;
 
     std::thread                         m_stream_thread;
@@ -268,9 +268,9 @@ struct v4l2_device_context_t
     std::unique_ptr<v4l2_object_t>      m_device;
 
 
-    v4l2_device_context_t(stream_data_handler_t stream_data_handler
+    v4l2_device_context_t(frame_handler_t frame_handler
                           , stream_event_handler_t stream_event_handler)
-        : m_stream_data_handler(stream_data_handler)
+        : m_frame_handler(frame_handler)
         , m_stream_event_handler(stream_event_handler)
         , m_running(false)
         , m_established(false)
@@ -289,7 +289,7 @@ struct v4l2_device_context_t
                                       , uri
                                       , buffer_count);
 
-        return false;
+        return m_running;
     }
 
     bool close()
@@ -395,17 +395,20 @@ struct v4l2_device_context_t
                       && m_frame_info == frame_info)
                 {        
                     command_process(*m_device);
-                    auto frame_data = std::move(m_device->fetch_frame_data(frame_time * 2));
 
-                    if (!frame_data.empty())
+                    frame_t frame(frame_info
+                                  , std::move(m_device->fetch_frame_data(frame_time * 2)));
+
+
+
+                    if (!frame.frame_data.empty())
                     {
                         m_established = true;
                         tp = std::chrono::high_resolution_clock::now();
-                        if (m_stream_data_handler == nullptr
-                                || m_stream_data_handler(frame_info
-                                                         , std::move(frame_data)) == false)
+                        if (m_frame_handler == nullptr
+                                || m_frame_handler(std::move(frame)) == false)
                         {                       
-                            push_media_queue(frame_t(frame_info, std::move(frame_data)));
+                            push_media_queue(std::move(frame));
                         }
                     }
                     else
@@ -558,10 +561,10 @@ void v4l2_device_context_deleter_t::operator()(v4l2_device_context_t *v4l2_devic
     delete v4l2_device_context_ptr;
 }
 //---------------------------------------------------------------------------------------------
-v4l2_device::v4l2_device(stream_data_handler_t stream_data_handler
+v4l2_device::v4l2_device(frame_handler_t frame_handler
         , stream_event_handler_t stream_event_handler)
-    : m_v4l2_device_context(new v4l2_device_context_t(stream_data_handler
-                                                               , stream_event_handler))
+    : m_v4l2_device_context(new v4l2_device_context_t(frame_handler
+                                                      , stream_event_handler))
 {
 
 }
@@ -570,7 +573,7 @@ bool v4l2_device::open(const std::string &uri
                        , std::uint32_t buffer_count)
 {
     return m_v4l2_device_context->open(uri
-                                                , buffer_count);
+                                        , buffer_count);
 }
 
 bool v4l2_device::close()

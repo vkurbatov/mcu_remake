@@ -35,13 +35,14 @@ public:
     void swap(media_buffer&& other_media_buffer);
     void swap(media_data_t&& media_data) override;
     media_data_t release() override;
-
+    media_buffer_ptr_t clone() const override;
 
     // i_media_buffer interface
 public:
     const void *data(int32_t offset = 0) const override;
     void *data(int32_t offset = 0) override;
     std::size_t size() const override;
+
 };
 
 }

@@ -33,7 +33,7 @@ public:
 
     // i_media_control interface
 public:
-    control_parameter_list_t controls() const override;
+    const control_parameter_list_t& controls() const override;
     bool set_control(const std::string &control_name, const variant control_value) override;
     variant get_control(const std::string &control_name, const variant control_value) const override;
 };

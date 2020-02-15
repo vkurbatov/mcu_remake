@@ -23,6 +23,7 @@ enum class control_type_t
     check
 };
 
+typedef std::uint32_t param_tag_t;
 
 class control_parameter
 {
@@ -30,12 +31,14 @@ class control_parameter
     variant_list_t  m_limits;
     variant         m_value;
     control_type_t  m_control_type;
+    param_tag_t     m_tag;
 
 public:
     control_parameter(const std::string& name = ""
                       , control_type_t control_type = control_type_t::direct
                       , const variant_list_t& limits = {}
-                      , const variant& default_value = {});
+                      , const variant& default_value = {}
+                      , param_tag_t tag = 0);
 
     bool is_valid(const variant& value) const;
 
@@ -49,6 +52,8 @@ public:
     const variant_list_t& limits() const;
 
     control_type_t type() const;
+
+    const param_tag_t tag() const;
 
 };
 

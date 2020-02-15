@@ -345,6 +345,10 @@ struct frame_t
 typedef std::vector<stream_info_t> stream_info_list_t;
 typedef std::queue<frame_t> frame_queue_t;
 typedef std::queue<media_data_t> media_queue_t;
+
+typedef std::function<bool(const stream_info_t& stream_info
+                           , frame_t&& frame)> frame_handler_t;
+
 typedef std::function<bool(const stream_info_t& stream_info
                            , media_data_t&& media_data)> stream_data_handler_t;
 

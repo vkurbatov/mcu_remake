@@ -9,32 +9,32 @@ namespace media
 {
 
 static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_info
-                                            , ffmpeg::media_data_t&& media_data)
+                                            , ffmpeg::frame_t&& frame)
 {
-    auto pixel_format = stream_info.codec_info.is_coded()
-            ? utils::format_conversion::from_ffmpeg_codec(stream_info.codec_info.id)
-            : utils::format_conversion::from_ffmpeg_format(stream_info.media_info.video_info.pixel_format);
+    auto pixel_format = frame.info.codec_id > 0 && frame.info.codec_id != ffmpeg::codec_id_raw_video
+            ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
+            : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
 
     video::video_format_t video_format(pixel_format
-                                       , { stream_info.media_info.video_info.size.width, stream_info.media_info.video_info.size.height }
-                                       , stream_info.media_info.video_info.fps);
+                                       , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
+                                       , frame.info.media_info.video_info.fps);
 
     video_format.extra_data = stream_info.extra_data;
-
     return video::video_frame::create(video_format
-                                      , media_buffer::create(std::move(media_data)));
+                                      , media_buffer::create(std::move(frame.media_data))
+                                      , frame.info.id);
 }
 
 libav_input_media_device::libav_input_media_device(i_media_sink& media_sink)
 {
-    auto data_handler = [&media_sink](const ffmpeg::stream_info_t& stream_info
-                                                 , ffmpeg::media_data_t&& media_data) ->
+    auto frame_handler = [&media_sink](const ffmpeg::stream_info_t& stream_info
+                                       , ffmpeg::frame_t&& libav_frame) ->
     bool
-    {
-        if (stream_info.media_info.media_type == ffmpeg::media_type_t::video)
+    {       
+        if (libav_frame.info.media_info.media_type == ffmpeg::media_type_t::video)
         {
             auto frame = create_video_frame(stream_info
-                                            , std::move(media_data));
+                                            , std::move(libav_frame));
 
             if (frame != nullptr)
             {
@@ -45,7 +45,7 @@ libav_input_media_device::libav_input_media_device(i_media_sink& media_sink)
         return true;
     };
 
-    m_libav_stream_capturer.reset(new ffmpeg::libav_stream_capturer(data_handler));
+    m_libav_stream_capturer.reset(new ffmpeg::libav_stream_capturer(frame_handler));
 }
 
 bool libav_input_media_device::open(const std::string &uri)
@@ -68,9 +68,10 @@ bool libav_input_media_device::is_established() const
     return m_libav_stream_capturer->is_established();
 }
 
-control_parameter_list_t libav_input_media_device::controls() const
+const control_parameter_list_t& libav_input_media_device::controls() const
 {
-    return control_parameter_list_t();
+    static control_parameter_list_t control_parameter_list;
+    return control_parameter_list;
 }
 
 bool libav_input_media_device::set_control(const std::string &control_name

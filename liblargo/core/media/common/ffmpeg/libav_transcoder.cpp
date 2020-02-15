@@ -103,12 +103,20 @@ bool set_custom_option(AVCodecContext& av_context
 {
     enum class custom_option_t
     {
-        thread_count
+        thread_count,
+        bitrate,
+        gop,
+        frame_size,
+        global_header
     };
 
     static std::map<std::string, custom_option_t> custom_option_table =
     {
-        { "libav_thread_count", custom_option_t::thread_count }
+        { "libav_thread_count", custom_option_t::thread_count },
+        { "libav_bitrate", custom_option_t::bitrate },
+        { "libav_gop", custom_option_t::gop },
+        { "libav_frame_size", custom_option_t::frame_size },
+        { "libav_global_header", custom_option_t::global_header }
     };
 
     auto it = custom_option_table.find(option.first);
@@ -119,6 +127,25 @@ bool set_custom_option(AVCodecContext& av_context
         {
             case custom_option_t::thread_count:
                 av_context.thread_count = std::atoi(option.second.c_str());
+            break;
+            case custom_option_t::bitrate:
+                av_context.bit_rate = std::atoi(option.second.c_str());
+            break;
+            case custom_option_t::gop:
+                av_context.gop_size = std::atoi(option.second.c_str());
+            break;
+            case custom_option_t::frame_size:
+                av_context.frame_size = std::atoi(option.second.c_str());
+            break;
+            case custom_option_t::global_header:
+                if (option.second.empty() || std::atoi(option.second.c_str()) != 0)
+                {
+                    av_context.flags |= CODEC_FLAG_GLOBAL_HEADER;
+                }
+                else
+                {
+                    av_context.flags &= ~CODEC_FLAG_GLOBAL_HEADER;
+                }
             break;
         }
         return true;

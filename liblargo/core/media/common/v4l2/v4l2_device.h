@@ -14,10 +14,10 @@ typedef std::unique_ptr<v4l2_device_context_t, v4l2_device_context_deleter_t> v4
 class v4l2_device
 {
     v4l2_device_context_ptr_t           m_v4l2_device_context;
-    stream_data_handler_t               m_stream_data_handler;
+    frame_handler_t                     m_frame_handler;
     stream_event_handler_t              m_stream_event_handler;
 public:    
-    v4l2_device(stream_data_handler_t stream_data_handler = nullptr
+    v4l2_device(frame_handler_t frame_handler = nullptr
             , stream_event_handler_t stream_event_handler = nullptr);
 
     bool open(const std::string& uri

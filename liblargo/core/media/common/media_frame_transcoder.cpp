@@ -51,11 +51,11 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
         {
             auto pixel_format = frame.info.is_encoded()
                     ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
-                    : utils::format_conversion::from_ffmpeg_format(stream_info.media_info.video_info.pixel_format);
+                    : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
 
             video::video_format_t video_format(pixel_format
-                                               , { stream_info.media_info.video_info.size.width, stream_info.media_info.video_info.size.height }
-                                               , stream_info.media_info.video_info.fps);
+                                               , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
+                                               , frame.info.media_info.video_info.fps);
 
             video_format.extra_data = stream_info.extra_data;
 
@@ -73,6 +73,11 @@ media_frame_transcoder::media_frame_transcoder(const media_format_t& transcoding
 {
     setup(transcoding_format
           , transcoding_options);
+}
+
+const std::unique_ptr<media_format_t> &media_frame_transcoder::format() const
+{
+    return m_transcoding_format;
 }
 
 void media_frame_transcoder::reset()

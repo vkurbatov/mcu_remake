@@ -14,12 +14,12 @@ typedef std::unique_ptr<libav_stream_capturer_context_t, libav_stream_capturer_c
 class libav_stream_capturer
 {
     libav_stream_capturer_context_ptr_t m_libav_stream_capturer_context;
-    stream_data_handler_t               m_stream_data_handler;
+    frame_handler_t                     m_frame_handler;
     stream_event_handler_t              m_stream_event_handler;
 
 
 public:
-    libav_stream_capturer(stream_data_handler_t stream_data_handler = nullptr
+    libav_stream_capturer(frame_handler_t frame_handler = nullptr
             , stream_event_handler_t stream_event_handler = nullptr);
     bool open(const std::string& uri
               , stream_mask_t stream_mask = stream_mask_t::stream_mask_all);

@@ -87,6 +87,12 @@ media_data_t media_buffer::release()
     return std::move(m_media_data);
 }
 
+media_buffer_ptr_t media_buffer::clone() const
+{
+    return create(data(),
+                  size());
+}
+
 void *media_buffer::data(int32_t offset)
 {
     return m_media_data.data() + offset;

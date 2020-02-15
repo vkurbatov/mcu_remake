@@ -71,13 +71,15 @@ static const variant& init_value(const variant& default_value
 control_parameter::control_parameter(const std::string& name
                                      , control_type_t control_type
                                      , const variant_list_t &limits
-                                     , const variant &default_value)
+                                     , const variant &default_value
+                                     , param_tag_t tag)
     : m_name(name)
     , m_control_type(control_type)
     , m_limits(limits)
     , m_value(init_value(default_value
                          , control_type
                          , limits))
+    , m_tag(tag)
 {
 
 }
@@ -147,6 +149,11 @@ const variant_list_t &control_parameter::limits() const
 control_type_t control_parameter::type() const
 {
     return m_control_type;
+}
+
+const param_tag_t control_parameter::tag() const
+{
+    return m_tag;
 }
 
 void control_parameter_test()

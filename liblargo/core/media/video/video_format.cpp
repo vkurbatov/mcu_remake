@@ -23,7 +23,7 @@ bool video_format_t::is_planar(pixel_format_t pixel_format)
 
 bool video_format_t::is_encoded(pixel_format_t pixel_format)
 {
-    return pixel_format >= pixel_format_t::h264;
+    return pixel_format >= pixel_format_t::jpeg;
 }
 
 std::size_t video_format_t::bpp(pixel_format_t pixel_format)

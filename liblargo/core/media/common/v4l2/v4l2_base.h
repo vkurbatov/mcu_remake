@@ -155,6 +155,9 @@ struct mapped_buffer_t
     void next();
 };
 
+typedef std::function<bool(frame_t&& frame)> frame_handler_t;
+
+
 typedef std::function<bool(const frame_info_t& frame_info
                            , frame_data_t&& frame_data)> stream_data_handler_t;
 

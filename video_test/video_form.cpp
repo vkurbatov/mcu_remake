@@ -30,6 +30,7 @@
 #include "media/video/filters/video_layer_figure.h"
 
 #include "media/common/libav_input_media_device.h"
+#include "media/common/v4l2_input_media_device.h"
 #include "media/common/media_frame_transcoder.h"
 
 
@@ -70,6 +71,7 @@ std::mutex  mutex;
 std::atomic_bool image_change(false);
 
 core::media::video::video_frame_converter           frame_converter(scaling_method);
+core::media::video::video_frame_converter           frame_converter2(scaling_method);
 core::media::video::filters::video_filter_flip      filter_flip;
 
 core::media::video::filters::layer_list_t         overlay_list;
@@ -85,6 +87,8 @@ std::vector<std::uint8_t>           image_buffer;
 ffmpeg::fragment_info_t             last_fragment_info;
 std::vector<std::uint8_t>           last_frame_buffer;
 std::vector<std::uint8_t>           last_output_buffer;
+
+core::media::media_frame_ptr_t      last_video_frame;
 
 core::media::video::frame_size_t    draw_image_size(640, 360);
 std::vector<std::uint8_t>           draw_image_buffer(draw_image_size.size() * 3);
@@ -127,6 +131,7 @@ public:
 test_sink sink;
 
 core::media::libav_input_media_device input_device(sink);
+core::media::v4l2_input_media_device input_camera_device(sink);
 std::unique_ptr<core::media::media_frame_transcoder> frame_transcoder;
 
 
@@ -428,67 +433,64 @@ video_form::video_form(QWidget *parent) :
         }
 */
 
-
         auto frame_handler = [this](const core::media::i_media_frame& frame) ->
         bool
         {
             auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
-            if (frame.media_format().is_encoded())
+            if (frame.media_format().media_type == core::media::media_type_t::video)
             {
-                if (frame_transcoder == nullptr)
-                {
-                    frame_transcoder.reset(new core::media::media_frame_transcoder(frame.media_format()));
-                }
-
-                core::media::media_frame_queue_t frames;
-
                 auto tp = std::chrono::high_resolution_clock::now();
 
-                if (frame_transcoder->transcode(frame
-                                                , frames))
+                mutex.lock();
+
+                if (frame.media_format().is_encoded())
                 {
-                    decoded_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
-                    dec_delay += (decoded_delay - dec_delay) * delay_factor;
-
-                    mutex.lock();
-
-                    while(!frames.empty())
+                    if (frame_transcoder == nullptr
+                            || frame_transcoder->format() == nullptr)
                     {
-                        const auto& decoded_frame = frames.front();
+                        frame_transcoder.reset(new core::media::media_frame_transcoder(frame.media_format()));
 
-                        auto video_format = static_cast<const core::media::video::video_format_t&>(decoded_frame->media_format());
-
-                        last_fragment_info = ffmpeg::fragment_info_t(0
-                                                                     , 0
-                                                                     , video_format.size.width
-                                                                     , video_format.size.height
-                                                                     , video_format.size.width
-                                                                     , video_format.size.height
-                                                                     , core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format)
-                                                                     );
-
-                        last_frame_buffer = std::move(decoded_frame->release()->release());
-
-                        frames.pop();
                     }
 
-                    real_frame_count++;
+                    core::media::media_frame_queue_t frames;
 
-                    if (current_seconds != real_last_seconds)
+                    if (frame_transcoder->transcode(frame
+                                                    , frames))
                     {
-                        real_fps = real_frame_count;
-                        real_frame_count = 0;
-                        real_last_seconds = current_seconds;
-                    }
+                        decoded_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
+                        dec_delay += (decoded_delay - dec_delay) * delay_factor;
 
-                    mutex.unlock();
+                        while(!frames.empty())
+                        {
+                            //auto decoded_frame = frames.front();
 
-                    if (image_change == false)
-                    {
-                        image_change = true;
-                        // QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
+                            last_video_frame = frames.front();
+
+                            frames.pop();
+                        }
                     }
+                }
+                else
+                {
+                    last_video_frame = frame.clone();
+                }
+
+                real_frame_count++;
+
+                if (current_seconds != real_last_seconds)
+                {
+                    real_fps = real_frame_count;
+                    real_frame_count = 0;
+                    real_last_seconds = current_seconds;
+                }
+
+                mutex.unlock();
+
+                if (image_change == false)
+                {
+                    image_change = true;
+                    QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
                 }
             }
 
@@ -635,10 +637,10 @@ video_form::video_form(QWidget *parent) :
         vnc_device.reset(new vnc::vnc_device(vnc_data_handler));
 
         auto rtsp_data_handler = [this, &process_data](const ffmpeg::stream_info_t& stream_info
-                , ffmpeg::media_data_t&& media_data)
+                , ffmpeg::frame_t&& frame)
         {
             if (process_data(stream_info
-                             , std::move(media_data)))
+                             , std::move(frame.media_data)))
             {
                 if (image_change == false)
                 {
@@ -653,11 +655,10 @@ video_form::video_form(QWidget *parent) :
         rtsp_capturer.reset(new ffmpeg::libav_stream_capturer(rtsp_data_handler));
 
 
-        auto v4ls_data_handler = [this, &process_data](const v4l2::frame_info_t& frame_info
-                , v4l2::frame_data_t&& frame_data)
+        auto v4l2_data_handler = [this, &process_data](v4l2::frame_t&& frame)
         {
 
-            auto video_format = core::media::utils::format_conversion::from_v4l2_format(frame_info.pixel_format);
+            auto video_format = core::media::utils::format_conversion::from_v4l2_format(frame.frame_info.pixel_format);
 
             auto codec = core::media::utils::format_conversion::to_ffmpeg_codec(video_format);
             auto format = core::media::utils::format_conversion::to_ffmpeg_format(video_format);
@@ -667,12 +668,12 @@ video_form::video_form(QWidget *parent) :
             stream_info.codec_info.id = codec;
             stream_info.media_info.media_type = ffmpeg::media_type_t::video;
             stream_info.stream_id = 0;
-            stream_info.media_info.video_info.fps = frame_info.fps;
-            stream_info.media_info.video_info.size = { frame_info.size.width, frame_info.size.height };
+            stream_info.media_info.video_info.fps = frame.frame_info.fps;
+            stream_info.media_info.video_info.size = { frame.frame_info.size.width, frame.frame_info.size.height };
             stream_info.media_info.video_info.pixel_format = format;
 
             if (process_data(stream_info
-                             , std::move(frame_data)))
+                             , std::move(frame.frame_data)))
             {
                 if (image_change == false)
                 {
@@ -684,7 +685,7 @@ video_form::video_form(QWidget *parent) :
             return true;
         };
 
-        v4l2_capturer.reset(new v4l2::v4l2_device(v4ls_data_handler));
+        v4l2_capturer.reset(new v4l2::v4l2_device(v4l2_data_handler));
     }
     ui->setupUi(this);
 }
@@ -1107,14 +1108,178 @@ void video_form::prepare_image()
     image_change = false;
 }
 
+void video_form::prepare_image2()
+{
+    mutex.lock();
+
+    auto input_frame = std::move(last_video_frame);
+
+    mutex.unlock();
+
+    auto margin = ui->spMargin->value();
+
+    auto& input_video_frame = reinterpret_cast<core::media::video::video_frame&>(*input_frame);
+    const auto& input_video_format = input_video_frame.video_format();
+
+    auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
+
+    if (input_frame != nullptr)
+    {
+        core::media::video::frame_rect_t input_area( core::media::video::frame_point_t(0, 0)
+                                                     , core::media::video::frame_size_t(input_video_format.size.width, input_video_format.size.height));
+
+        auto mid_area = input_area;
+        auto output_area = input_area;
+
+        auto mid_format = input_video_format;
+        auto output_format = input_video_format;
+
+        output_format.pixel_format = core::media::video::pixel_format_t::rgba32;
+        output_format.size = output_area.size = { 1280, 720 };
+
+        input_area.point.x += margin;
+        input_area.point.y += margin;
+        input_area.size.width -= margin * 2;
+        input_area.size.height -= margin * 2;
+
+        output_area.point.x += margin * 2;
+        output_area.point.y += margin * 2;
+        output_area.size.width -= margin * 4;
+        output_area.size.height -= margin * 4;
+
+        const auto k_w = scaling_factor;
+        const auto k_h = scaling_factor;
+
+        mid_format.size.width /= k_w;
+        mid_format.size.height /= k_h;
+        mid_area.size = mid_format.size;
+        mid_format.pixel_format = core::media::video::pixel_format_t::yuv420p;
+
+        const QSize q_size(output_format.size.width
+                           , output_format.size.height);
+
+
+        if (scaling_method != converter.scaling_method())
+        {
+            converter.reset(scaling_method);
+            frame_converter.set_scaling_method(scaling_method);
+            frame_converter2.set_scaling_method(scaling_method);
+        }
+
+        auto flip_method = static_cast<core::media::video::filters::flip_method_t>(ui->cbFlipMethod->currentIndex());
+
+        if (flip_method != filter_flip.flip_method())
+        {
+            filter_flip.set_flip_method(flip_method);
+        }
+
+        auto tp = std::chrono::high_resolution_clock::now();
+
+        frame_converter.set_input_area(input_area);
+        frame_converter.set_aspect_ratio_mode(aspect_ratio_method);
+
+        auto mid_frame = frame_converter.convert(*input_frame
+                                                 , mid_format);
+
+
+
+        publisher_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
+
+        filter_flip.filter(*mid_frame);
+
+
+        convert_delay1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
+        tp = std::chrono::high_resolution_clock::now();
+
+        core::media::video::filters::text_format_t text_format("Times"
+                                                               , 0x0000004F
+                                                               , 20
+                                                               , 10
+                                                               , true);
+
+        core::media::video::filters::image_decriptor_t image(draw_image_buffer.data()
+                                                             , draw_image_size
+                                                             , 0.5);
+
+        core::media::video::filters::figure_format_t figure_format(core::media::video::filters::figure_type_t::polygon
+                                                                   , 0x00FF007F
+                                                                   , 0x0000FF7F
+                                                                   , 3);
+
+        core::media::video::filters::polyline_list_t polylines;
+
+        if (overlay_list.empty())
+        {
+
+            polylines.push_back( { 150, 150 } );
+            polylines.push_back( { 300, 150 } );
+            polylines.push_back( { 225, 300 } );
+
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_image(image
+                                                                                                   , { 100, 100 }));
+
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_figure(figure_format
+                                                                                          , polylines));
+/*
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_image(image
+                                                                                       , { 100, 100 }));*/
+
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_text("Hello World!!!"
+                                                                                       , text_format
+                                                                                       , { 917, 100 }));
+
+            text_format.color = 0xFF00009F;
+            overlay_list.emplace_back(new core::media::video::filters::video_layer_text("Hello World!!!"
+                                                                                       , text_format
+                                                                                       , { 1117, 300 }));
+
+        }
+
+        filter_overlay.filter(*mid_frame);
+
+        auto flt_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()
+                                                                               - tp).count();
+
+        frame_converter2.set_input_area(mid_area);
+        frame_converter2.set_output_area(output_area);
+
+        auto output_frame = frame_converter2.convert(*mid_frame
+                                                     , output_format);
+
+        convert_delay2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
+
+
+        filter_delay += (flt_delay - filter_delay) * delay_factor;
+        delay1 += (convert_delay1 - delay1) * delay_factor;
+        delay2 += (convert_delay2 - delay2) * delay_factor;
+
+        last_output_buffer = std::move(output_frame->release()->release());
+        last_image = QImage(last_output_buffer.data(), q_size.width(), q_size.height(), QImage::Format_RGBA8888);
+
+        frame_count++;
+
+        if (current_seconds != last_seconds)
+        {
+            fps = frame_count;
+            frame_count = 0;
+            last_seconds = current_seconds;
+        }
+    }
+
+    image_change = false;
+}
+
 #define IS_V4L2 1
 
 void video_form::on_pushButton_clicked()
 {
 
-    auto& device = input_device;
+    auto& device = input_camera_device; //input_device;
 
-    std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
+    // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
+    // std::string uri = "/home/user/test_file.mp4";
+    std::string uri = "v4l2://dev/video0";
+
 
     if (device.is_open())
     {
@@ -1123,6 +1288,7 @@ void video_form::on_pushButton_clicked()
     else
     {
         device.open(uri);
+        // device.set_control("Resolution", "1280x720@30:mjpeg");
     }
 
     ui->pushButton->setText(device.is_open() ? "Stop" : "Start");
@@ -1254,7 +1420,7 @@ void video_form::on_update()
     mutex.lock();
     m_surface.present(last_frame);   
     mutex.unlock();*/
-    prepare_image();
+    prepare_image2();
     repaint();
 }
 

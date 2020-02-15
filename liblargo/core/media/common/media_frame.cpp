@@ -1,6 +1,7 @@
 #include "media_frame.h"
 #include <numeric>
 #include <cstring>
+#include <chrono>
 
 #include "media_plane.h"
 
@@ -18,11 +19,20 @@ bool media_frame::check_media_buffer(const media_format_t &media_format
            || media_buffer.size() == media_format.frame_size();
 }
 
-media_frame::media_frame(media_buffer_ptr_t media_buffer)
+media_frame::media_frame(media_buffer_ptr_t media_buffer
+                         , stream_id_t stream_id
+                         , timestamp_t timestamp)
     : m_media_buffer(media_buffer)
+    , m_stream_id(stream_id)
+    , m_timestamp(timestamp)
 {
-
+    if (m_timestamp == 0)
+    {
+        m_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    }
 }
+
+media_frame::~media_frame(){}
 
 media_plane_list_t media_frame::planes() const
 {
@@ -70,6 +80,16 @@ bool media_frame::is_valid() const
             && media_format().is_valid()
             && check_media_buffer(media_format()
                                   , *m_media_buffer);
+}
+
+stream_id_t media_frame::stream_id() const
+{
+    return m_stream_id;
+}
+
+timestamp_t media_frame::timestamp() const
+{
+    return m_timestamp;
 }
 
 void media_frame::swap(media_buffer_ptr_t &&media_buffer)

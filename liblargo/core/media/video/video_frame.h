@@ -21,14 +21,19 @@ class video_frame : virtual public i_video_frame
 
 public:
     static media_frame_ptr_t create(const media_format_t& media_format
-                                    , media_buffer_ptr_t media_buffer);
+                                    , media_buffer_ptr_t media_buffer
+                                    , stream_id_t stream_id = 0
+                                    , timestamp_t timestamp = 0);
 
     video_frame(const video_format_t& video_format
-                , media_buffer_ptr_t media_buffer = nullptr);
+                , media_buffer_ptr_t media_buffer = nullptr
+                , stream_id_t stream_id = 0
+                , timestamp_t timestamp = 0);
 
     // i_media_frame interface
 public:
     const media_format_t &media_format() const override;
+    media_frame_ptr_t clone() const override;
     void clear() override;
 
     // i_video_frame interface

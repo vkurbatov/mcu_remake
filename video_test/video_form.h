@@ -17,6 +17,7 @@ public:
     ~video_form();
 
     void prepare_image();
+    void prepare_image2();
 
 private slots:
     void on_pushButton_clicked();

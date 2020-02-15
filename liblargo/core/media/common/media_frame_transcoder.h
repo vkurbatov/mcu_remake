@@ -20,6 +20,8 @@ public:
     media_frame_transcoder(const media_format_t& transcoding_format
                            , const std::string& transcoding_options = "");
 
+    const std::unique_ptr<media_format_t>& format() const;
+
     void reset();
     bool setup(const media_format_t& transcoding_format
                , const std::string& transcoding_options);

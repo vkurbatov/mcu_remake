@@ -15,6 +15,10 @@ namespace media
 
 typedef std::vector<std::uint8_t> media_data_t;
 
+class i_media_buffer;
+
+typedef std::shared_ptr<i_media_buffer> media_buffer_ptr_t;
+
 class i_media_buffer
 {
 public:
@@ -24,6 +28,7 @@ public:
     virtual std::size_t size() const = 0;
     virtual void swap(media_data_t&& media_data) = 0;
     virtual media_data_t release() = 0;
+    virtual media_buffer_ptr_t clone() const = 0;
     //virtual const plane_sizes_t& plane_sizes() const = 0;
 };
 
@@ -34,7 +39,6 @@ public:
 
 };
 
-typedef std::shared_ptr<i_media_buffer> media_buffer_ptr_t;
 typedef std::shared_ptr<i_swapped_media_buffer> swapped_media_buffer_ptr_t;
 
 }

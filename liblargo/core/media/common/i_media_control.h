@@ -15,7 +15,7 @@ class i_media_control
 public:
     virtual ~i_media_control() {}
 
-    virtual control_parameter_list_t controls() const = 0;
+    virtual const control_parameter_list_t& controls() const = 0;
 
     virtual bool set_control(const std::string& control_name
                              , const variant control_value) = 0;

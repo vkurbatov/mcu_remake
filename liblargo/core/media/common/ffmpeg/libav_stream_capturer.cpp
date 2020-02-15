@@ -294,7 +294,7 @@ struct libav_stream_capturer_context_t
     };
 
     std::string                                         m_uri;
-    stream_data_handler_t                               m_stream_data_handler;
+    frame_handler_t                                     m_frame_handler;
     stream_event_handler_t                              m_stream_event_handler;
 
     std::thread                                         m_stream_thread;
@@ -307,11 +307,11 @@ struct libav_stream_capturer_context_t
     std::uint32_t                                       m_capturer_id;
 
     libav_stream_capturer_context_t(const std::string& uri
-                                    , stream_data_handler_t stream_data_handler
+                                    , frame_handler_t frame_handler
                                     , stream_event_handler_t stream_event_handler
                                     , stream_mask_t stream_mask)
         : m_uri(uri)
-        , m_stream_data_handler(stream_data_handler)
+        , m_frame_handler(frame_handler)
         , m_stream_event_handler(stream_event_handler)
         , m_format_context(nullptr)
         , m_is_running(false)
@@ -424,12 +424,12 @@ struct libav_stream_capturer_context_t
                             && !frame.media_data.empty())
                     {
                         const stream_info_t& stream_info = it->second.stream_info;
-                        frame.info.media_info.media_type = stream_info.media_info.media_type;
+                        frame.info.media_info = stream_info.media_info;
                         frame.info.codec_id = stream_info.codec_info.id;
 
-                        if (m_stream_data_handler == nullptr
-                                || !m_stream_data_handler(stream_info
-                                                         , std::move(frame.media_data))
+                        if (m_frame_handler == nullptr
+                                || !m_frame_handler(stream_info
+                                                    , std::move(frame))
                                 )
                         {
                             LOG_D << "Capturer #" << m_capturer_id << ". Fetch data size " << frame.media_data.size()
@@ -523,9 +523,9 @@ void libav_stream_capturer_context_deleter_t::operator()(libav_stream_capturer_c
     delete libav_stream_capturer_context_ptr;
 }
 //------------------------------------------------------------------------------------
-libav_stream_capturer::libav_stream_capturer(stream_data_handler_t stream_data_handler
+libav_stream_capturer::libav_stream_capturer(frame_handler_t frame_handler
                                              , stream_event_handler_t stream_event_handler)
-    : m_stream_data_handler(stream_data_handler)
+    : m_frame_handler(frame_handler)
     , m_stream_event_handler(stream_event_handler)
 {
 
@@ -535,7 +535,7 @@ bool libav_stream_capturer::open(const std::string &uri
                                  , stream_mask_t stream_mask)
 {
     m_libav_stream_capturer_context.reset(new libav_stream_capturer_context_t(uri
-                                              , m_stream_data_handler
+                                              , m_frame_handler
                                               , m_stream_event_handler
                                               , stream_mask)
                           );
