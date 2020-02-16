@@ -567,6 +567,7 @@ struct libav_codec_context_t
                         , std::size_t size
                         , frame_queue_t& decoded_frames)
     {
+        av_packet = {};
         av_packet.data = const_cast<std::uint8_t*>(static_cast<const std::uint8_t*>(data));
         av_packet.size = size;
 

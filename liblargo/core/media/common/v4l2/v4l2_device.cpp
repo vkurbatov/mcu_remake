@@ -264,7 +264,7 @@ struct v4l2_device_context_t
     command_controller_t                m_command_controller;
 
     std::atomic_bool                    m_running;
-    std::atomic_bool                    m_established;
+    std::size_t                         m_frame_counter;
     std::unique_ptr<v4l2_object_t>      m_device;
 
 
@@ -273,7 +273,7 @@ struct v4l2_device_context_t
         : m_frame_handler(frame_handler)
         , m_stream_event_handler(stream_event_handler)
         , m_running(false)
-        , m_established(false)
+        , m_frame_counter(0)
     {
 
     }
@@ -314,7 +314,7 @@ struct v4l2_device_context_t
 
     bool is_established() const
     {
-        return m_established;
+        return m_frame_counter > 0;
     }
 
     format_list_t get_supported_formats() const
@@ -347,7 +347,7 @@ struct v4l2_device_context_t
         }
 
         std::lock_guard<std::mutex> lg(m_mutex);
-        m_device.reset();
+        m_device.reset();                
         m_device.reset(new v4l2_object_t(uri
                                      , frame_info
                                      , buffer_count));
@@ -387,6 +387,7 @@ struct v4l2_device_context_t
             {
                 frame_info_t frame_info = m_frame_info;
                 frame_time = frame_info.fps == 0 ? 100 : (1000 / frame_info.fps);
+
                 push_event(streaming_event_t::open);
 
                 auto tp = std::chrono::high_resolution_clock::now();
@@ -399,11 +400,9 @@ struct v4l2_device_context_t
                     frame_t frame(frame_info
                                   , std::move(m_device->fetch_frame_data(frame_time * 2)));
 
-
-
                     if (!frame.frame_data.empty())
                     {
-                        m_established = true;
+                        m_frame_counter++;
                         tp = std::chrono::high_resolution_clock::now();
                         if (m_frame_handler == nullptr
                                 || m_frame_handler(std::move(frame)) == false)
@@ -426,7 +425,7 @@ struct v4l2_device_context_t
 
                 }
 
-                m_established = false;
+                m_frame_counter = 0;
                 push_event(streaming_event_t::close);
             }
             else
@@ -484,12 +483,15 @@ struct v4l2_device_context_t
 
     void push_media_queue(frame_t&& frame)
     {
-        std::lock_guard<std::mutex> lg(m_mutex);
-        m_frame_queue.emplace(std::move(frame));
-
-        while (m_frame_queue.size() > max_frame_queue)
+        if (!frame.frame_data.empty())
         {
-            m_frame_queue.pop();
+            std::lock_guard<std::mutex> lg(m_mutex);
+            m_frame_queue.emplace(std::move(frame));
+
+            while (m_frame_queue.size() > max_frame_queue)
+            {
+                m_frame_queue.pop();
+            }
         }
     }
 
