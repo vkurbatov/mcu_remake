@@ -278,8 +278,8 @@ struct libav_codec_context_t
                                        , is_encoder);
 
         if (codec != nullptr)
-        {
-            av_context = avcodec_alloc_context3(codec);
+        {            
+            av_context = avcodec_alloc_context3(codec);                    
 
             if (av_context != nullptr)
             {
@@ -577,6 +577,7 @@ struct libav_codec_context_t
         {
             while (result >= 0)
             {
+
                 result = avcodec_receive_frame(av_context, &av_frame);
 
                 if (result >= 0)

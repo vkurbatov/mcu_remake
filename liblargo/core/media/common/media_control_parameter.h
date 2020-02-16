@@ -23,7 +23,8 @@ enum class control_type_t
     check
 };
 
-typedef std::uint32_t param_tag_t;
+typedef std::int32_t param_tag_t;
+const param_tag_t custom_parameter = -1;
 
 class control_parameter
 {
@@ -38,7 +39,7 @@ public:
                       , control_type_t control_type = control_type_t::direct
                       , const variant_list_t& limits = {}
                       , const variant& default_value = {}
-                      , param_tag_t tag = 0);
+                      , param_tag_t tag = custom_parameter);
 
     bool is_valid(const variant& value) const;
 
@@ -56,7 +57,6 @@ public:
     const param_tag_t tag() const;
 
 };
-
 
 typedef std::vector<control_parameter> control_parameter_list_t;
 

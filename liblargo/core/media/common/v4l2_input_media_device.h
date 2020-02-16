@@ -6,6 +6,7 @@
 #include "i_media_control.h"
 
 #include "media/common/v4l2/v4l2_device.h"
+#include "media/common/visca/visca_device.h"
 
 namespace core
 {
@@ -20,6 +21,8 @@ class v4l2_input_media_device : virtual public i_media_device,
 
 {
     v4l2_device_ptr_t           m_v4l2_device;
+    visca::visca_device         m_visca_device;
+
     std::uint32_t               m_buffer_count;
 
     v4l2::control_list_t        m_native_controls;
@@ -41,8 +44,10 @@ public:
     // i_media_control interface
 public:
     const control_parameter_list_t& controls() const override;
+
     bool set_control(const std::string &control_name
                      , const variant control_value) override;
+
     variant get_control(const std::string &control_name
                         , const variant default_value = {}) const override;
 };

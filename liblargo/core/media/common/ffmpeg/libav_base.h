@@ -17,7 +17,7 @@ namespace ffmpeg
 typedef std::int32_t codec_id_t;
 typedef std::int32_t pixel_format_t;
 typedef std::int32_t sample_format_t;
-const std::int32_t default_frame_align = 32;
+const std::int32_t default_frame_align = 1;
 
 const codec_id_t unknown_codec_id = -1;
 const pixel_format_t unknown_pixel_format = -1;

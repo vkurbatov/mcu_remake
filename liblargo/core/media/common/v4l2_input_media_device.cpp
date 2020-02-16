@@ -5,6 +5,7 @@
 #include "media/common/utils/format_converter.h"
 
 #include <thread>
+#include <algorithm>
 
 namespace core
 {
@@ -161,62 +162,73 @@ const control_parameter_list_t& v4l2_input_media_device::controls() const
 bool v4l2_input_media_device::set_control(const std::string &control_name
                                           , const variant control_value)
 {
+    auto it = std::find_if(m_controls.begin()
+                           , m_controls.end()
+                           , [&control_name](const control_parameter& param){ return param.name() == control_name; });
 
-    for (auto& ctrl : m_controls)
+    if (it != m_controls.end())
     {
-        if (ctrl.name() == control_name)
+        control_parameter& ctrl = *it;
+
+        if (control_name == "Resolution")
         {
-            if (control_name == "Resolution")
+            for (const auto& fmt : m_native_formats)
             {
-                for (const auto& fmt : m_native_formats)
+                if (control_value == fmt_to_string(fmt))
                 {
-                    if (control_value == fmt_to_string(fmt))
+                    if (m_v4l2_device->set_format(fmt))
                     {
-                        if (m_v4l2_device->set_format(fmt))
+                        ctrl.set(control_value);
+                        return true;
+                    }
+                }
+            }
+        }
+        else if (control_name == "Port")
+        {
+
+        }
+        else
+        {
+            if (ctrl.tag() < m_native_controls.size())
+            {
+                auto& native_ctrl = m_native_controls[ctrl.tag()];
+
+                switch (native_ctrl.type())
+                {
+                    case v4l2::control_type_t::numeric:
+                    case v4l2::control_type_t::boolean:
+                        if (m_v4l2_device->set_control(native_ctrl.id
+                                                       , control_value.get<std::int32_t>()))
                         {
                             ctrl.set(control_value);
                             return true;
                         }
-                    }
-                }
-            }
-            else
-            {
-                if (ctrl.tag() < m_native_controls.size())
-                {
-                    auto& native_ctrl = m_native_controls[ctrl.tag()];
-
-                    switch (native_ctrl.type())
+                    break;
+                    case v4l2::control_type_t::menu:
                     {
-                        case v4l2::control_type_t::numeric:
-                        case v4l2::control_type_t::boolean:
-                            if (m_v4l2_device->set_control(native_ctrl.id
-                                                           , control_value.get<std::int32_t>()))
-                            {
-                                ctrl.set(control_value);
-                                return true;
-                            }
-                        break;
-                        case v4l2::control_type_t::menu:
+                        bool by_index = control_value.type() != variant_type_t::vt_string;
+
+                        auto idx = 0;
+                        for (const auto& item : native_ctrl.menu)
                         {
-                            for (const auto& item : native_ctrl.menu)
+                            if (by_index
+                                ? control_value == idx
+                                : control_value == item.name)
                             {
-                                if (control_value == item.name)
+                                if (m_v4l2_device->set_control(native_ctrl.id
+                                                               , item.id))
                                 {
-                                    if (m_v4l2_device->set_control(native_ctrl.id
-                                                                   , item.id))
-                                    {
-                                        ctrl.set(control_value);
-                                        return true;
-                                    }
+                                    ctrl.set(control_value);
+                                    return true;
                                 }
                             }
+                            idx++;
                         }
-                        break;
                     }
+                    break;
                 }
             }
-            break;
         }
     }
 
@@ -226,14 +238,17 @@ bool v4l2_input_media_device::set_control(const std::string &control_name
 variant v4l2_input_media_device::get_control(const std::string &control_name
                                              , const variant default_value) const
 {
-    for (const auto& ctrl : m_controls)
+    const auto it = std::find_if(m_controls.begin()
+                           , m_controls.end()
+                           , [&control_name](const control_parameter& param){ return param.name() == control_name; });
+
+    if (it != m_controls.end())
     {
-        if (ctrl.name() == control_name)
+        const control_parameter& ctrl = *it;
+
+        if (control_name == "Resolution")
         {
-            if (control_name == "Resolution")
-            {
-                return fmt_to_string(m_v4l2_device->get_format());
-            }
+            return fmt_to_string(m_v4l2_device->get_format());
         }
         else
         {
@@ -270,6 +285,7 @@ variant v4l2_input_media_device::get_control(const std::string &control_name
             }
         }
     }
+
     return default_value;
 }
 

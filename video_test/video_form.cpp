@@ -282,7 +282,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
         }
     }
 
-};
+}
 
 static bool transcoder_test(core::media::video::i_video_frame& video_frame)
 {
@@ -450,7 +450,6 @@ video_form::video_form(QWidget *parent) :
                             || frame_transcoder->format() == nullptr)
                     {
                         frame_transcoder.reset(new core::media::media_frame_transcoder(frame.media_format()));
-
                     }
 
                     core::media::media_frame_queue_t frames;
@@ -494,7 +493,7 @@ video_form::video_form(QWidget *parent) :
                 }
             }
 
-            return false;
+            return true;
         };
 
         sink.set_handler(frame_handler);
@@ -1118,13 +1117,13 @@ void video_form::prepare_image2()
 
     auto margin = ui->spMargin->value();
 
-    auto& input_video_frame = reinterpret_cast<core::media::video::video_frame&>(*input_frame);
-    const auto& input_video_format = input_video_frame.video_format();
-
     auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
     if (input_frame != nullptr)
     {
+        auto& input_video_frame = reinterpret_cast<core::media::video::video_frame&>(*input_frame);
+        const auto& input_video_format = input_video_frame.video_format();
+
         core::media::video::frame_rect_t input_area( core::media::video::frame_point_t(0, 0)
                                                      , core::media::video::frame_size_t(input_video_format.size.width, input_video_format.size.height));
 
@@ -1216,13 +1215,10 @@ void video_form::prepare_image2()
             polylines.push_back( { 225, 300 } );
 
             overlay_list.emplace_back(new core::media::video::filters::video_layer_image(image
-                                                                                                   , { 100, 100 }));
+                                                                                         , { 100, 100 }));
 
             overlay_list.emplace_back(new core::media::video::filters::video_layer_figure(figure_format
                                                                                           , polylines));
-/*
-            overlay_list.emplace_back(new core::media::video::filters::video_layer_image(image
-                                                                                       , { 100, 100 }));*/
 
             overlay_list.emplace_back(new core::media::video::filters::video_layer_text("Hello World!!!"
                                                                                        , text_format
@@ -1242,6 +1238,7 @@ void video_form::prepare_image2()
 
         frame_converter2.set_input_area(mid_area);
         frame_converter2.set_output_area(output_area);
+        frame_converter2.set_aspect_ratio_mode(aspect_ratio_method);
 
         auto output_frame = frame_converter2.convert(*mid_frame
                                                      , output_format);
@@ -1278,7 +1275,7 @@ void video_form::on_pushButton_clicked()
 
     // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
     // std::string uri = "/home/user/test_file.mp4";
-    std::string uri = "v4l2://dev/video0";
+    std::string uri = "v4l2://dev/video2";
 
 
     if (device.is_open())
@@ -1288,12 +1285,36 @@ void video_form::on_pushButton_clicked()
     else
     {
         device.open(uri);
+
+        ui->cbResoulution->clear();
+        ui->cbControlList->clear();
+        const auto& controls = device.controls();
+
+        for (const auto& c : controls)
+        {
+            if (c.name() == "Resolution")
+            {
+                for (const auto& r : c.limits())
+                {
+                    ui->cbResoulution->addItem(QString::fromStdString(r.get<std::string>()));
+                }
+
+                ui->cbResoulution->setCurrentText(QString::fromStdString(c.get().get<std::string>()));
+            }
+            else
+            {
+                ui->cbControlList->addItem(QString::fromStdString(c.name()));
+            }
+        }
+
+
         // device.set_control("Resolution", "1280x720@30:mjpeg");
     }
 
     ui->pushButton->setText(device.is_open() ? "Stop" : "Start");
 
     return;
+
 
     /*
 #if IS_V4L2
@@ -1312,7 +1333,7 @@ void video_form::on_pushButton_clicked()
         // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
         // std::string uri = "/home/user/ivcscodec/loading.gif";
         // std::string uri = "v4l2://dev/video0";
-        std::string uri = "/dev/video4";
+        std::string uri = "/dev/video0";
         // std::string uri = "vnc://123123123@10.11.4.213:5901";
         //std::string uri = "vnc://123456@10.12.2.86:5900";
         device->open(uri);
@@ -1358,8 +1379,8 @@ void video_form::on_pushButton_clicked()
 #endif
     }
     ui->pushButton->setText(device->is_opened() ? "Stop" : "Start");
-    return;*/
-
+    return;
+*/
     QSize size_src(1280, 720);
     QSize size_dst(1280, 720);
 
@@ -1464,21 +1485,18 @@ void video_form::on_cbScaling_currentIndexChanged(int index)
 
 void video_form::on_cbResoulution_activated(const QString &arg1)
 {
-
+    input_camera_device.set_control("Resolution", arg1.toStdString());
 }
 
 void video_form::on_cbResoulution_activated(int index)
 {
-    auto formats = v4l2_capturer->get_supported_formats();
-    if (index >= 0 && index < formats.size())
-    {
-        v4l2_capturer->set_format(formats[index]);
-    }
-    // for
+
+
 }
 
 void video_form::on_cbControlList_activated(int index)
 {
+    /*
     auto controls = v4l2_capturer->get_control_list();
     if (index >= 0 && index < controls.size())
     {
@@ -1486,6 +1504,48 @@ void video_form::on_cbControlList_activated(int index)
         ui->slControl->setMaximum(ctrl.range.max);
         ui->slControl->setMinimum(ctrl.range.min);
         ui->slControl->setValue(v4l2_capturer->get_control(ctrl.id));
+    }*/
+}
+
+void video_form::on_cbControlList_activated(const QString &arg1)
+{
+    for (const auto& c : input_camera_device.controls())
+    {
+        if (c.name() == arg1.toStdString())
+        {
+            std::int32_t min = 0, max = 0, val = 0;
+
+            switch(c.type())
+            {
+                case core::media::control_type_t::check:
+                    max = 1;
+                    val = c.get();
+
+                break;
+                case core::media::control_type_t::direct:
+                    min = c.limits()[0];
+                    max = c.limits()[1];
+                    val = c.get();
+                break;
+                case core::media::control_type_t::list:
+                    max = c.limits().size() - 1;
+                    for (int i = 0; i < c.limits().size(); i++)
+                    {
+                        if (c.limits()[i] == c.get())
+                        {
+                            val = i;
+                            break;
+                        }
+                    }
+                break;
+            }
+
+            ui->slControl->setMinimum(min);
+            ui->slControl->setMaximum(max);
+            ui->slControl->setValue(val);
+
+            break;
+        }
     }
 }
 
@@ -1496,6 +1556,10 @@ void video_form::on_slControl_actionTriggered(int action)
 
 void video_form::on_slControl_sliderMoved(int position)
 {
+    input_camera_device.set_control(ui->cbControlList->currentText().toStdString()
+                                    , position);
+
+    /*
     auto controls = v4l2_capturer->get_control_list();
     auto index = ui->cbControlList->currentIndex();
 
@@ -1503,7 +1567,7 @@ void video_form::on_slControl_sliderMoved(int position)
     {
         v4l2::control_t& ctrl = controls[index];
         v4l2_capturer->set_control(ctrl.id, position);
-    }
+    }*/
 }
 
 void video_form::test1()
@@ -1631,3 +1695,4 @@ void video_form::on_pushButton_2_clicked()
 {
     on_update();
 }
+

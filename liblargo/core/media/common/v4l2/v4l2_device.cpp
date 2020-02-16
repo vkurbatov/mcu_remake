@@ -14,6 +14,7 @@
 namespace v4l2
 {
 
+const std::uint32_t watchdog_timeout = 5000;
 const std::size_t max_frame_queue = 10;
 
 struct command_controller_t
@@ -413,7 +414,7 @@ struct v4l2_device_context_t
                     else
                     {
                          auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - tp).count();
-                         if (dt < 1000)
+                         if (dt < watchdog_timeout)
                          {
                              std::this_thread::sleep_for(std::chrono::milliseconds(frame_time));
                          }

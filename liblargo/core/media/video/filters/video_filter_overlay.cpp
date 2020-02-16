@@ -17,7 +17,7 @@ namespace video
 namespace filters
 {
 
-const auto width_align = ffmpeg::default_frame_align;
+const auto width_align = 32;//ffmpeg::default_frame_align;
 
 static frame_rect_t fetch_total_rect(const layer_list_t& overlay_list
                                      , const frame_size_t& frame_size)

@@ -43,26 +43,30 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
 {
     media_frame_ptr_t result;
 
-    auto buffer = media_buffer::create(std::move(frame.media_data));
-
-    switch(stream_info.media_info.media_type)
+    if (!frame.media_data.empty())
     {
-        case ffmpeg::media_type_t::video:
+        auto buffer = media_buffer::create(std::move(frame.media_data));
+
+        switch(stream_info.media_info.media_type)
         {
-            auto pixel_format = frame.info.is_encoded()
-                    ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
-                    : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
+            case ffmpeg::media_type_t::video:
+            {
+                auto pixel_format = frame.info.is_encoded()
+                        ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
+                        : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
 
-            video::video_format_t video_format(pixel_format
-                                               , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
-                                               , frame.info.media_info.video_info.fps);
+                video::video_format_t video_format(pixel_format
+                                                   , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
+                                                   , frame.info.media_info.video_info.fps);
 
-            video_format.extra_data = stream_info.extra_data;
+                video_format.extra_data = stream_info.extra_data;
 
-            result = video::video_frame::create(video_format
-                                                , buffer);
+                result = video::video_frame::create(video_format
+                                                    , buffer);
+            }
+            break;
         }
-        break;
+
     }
 
     return result;
@@ -147,7 +151,6 @@ bool media_frame_transcoder::transcode(const i_media_frame &input_frame
 
                     auto frame = libav_frame_to_media_frame(libav_frame
                                                             , m_libav_transcoder.config());
-
                     if (frame)
                     {
                         frame_queue.push(frame);
