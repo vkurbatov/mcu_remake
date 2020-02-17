@@ -25,9 +25,6 @@ class v4l2_input_media_device : virtual public i_media_device,
 
     std::uint32_t               m_buffer_count;
 
-    v4l2::control_list_t        m_native_controls;
-    v4l2::format_list_t         m_native_formats;
-
     control_parameter_list_t    m_controls;
 
 public:

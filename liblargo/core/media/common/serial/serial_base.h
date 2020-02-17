@@ -9,6 +9,7 @@ namespace serial
 
 typedef std::uint32_t timeout_t;
 typedef std::vector<std::uint8_t> frame_data_t;
+typedef std::vector<std::string> serial_list_t;
 
 const timeout_t no_timeout = 0;
 const timeout_t infinite_timeout = 0xffffffff;

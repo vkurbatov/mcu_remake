@@ -124,6 +124,11 @@ void serial_device_context_deleter_t::operator()(serial_device_context_t *serial
     delete serial_device_context_ptr;
 }
 //---------------------------------------------------------------------------------------------
+serial_list_t serial_device::serial_devices()
+{
+    return serial::serial_list();
+}
+
 serial_device::serial_device(const control_config_t& control_config)
     : m_serial_device_context(new serial_device_context_t(control_config))
 {

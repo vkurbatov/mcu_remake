@@ -41,6 +41,9 @@ public:
     bool get_pan_tilt(std::int16_t& pan
                       , std::int16_t& tilt);
 
+    bool get_pan(std::int16_t& pan);
+    bool get_tilt(std::int16_t& tilt);
+
     bool pan_tilt_home();
     bool pan_tilt_reset();
 

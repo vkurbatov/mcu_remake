@@ -21,6 +21,7 @@
 #include "media/common/opencv/cv_base.h"
 #include "media/common/magick/magick_base.h"
 #include "media/common/qt/qt_base.h"
+#include "media/common/serial/serial_device.h"
 #include "media/common/visca/visca_device.h"
 #include "media/common/vnc/vnc_device.h"
 
@@ -388,7 +389,9 @@ video_form::video_form(QWidget *parent) :
     bool f4 = var2 < var1;
     bool f5 = var1 == var2;
 
-    visca_device.open("/dev/ttyUSB0");
+    auto serials = serial::serial_device::serial_devices();
+
+    // visca_device.open("/dev/ttyUSB0");
 
     // auto visca_open_flag = visca::open_device("/dev/ttyUSB0");
 
@@ -1275,7 +1278,7 @@ void video_form::on_pushButton_clicked()
 
     // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
     // std::string uri = "/home/user/test_file.mp4";
-    std::string uri = "v4l2://dev/video2";
+    std::string uri = "v4l2://dev/video4";
 
 
     if (device.is_open())

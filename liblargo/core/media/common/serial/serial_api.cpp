@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <dirent.h>
 
 namespace serial
 {
@@ -225,6 +226,43 @@ std::size_t serial_unread_data_size(handle_t handle)
     }
 
     return 0;
+}
+
+serial_list_t serial_list()
+{
+    serial_list_t serial_list;
+    auto dev = opendir("/dev");
+
+
+    if (dev != nullptr)
+    {
+        do
+        {
+            auto dir_entry = readdir(dev);
+
+            if (dir_entry == nullptr)
+            {
+                break;
+            }
+
+            std::string device_name = dir_entry->d_name;
+
+            if (device_name.find("ttyU") == 0)
+            {
+                serial_list.emplace_back("/dev/" + device_name);
+            }
+        }
+        while(true);
+
+        for (auto i = 0; i < 10; i++)
+        {
+            serial_list.emplace_back("/dev/ttyS" + std::to_string(i));
+        }
+
+        closedir(dev);
+    }
+
+    return serial_list;
 }
 
 

@@ -1,5 +1,6 @@
 #include "media_control_parameter.h"
 #include <cstring>
+#include <algorithm>
 
 namespace core
 {
@@ -67,12 +68,13 @@ static const variant& init_value(const variant& default_value
     return default_value;
 }
 
-
 control_parameter::control_parameter(const std::string& name
                                      , control_type_t control_type
                                      , const variant_list_t &limits
                                      , const variant &default_value
-                                     , param_tag_t tag)
+                                     , param_tag_t tag
+                                     , set_control_handler_t set_handler
+                                     , get_control_handler_t get_handler)
     : m_name(name)
     , m_control_type(control_type)
     , m_limits(limits)
@@ -80,6 +82,8 @@ control_parameter::control_parameter(const std::string& name
                          , control_type
                          , limits))
     , m_tag(tag)
+    , m_set_handler(set_handler)
+    , m_get_handler(get_handler)
 {
 
 }
@@ -121,9 +125,10 @@ bool control_parameter::set(const variant &value)
         case control_type_t::check:
             m_value = value;
         break;
-    }
+    }        
 
-    return true;
+    return m_set_handler == nullptr
+            || m_set_handler(m_value);
 }
 
 void control_parameter::operator=(const variant &value)
@@ -133,7 +138,21 @@ void control_parameter::operator=(const variant &value)
 
 const variant& control_parameter::get() const
 {
+    if (m_get_handler != nullptr)
+    {
+        m_get_handler(m_value);
+    }
     return m_value;
+}
+
+void control_parameter::bind_get_handler(get_control_handler_t get_handler)
+{
+    m_get_handler = get_handler;
+}
+
+void control_parameter::bind_set_handler(set_control_handler_t set_handler)
+{
+    m_set_handler = set_handler;
 }
 
 const std::string &control_parameter::name() const
@@ -186,11 +205,48 @@ void control_parameter_test()
 
     cur = parameter_direct.get();
 
-
     return;
 }
 
+control_parameter_list_t::iterator control_parameter_list_t::find(const std::string &name)
+{
+    return std::find_if(begin(), end(), [&name](const control_parameter& parameter) { return parameter.name() == name; });
+}
 
+control_parameter_list_t::const_iterator control_parameter_list_t::find(const std::string &name) const
+{
+    return std::find_if(begin(), end(), [&name](const control_parameter& parameter) { return parameter.name() == name; });
+}
+
+bool control_parameter_list_t::has_parameter(const std::string &name) const
+{
+    return find(name) != end();
+}
+
+bool control_parameter_list_t::set(const std::string &name, const variant &value)
+{
+    auto it = find(name);
+
+    if (it != end())
+    {
+        return (*it).set(value);
+    }
+
+    return false;
+}
+
+bool control_parameter_list_t::get(const std::string &name, variant &value) const
+{
+    auto it = find(name);
+
+    if (it != end())
+    {
+        value = (*it).get();
+        return true;
+    }
+
+    return false;
+}
 
 }
 

@@ -43,6 +43,8 @@ std::size_t serial_unread_data_size(handle_t handle);
 
 bool serial_flush(handle_t handle);
 
+serial_list_t serial_list();
+
 }
 
 #endif // SERIAL_API_H

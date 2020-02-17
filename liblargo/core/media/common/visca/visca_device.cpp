@@ -733,6 +733,20 @@ bool visca_device::get_pan_tilt(int16_t& pan
                                                 , tilt);
 }
 
+bool visca_device::get_pan(int16_t &pan)
+{
+    std::int16_t tilt;
+    return m_visca_device_context->get_pan_tilt(pan
+                                                , tilt);
+}
+
+bool visca_device::get_tilt(int16_t &tilt)
+{
+    std::int16_t pan;
+    return m_visca_device_context->get_pan_tilt(pan
+                                                , tilt);
+}
+
 bool visca_device::pan_tilt_home()
 {
     return m_visca_device_context->pan_tilt_home();

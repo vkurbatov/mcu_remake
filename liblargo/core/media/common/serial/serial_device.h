@@ -16,6 +16,7 @@ class serial_device
 {
     serial_device_context_ptr_t     m_serial_device_context;
 public:
+    static serial_list_t serial_devices();
 
     serial_device(const control_config_t& control_config = control_config_t());
 

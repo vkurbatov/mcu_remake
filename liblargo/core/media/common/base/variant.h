@@ -64,6 +64,8 @@ public:
 
     void set_type(variant_type_t variant_type);
     variant_type_t type() const;
+
+    bool empty() const;
 };
 
 void test();
