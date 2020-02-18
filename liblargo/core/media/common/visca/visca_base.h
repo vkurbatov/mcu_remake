@@ -14,6 +14,17 @@ const std::uint8_t default_reply_timeout = 1000;
 const std::uint8_t default_pan_speed = 0x10;
 const std::uint8_t default_tilt_speed = 0x10;
 
+const std::int32_t visca_pan_min = -2448;
+const std::int32_t visca_pan_max = 2448;
+const std::int32_t visca_tilt_min = -432;
+const std::int32_t visca_tilt_max = 1296;
+const std::int32_t visca_zoom_min = 0;
+const std::int32_t visca_zoom_max = 16384;
+const std::int32_t visca_pan_range = visca_pan_max - visca_pan_min;
+const std::int32_t visca_tilt_range = visca_tilt_min - visca_tilt_max;
+const std::int32_t visca_zoom_range = visca_zoom_min - visca_zoom_max;
+
+
 const std::uint8_t visca_eof = 0xff;
 
 enum class response_type_t

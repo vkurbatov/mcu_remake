@@ -34,6 +34,11 @@ public:
     bool set_control(std::uint32_t control_id, std::int32_t value);
     std::int32_t get_control(std::uint32_t control_id, std::int32_t default_value = 0);
 
+    bool set_relative_control(std::uint32_t control_id, double value);
+    double get_relatuive_control(std::uint32_t control_id, double default_value = 0);
+
+    bool get_ptz(double& pan, double& tilt, double& zoom);
+    bool set_ptz(double pan, double tilt, double zoom);
 
     frame_queue_t fetch_media_queue();
 };

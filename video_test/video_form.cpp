@@ -60,6 +60,7 @@ double filter_delay = 0;
 double encoder_delay = 0;
 
 double delay_factor = 0.1;
+std::uint64_t preset = 0;
 
 visca::visca_device visca_device;
 
@@ -75,7 +76,7 @@ core::media::video::video_frame_converter           frame_converter(scaling_meth
 core::media::video::video_frame_converter           frame_converter2(scaling_method);
 core::media::video::filters::video_filter_flip      filter_flip;
 
-core::media::video::filters::layer_list_t         overlay_list;
+core::media::video::filters::layer_list_t           overlay_list;
 core::media::video::filters::video_filter_overlay   filter_overlay(overlay_list);
 
 //core::media::video::filters::video_filter_custom    filter_custom;
@@ -690,6 +691,11 @@ video_form::video_form(QWidget *parent) :
         v4l2_capturer.reset(new v4l2::v4l2_device(v4l2_data_handler));
     }
     ui->setupUi(this);
+
+    ui->slControl->hide();
+    ui->cbbControl->hide();
+    ui->cbControl->hide();
+    ui->teControl->hide();
 }
 
 video_form::~video_form()
@@ -1512,6 +1518,8 @@ void video_form::on_cbControlList_activated(int index)
 
 void video_form::on_cbControlList_activated(const QString &arg1)
 {
+
+
     for (const auto& c : input_camera_device.controls())
     {
         if (c.name() == arg1.toStdString())
@@ -1524,32 +1532,72 @@ void video_form::on_cbControlList_activated(const QString &arg1)
                     max = 1;
                     val = c.get();
 
+                    ui->cbControl->setChecked(val);
+                    ui->cbControl->show();
+                    ui->cbbControl->hide();
+                    ui->slControl->hide();
+                    ui->teControl->hide();
                 break;
                 case core::media::control_type_t::direct:
-                    min = c.limits()[0];
-                    max = c.limits()[1];
-                    val = c.get();
+
+                    if (c.limits().size() == 2)
+                    {
+                        min = c.limits()[0];
+                        max = c.limits()[1];
+                    }
+
+                    val = c.get();                    
+
+                    if (max > min)
+                    {
+                        ui->slControl->show();
+                        ui->teControl->hide();
+                        ui->slControl->setMinimum(min);
+                        ui->slControl->setMaximum(max);
+                        ui->slControl->setValue(val);
+                    }
+                    else
+                    {
+                        ui->slControl->hide();
+                        ui->teControl->show();
+                        ui->teControl->setPlainText(QString::fromStdString(c.get()));
+                    }
+
+                    ui->cbControl->hide();
+                    ui->cbbControl->hide();
                 break;
+
                 case core::media::control_type_t::list:
                     max = c.limits().size() - 1;
-                    for (int i = 0; i < c.limits().size(); i++)
+                    ui->cbbControl->clear();
+
+                    auto i = 0;
+
+                    for (const auto& item : c.limits())
                     {
-                        if (c.limits()[i] == c.get())
+                        ui->cbbControl->addItem(QString::fromStdString(item));
+                        if (item == c.get())
                         {
                             val = i;
-                            break;
                         }
+                        i++;
                     }
+
+                    ui->cbbControl->setCurrentIndex(val);
+                    ui->cbControl->hide();
+                    ui->cbbControl->show();
+                    ui->slControl->hide();
+                    ui->teControl->hide();
                 break;
             }
-
-            ui->slControl->setMinimum(min);
-            ui->slControl->setMaximum(max);
-            ui->slControl->setValue(val);
-
             break;
         }
     }
+}
+
+void video_form::on_teControl_selectionChanged()
+{
+
 }
 
 void video_form::on_slControl_actionTriggered(int action)
@@ -1631,33 +1679,46 @@ void video_form::keyPressEvent(QKeyEvent *key_event)
             case Qt::Key_A:
                 //v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, -612000);
                 // v4l2_capturer->set_control(v4l2::ctrl_pan_speed, -10);
-                visca_device.set_pan(-2448);
+                // visca_device.set_pan(-2448);
+                input_camera_device.set_control("Pan control", -1);
             break;
             case Qt::Key_S:
                 // v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, -108000);
                 // v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, -10);
-                visca_device.set_tilt(-432);
+                // visca_device.set_tilt(-432);
+                input_camera_device.set_control("Tilt control", -1);
             break;
             case Qt::Key_D:
                 // v4l2_capturer->set_control(v4l2::ctrl_pan_absolute, 612000);
                 // v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 10);
-                visca_device.set_pan(2448);
+                // visca_device.set_pan(2448);
+                input_camera_device.set_control("Pan control", 1);
             break;
             case Qt::Key_W:
                 //v4l2_capturer->set_control(v4l2::ctrl_tilt_absolute, 324000);
                 // v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 10);
-                visca_device.set_tilt(1296);
+                // visca_device.set_tilt(1296);
+                input_camera_device.set_control("Tilt control", 1);
             break;
             case Qt::Key_PageUp:
                 // v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 16384);
                 // v4l2_capturer->set_control(v4l2::ctrl_zoom_speed, +10);
-                visca_device.set_zoom(16384);
+                // visca_device.set_zoom(16384);
+                input_camera_device.set_control("Zoom control", 1);
             break;
             case Qt::Key_PageDown:
                 // v4l2_capturer->set_control(v4l2::ctrl_zoom_speed, -1);
                 // v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, 0);
-                visca_device.set_zoom(0);
+                // visca_device.set_zoom(0);
+                input_camera_device.set_control("Zoom control", -1);
             break;
+            case Qt::Key_1:
+                input_camera_device.set_control("Preset", preset);
+            break;
+            case Qt::Key_2:
+                preset = input_camera_device.get_control("Preset", preset);
+            break;
+
         }
         std::cout << "Key press: " << key_event->key() << std::endl;
     }
@@ -1676,18 +1737,21 @@ void video_form::keyReleaseEvent(QKeyEvent *key_event)
             case Qt::Key_A:
             case Qt::Key_D:
                 //v4l2_capturer->set_control(v4l2::ctrl_pan_speed, 0);
-                visca_device.pan_tilt_stop();
+                // visca_device.pan_tilt_stop();
+                input_camera_device.set_control("Pan control", 0);
             break;
             case Qt::Key_S:
             case Qt::Key_W:
                 //v4l2_capturer->set_control(v4l2::ctrl_tilt_speed, 0);
-                visca_device.pan_tilt_stop();
+                // visca_device.pan_tilt_stop();
+                input_camera_device.set_control("Tilt control", 0);
             break;
             case Qt::Key_PageUp:
             case Qt::Key_PageDown:
                 // v4l2_capturer->set_control(v4l2::ctrl_zoom_speed, 0);
                 // v4l2_capturer->set_control(v4l2::ctrl_zoom_absolute, v4l2_capturer->get_control(v4l2::ctrl_zoom_absolute));
-                visca_device.zoom_stop();
+                // visca_device.zoom_stop();
+                input_camera_device.set_control("Zoom control", 0);
             break;
         }
         std::cout << "Key release: " << key_event->key() << std::endl;
@@ -1699,3 +1763,18 @@ void video_form::on_pushButton_2_clicked()
     on_update();
 }
 
+
+void video_form::on_teControl_textChanged()
+{
+    input_camera_device.set_control(ui->cbControlList->currentText().toStdString(), ui->teControl->toPlainText().toStdString());
+}
+
+void video_form::on_cbbControl_currentIndexChanged(const QString &arg1)
+{
+    input_camera_device.set_control(ui->cbControlList->currentText().toStdString(), arg1.toStdString());
+}
+
+void video_form::on_cbControl_clicked(bool checked)
+{
+    input_camera_device.set_control(ui->cbControlList->currentText().toStdString(), checked);
+}

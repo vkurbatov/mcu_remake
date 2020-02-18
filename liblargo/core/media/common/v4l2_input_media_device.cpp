@@ -14,13 +14,231 @@ namespace core
 namespace media
 {
 
+class i_camera_control
+{
+public:
+    virtual ~i_camera_control(){}
+    virtual bool control_pan(std::int32_t direction) = 0;
+    virtual bool control_tilt(std::int32_t direction) = 0;
+    virtual bool control_zoom(std::int32_t direction) = 0;
+    virtual bool set_preset(std::uint64_t preset) = 0;
+    virtual bool get_preset(std::uint64_t& preset) = 0;
+};
 
-const std::int32_t visca_pan_min = -2448;
-const std::int32_t visca_pan_max = 2448;
-const std::int32_t visca_tilt_min = -432;
-const std::int32_t visca_tilt_max = 1296;
-const std::int32_t visca_zoom_min = 0;
-const std::int32_t visca_zoom_max = 16384;
+class camera_control : virtual public i_camera_control
+{
+public:
+    virtual bool set_preset(std::uint64_t preset)
+    {
+        double pan = static_cast<double>((preset >> 40) & 0xffffff) / static_cast<double>(0xffffff);
+        double tilt = static_cast<double>((preset >> 16) & 0xffffff) / static_cast<double>(0xffffff);
+        double zoom = static_cast<double>((preset >> 0) & 0xffff) / static_cast<double>(0xffff);
+
+        return set_ptz_state(pan, tilt, zoom);
+    }
+    virtual bool get_preset(std::uint64_t& preset)
+    {
+        double pan = 0, tilt = 0, zoom = 0;
+
+        if (get_ptz_state(pan, tilt, zoom))
+        {
+            preset = 0;
+            preset |= static_cast<std::uint64_t>(pan * 0xffffff) << 40;
+            preset |= static_cast<std::uint64_t>(tilt * 0xffffff) << 16;
+            preset |= static_cast<std::uint64_t>(zoom * 0xffff) << 0;
+
+            return true;
+        }
+
+        return false;
+    }
+protected:
+    virtual bool get_ptz_state(double& pan
+                               , double& tilt
+                               , double& zoom) = 0;
+
+    virtual bool set_ptz_state(double pan
+                               , double tilt
+                               , double zoom) = 0;
+};
+
+class uvc_camera_control : public camera_control
+{
+    v4l2_device_ptr_t&      m_v4l2_device;
+    bool                    m_mode_b;
+
+public:
+    uvc_camera_control(v4l2_device_ptr_t& v4l2_device
+                       , bool mode_b = false)
+        : m_v4l2_device(v4l2_device)
+        , m_mode_b(mode_b)
+    {
+
+    }
+    // i_camera_control interface
+public:
+    bool control_pan(int32_t direction) override
+    {
+        if (m_v4l2_device->is_opened())
+        {
+            switch (direction)
+            {
+                case -1:
+                    return m_mode_b
+                            ? m_v4l2_device->set_control(v4l2::ctrl_pan_speed, -8)
+                            : m_v4l2_device->set_relative_control(v4l2::ctrl_pan_absolute, 0);
+                break;
+                case 0:
+                    return m_v4l2_device->set_control(v4l2::ctrl_pan_speed, 0);
+                break;
+                case 1:
+                return m_mode_b
+                        ? m_v4l2_device->set_control(v4l2::ctrl_pan_speed, 8)
+                        : m_v4l2_device->set_relative_control(v4l2::ctrl_pan_absolute, 1);
+                break;
+            }
+        }
+
+        return false;
+    }
+    bool control_tilt(int32_t direction) override
+    {
+        switch (direction)
+        {
+            case -1:
+                return m_mode_b
+                        ? m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, - 10)
+                        : m_v4l2_device->set_relative_control(v4l2::ctrl_tilt_absolute, 0);
+            break;
+            case 0:
+                return m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, 0);
+            break;
+            case 1:
+                return m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, 10);
+            break;
+        }
+
+        return false;
+
+    }
+    bool control_zoom(int32_t direction) override
+    {
+        switch (direction)
+        {
+            case -1:
+                return m_mode_b
+                        ? m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, -10)
+                        : m_v4l2_device->set_relative_control(v4l2::ctrl_zoom_absolute, 0);
+            break;
+            case 0:
+                return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, 0)
+                        && m_mode_b || m_v4l2_device->set_control(v4l2::ctrl_zoom_absolute, m_v4l2_device->get_control(v4l2::ctrl_zoom_absolute));
+            break;
+            case 1:
+                return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, 10);
+            break;
+        }
+
+        return false;
+    }
+    // camera_control interface
+protected:
+    bool get_ptz_state(double &pan, double &tilt, double &zoom) override
+    {
+        return m_v4l2_device->get_ptz(pan, tilt, zoom);
+    }
+    bool set_ptz_state(double pan, double tilt, double zoom) override
+    {
+        return m_v4l2_device->set_ptz(pan, tilt, zoom);
+    }
+};
+
+class visca_camera_control : public camera_control
+{
+    visca::visca_device&    m_visca_device;
+
+public:
+    visca_camera_control(visca::visca_device& visca_device)
+        : m_visca_device(visca_device)
+    {
+
+    }
+    // i_camera_control interface
+public:
+    bool control_pan(int32_t direction) override
+    {
+        if (m_visca_device.is_opened())
+        {
+            switch (direction)
+            {
+                case -1:
+                    return m_visca_device.set_pan(visca::visca_pan_min);
+                break;
+                case 0:
+                    return m_visca_device.pan_tilt_stop();
+                break;
+                case 1:
+                    return m_visca_device.set_pan(visca::visca_pan_max);
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    bool control_tilt(int32_t direction) override
+    {
+        if (m_visca_device.is_opened())
+        {
+            switch (direction)
+            {
+                case -1:
+                    return m_visca_device.set_tilt(visca::visca_tilt_min);
+                break;
+                case 0:
+                    return m_visca_device.pan_tilt_stop();
+                break;
+                case 1:
+                    return m_visca_device.set_tilt(visca::visca_tilt_max);
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    bool control_zoom(int32_t direction) override
+    {
+        if (m_visca_device.is_opened())
+        {
+            switch (direction)
+            {
+                case -1:
+                    return m_visca_device.set_zoom(visca::visca_zoom_min);
+                break;
+                case 0:
+                    return m_visca_device.zoom_stop();
+                break;
+                case 1:
+                    return m_visca_device.set_zoom(visca::visca_zoom_max);
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    // camera_control interface
+protected:
+    bool get_ptz_state(double &pan, double &tilt, double &zoom) override
+    {
+        return m_visca_device.get_ptz(pan, tilt, zoom);
+    }
+    bool set_ptz_state(double pan, double tilt, double zoom) override
+    {
+        return m_visca_device.set_ptz(pan, tilt, zoom);
+    }
+};
 
 auto fmt_to_string = [](const v4l2::frame_info_t& format)
 {
@@ -217,7 +435,7 @@ static void fetch_visca_controls(control_parameter_list_t& controls
 
     controls.emplace_back(control_parameter("Visca pan absolute"
                                             , control_type_t::direct
-                                            , { -2448, 2448 }
+                                            , { visca::visca_pan_min, visca::visca_pan_max }
                                             , 0
                                             , custom_parameter
                                             , [&visca_device](variant& value) { return visca_device.set_pan(value); }
@@ -227,7 +445,7 @@ static void fetch_visca_controls(control_parameter_list_t& controls
 
     controls.emplace_back(control_parameter("Visca tilt absolute"
                                             , control_type_t::direct
-                                            , { -432, 1296 }
+                                            , { visca::visca_tilt_min, visca::visca_tilt_max }
                                             , 0
                                             , custom_parameter
                                             , [&visca_device](variant& value) { return visca_device.set_tilt(value); }
@@ -237,7 +455,7 @@ static void fetch_visca_controls(control_parameter_list_t& controls
 
     controls.emplace_back(control_parameter("Visca zoom absolute"
                                             , control_type_t::direct
-                                            , { 0u, 16384u }
+                                            , { visca::visca_zoom_min, visca::visca_zoom_max }
                                             , 0u
                                             , custom_parameter
                                             , [&visca_device](variant& value) { return visca_device.set_zoom(value); }
@@ -247,154 +465,28 @@ static void fetch_visca_controls(control_parameter_list_t& controls
 
 }
 
-struct camera_control_helper
+class camera_control_helper
 {
-    const std::int32_t uvc_control_factor = 250;
-
-    enum class control_mode_t
-    {
-        uvc_a,
-        uvc_b,
-        visca
-    };
-
-    v4l2_device_ptr_t&          m_v4l2_device;
-    visca::visca_device&        m_visca_device;
-    control_mode_t              m_control_mode;
-
-
-    std::int32_t            m_pan_min;
-    std::int32_t            m_pan_max;
-    std::int32_t            m_tilt_min;
-    std::int32_t            m_tilt_max;
-    std::int32_t            m_zoom_min;
-    std::int32_t            m_zoom_max;
-
+    bool                    m_is_visca;
+    uvc_camera_control      m_uvc_control;
+    visca_camera_control    m_visca_control;
+public:
     camera_control_helper(v4l2_device_ptr_t& v4l2_device
                           , visca::visca_device& visca_device
-                          , const std::string& control_mode)
-        : m_v4l2_device(v4l2_device)
-        , m_visca_device(visca_device)
-        , m_control_mode(control_mode_t::visca)
-        , m_pan_min(visca_pan_min)
-        , m_pan_max(visca_pan_max)
-        , m_tilt_min(visca_tilt_min)
-        , m_tilt_max(visca_tilt_max)
-        , m_zoom_min(visca_zoom_min)
-        , m_zoom_max(visca_zoom_max)
+                          , const std::string& mode)
+        : m_is_visca(mode == "VISCA")
+        , m_uvc_control(v4l2_device
+                        , mode == "UVC_B")
+        , m_visca_control(visca_device)
     {
-        if (control_mode == "UVC_A")
-        {
-            m_control_mode = control_mode_t::uvc_a;
-        }
-        else if (control_mode == "UVC_B")
-        {
-            m_control_mode = control_mode_t::uvc_b;
-        }
 
-        if (m_control_mode != control_mode_t::visca)
-        {
-            m_pan_min *= uvc_control_factor;
-            m_pan_max *= uvc_control_factor;
-            m_tilt_min *= uvc_control_factor;
-            m_tilt_max *= uvc_control_factor;
-        }
     }
 
-    bool left()
+    i_camera_control& control()
     {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a: return m_v4l2_device->set_control(v4l2::ctrl_pan_absolute, m_pan_min); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_pan_speed, -10); break;
-            case control_mode_t::visca: return m_visca_device.set_pan(m_pan_min); break;
-        }
-
-        return false;
-    }
-
-    bool right()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a: return m_v4l2_device->set_control(v4l2::ctrl_pan_absolute, m_pan_max); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_pan_speed, 10); break;
-            case control_mode_t::visca: return m_visca_device.set_pan(m_pan_max); break;
-        }
-
-        return false;
-    }
-
-    bool up()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a: return m_v4l2_device->set_control(v4l2::ctrl_tilt_absolute, m_tilt_min); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, -10); break;
-            case control_mode_t::visca: return m_visca_device.set_tilt(m_tilt_min); break;
-        }
-
-        return false;
-    }
-
-    bool down()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a: return m_v4l2_device->set_control(v4l2::ctrl_tilt_absolute, m_tilt_max); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, 10); break;
-            case control_mode_t::visca: return m_visca_device.set_tilt(m_tilt_max); break;
-        }
-
-        return false;
-    }
-
-    bool zoom_in()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a: return m_v4l2_device->set_control(v4l2::ctrl_zoom_absolute, m_zoom_max); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, 10); break;
-            case control_mode_t::visca: return m_visca_device.set_zoom(m_zoom_max); break;
-        }
-
-        return false;
-    }
-
-    bool zoom_out()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a: return m_v4l2_device->set_control(v4l2::ctrl_zoom_absolute, m_zoom_min); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, -1); break;
-            case control_mode_t::visca: return m_visca_device.set_zoom(m_zoom_min); break;
-        }
-
-        return false;
-    }
-
-    bool stop_move()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a:
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_pan_speed, 0) && m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, 0) ; break;
-            case control_mode_t::visca: return m_visca_device.pan_tilt_stop(); break;
-        }
-
-        return false;
-    }
-
-    bool stop_zoom()
-    {
-        switch (m_control_mode)
-        {
-            case control_mode_t::uvc_a:return m_v4l2_device->set_control(v4l2::ctrl_zoom_absolute, m_v4l2_device->get_control(v4l2::ctrl_zoom_absolute)); break;
-            case control_mode_t::uvc_b: return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, 0); break;
-            case control_mode_t::visca: return m_visca_device.zoom_stop(); break;
-        }
-
-        return false;
+        return m_is_visca
+                ? static_cast<i_camera_control&>(m_visca_control)
+                : static_cast<i_camera_control&>(m_uvc_control);
     }
 };
 
@@ -435,6 +527,7 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
         visca
     };
 
+
     auto set_handler = [&v4l2_device, &visca_device, &controls](variant& value
             , custom_control_type_t ctrl_type) -> bool
     {
@@ -450,41 +543,46 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
         {
             case custom_control_type_t::pan:
             {
-                switch (value.get<std::int32_t>())
-                {
-                    case -1: return control_helper.left(); break;
-                    case 0: return control_helper.stop_move(); break;
-                    case 1: return control_helper.right(); break;
-                }
+                return control_helper.control().control_pan(value.get<std::int32_t>());
             }
             case custom_control_type_t::tilt:
             {
-                switch (value.get<std::int32_t>())
-                {
-                    case -1: return control_helper.up(); break;
-                    case 0: return control_helper.stop_move(); break;
-                    case 1: return control_helper.down(); break;
-                }
+                return control_helper.control().control_tilt(value.get<std::int32_t>());
             }
             case custom_control_type_t::zoom:
             {
-                switch (value.get<std::int32_t>())
-                {
-                    case -1: return control_helper.zoom_out(); break;
-                    case 0: return control_helper.stop_zoom(); break;
-                    case 1: return control_helper.zoom_in(); break;
-                }
+                return control_helper.control().control_zoom(value.get<std::int32_t>());
+            }
+            case custom_control_type_t::ptz:
+            {
+                return control_helper.control().set_preset(value.get<std::uint64_t>());
             }
         };
 
         return false;
     };
-/*
-    auto get_handler = [&v4l2_device, &visca_device, &controls](variant& value
-            , custom_control_type_t ctrl_type) -> bool
+
+
+    auto get_handler_ptz = [&v4l2_device, &visca_device, &controls](variant& value) -> bool
     {
+
+        variant mode;
+        controls.get("Control mode", mode);
+
+        camera_control_helper control_helper(v4l2_device
+                                             , visca_device
+                                             , mode);
+
+        std::uint64_t ptz = 0;
+
+        if (control_helper.control().get_preset(ptz))
+        {
+            value = ptz;
+            return true;
+        }
+
         return false;
-    };*/
+    };
 
     controls.emplace_back(control_parameter("Pan control"
                                             , control_type_t::direct
@@ -511,6 +609,15 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
                                             , custom_parameter
                                             , std::bind(set_handler, std::placeholders::_1, custom_control_type_t::zoom)
                                             )
+                          );
+
+    controls.emplace_back(control_parameter("Preset"
+                                            , control_type_t::direct
+                                            , {} // { 0ul, 0xfffffffffffffffful }// { -1, 1 }
+                                            , 0
+                                            , custom_parameter
+                                            , std::bind(set_handler, std::placeholders::_1, custom_control_type_t::ptz)
+                                            , get_handler_ptz)
                           );
 }
 

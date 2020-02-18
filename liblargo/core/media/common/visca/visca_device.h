@@ -52,6 +52,9 @@ public:
     bool set_zoom(std::uint16_t zoom);
     bool get_zoom(std::uint16_t& zoom);
 
+    bool get_ptz(double& pan, double& tilt, double& zoom);
+    bool set_ptz(double pan, double tilt, double zoom);
+
     bool zoom_stop();
 
 };

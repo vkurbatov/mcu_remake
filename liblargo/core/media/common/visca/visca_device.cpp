@@ -387,6 +387,8 @@ struct visca_channel_t
                               , response_data_size);
 
         }
+
+        return false;
     }
 
     template<typename T>
@@ -404,6 +406,8 @@ struct visca_channel_t
                               , response_data_size);
 
         }
+
+        return false;
     }
 
     template<typename T, typename... Targs>
@@ -423,6 +427,8 @@ struct visca_channel_t
                               , response_data_size);
 
         }
+
+        return false;
     }
 
     template<typename T>
@@ -658,6 +664,38 @@ struct visca_device_context_t
         return false;
     }
 
+    bool get_ptz(double& pan, double& tilt, double& zoom)
+    {
+        std::int16_t v_pan = 0, v_tilt = 0;
+
+        if (get_pan_tilt(v_pan, v_tilt))
+        {
+            std::uint16_t v_zoom = 0;
+
+            if (get_zoom(v_zoom))
+            {
+                pan = static_cast<double>(v_pan - visca_pan_min) / static_cast<double>(visca_pan_range);
+                tilt = static_cast<double>(v_tilt - visca_tilt_min) / static_cast<double>(visca_tilt_range);
+                zoom = static_cast<double>(v_zoom - visca_zoom_min) / static_cast<double>(visca_zoom_range);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool set_ptz(double pan, double tilt, double zoom)
+    {
+        if (set_pan_tilt(visca_pan_min + pan * visca_pan_range
+                         , visca_tilt_min + tilt * visca_tilt_range))
+        {
+            return set_zoom(visca_zoom_min + zoom * visca_zoom_range);
+        }
+
+        return false;
+    }
+
 
 };
 
@@ -770,6 +808,16 @@ bool visca_device::set_zoom(uint16_t zoom)
 bool visca_device::get_zoom(uint16_t &zoom)
 {
     return m_visca_device_context->get_zoom(zoom);
+}
+
+bool visca_device::get_ptz(double &pan, double &tilt, double &zoom)
+{
+    return m_visca_device_context->get_ptz(pan, tilt, zoom);
+}
+
+bool visca_device::set_ptz(double pan, double tilt, double zoom)
+{
+    return m_visca_device_context->set_ptz(pan, tilt, zoom);
 }
 
 bool visca_device::zoom_stop()

@@ -43,6 +43,14 @@ private slots:
 
     void on_cbControlList_activated(const QString &arg1);
 
+    void on_teControl_selectionChanged();
+
+    void on_teControl_textChanged();
+
+    void on_cbbControl_currentIndexChanged(const QString &arg1);
+
+    void on_cbControl_clicked(bool checked);
+
 protected:
     void keyPressEvent(QKeyEvent *key_event);
     void keyReleaseEvent(QKeyEvent *key_event);

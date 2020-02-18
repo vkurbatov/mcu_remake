@@ -11,11 +11,25 @@
 #define WBS_MODULE_NAME "v4l2:device"
 #include <core-tools/logging.h>
 
+
 namespace v4l2
 {
 
+const std::int32_t relative_min = -0x80000000;
+const std::int32_t relative_max = 0x7fffffff;
+
 const std::uint32_t watchdog_timeout = 5000;
 const std::size_t max_frame_queue = 10;
+
+template<typename T>
+static T scale_value(T input_value, T input_min, T input_max, T output_min, T output_max)
+{
+        auto k = (output_max - output_min) / (input_max - input_min);
+        auto b = output_min - input_min * k;
+
+        return input_value * k + b;
+}
+
 
 struct command_controller_t
 {
@@ -25,22 +39,27 @@ struct command_controller_t
         std::uint32_t               control_id;
         std::int32_t                value;
         bool                        is_set;
+        bool                        is_relative;
 
         std::promise<std::int32_t>  promise;
 
         request_t(std::uint32_t control_id
-                  , std::int32_t value)
+                  , std::int32_t value
+                  , bool is_relative = false)
             : control_id(control_id)
             , value(value)
             , is_set(true)
+            , is_relative(is_relative)
         {
 
         }
 
-        request_t(std::uint32_t control_id)
+        request_t(std::uint32_t control_id
+                  , bool is_relative = false)
             : control_id(control_id)
             , value(0)
             , is_set(false)
+            , is_relative(is_relative)
         {
 
         }
@@ -71,8 +90,6 @@ struct command_controller_t
     std::mutex                  mutex;
     request_queue_t             request_queue;
 
-
-
     command_controller_t()
         : is_request(false)
     {
@@ -81,10 +98,12 @@ struct command_controller_t
 
     bool set_control(std::uint32_t control_id
                      , std::int32_t value
-                     , std::uint32_t timeout)
+                     , std::uint32_t timeout
+                     , bool is_relative = false)
     {
         request_t request(control_id
-                          , value);
+                          , value
+                          , is_relative);
 
         auto future = request.promise.get_future();
 
@@ -99,9 +118,11 @@ struct command_controller_t
 
     bool get_control(std::uint32_t control_id
                      , std::int32_t& value
-                     , std::uint32_t timeout)
+                     , std::uint32_t timeout
+                     , bool is_relative = false)
     {
-        request_t request(control_id);
+        request_t request(control_id
+                          , is_relative);
 
         auto future = request.promise.get_future();
 
@@ -268,6 +289,7 @@ struct v4l2_device_context_t
     std::size_t                         m_frame_counter;
     std::unique_ptr<v4l2_object_t>      m_device;
 
+    bool                                m_control_support;
 
     v4l2_device_context_t(frame_handler_t frame_handler
                           , stream_event_handler_t stream_event_handler)
@@ -275,8 +297,14 @@ struct v4l2_device_context_t
         , m_stream_event_handler(stream_event_handler)
         , m_running(false)
         , m_frame_counter(0)
+        , m_control_support(false)
     {
 
+    }
+
+    ~v4l2_device_context_t()
+    {
+        close();
     }
 
     bool open(const std::string &uri
@@ -342,6 +370,8 @@ struct v4l2_device_context_t
                      , std::uint32_t buffer_count
                      , frame_info_t& frame_info)
     {
+        m_control_support = false;
+
         if (uri.find("v4l2://") == 0)
         {
             uri = uri.substr(6);
@@ -363,7 +393,6 @@ struct v4l2_device_context_t
             // formats.push_back(frame_info_t({ 800, 600 }, 15, pixel_format_h264));
             m_format_list = std::move(formats);
             m_control_list = std::move(controls);
-
 
             return true;
         }
@@ -450,8 +479,29 @@ struct v4l2_device_context_t
         {
             auto& request = requests.front();
 
+            std::int32_t min = 0;
+            std::int32_t max = 0;
+
+            if (request.is_relative)
+            {
+                auto it = m_control_list.find(request.control_id);
+
+                if (it == m_control_list.end())
+                {
+                    break;
+                }
+
+                min = it->second.range.min;
+                max = it->second.range.max;
+            }
+
             if (request.is_set)
             {
+                if (request.is_relative)
+                {
+                    request.value = scale_value<double>(request.value, relative_min, relative_max, min, max);
+                }
+
                 v4l2_object.set_control(request.control_id
                                         , request.value);
                 request.set_result();
@@ -460,6 +510,11 @@ struct v4l2_device_context_t
             {
                 v4l2_object.get_control(request.control_id
                                         , request.value);
+
+                if (request.is_relative)
+                {
+                    request.value = scale_value<double>(request.value, min, max, relative_min, relative_max);
+                }
 
                 request.set_result(request.value);
             }
@@ -496,67 +551,81 @@ struct v4l2_device_context_t
         }
     }
 
+
     bool set_control(std::uint32_t control_id, std::int32_t value)
     {
 
         return m_command_controller.set_control(control_id
                                                 , value
-                                                , 100);
+                                                , 100
+                                                , false);
 
-/*
-        auto l_tp = std::chrono::high_resolution_clock::now();
-
-        LOG_D << "Set before lock" LOG_END;
-
-        std::lock_guard<std::mutex> lg(m_mutex);
-
-        auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - l_tp).count();
-
-        LOG_D << "Set after unlock = " << dt LOG_END;
-
-        if (m_device != nullptr)
-        {
-            if (m_device->set_control(control_id, value))
-            {
-                auto it = m_control_list.find(control_id);
-
-                if (it != m_control_list.end())
-                {
-                    it->second.current_value = value;
-                }
-
-                return true;
-            }
-        }
-
-        return false;*/
     }
 
-    std::int32_t get_control(std::uint32_t control_id, std::int32_t default_value)
+    bool set_relative_control(std::uint32_t control_id, double value)
+    {
+
+        return m_command_controller.set_control(control_id
+                                                , scale_value<double>(value, 0.0, 1.0, relative_min, relative_max)
+                                                , 100
+                                                , true);
+    }
+
+
+    std::int32_t get_control(std::uint32_t control_id, std::int32_t default_value = 0)
     {
         m_command_controller.get_control(control_id
                                          , default_value
-                                         , 100);
+                                         , 100
+                                         , false);
 
         return default_value;
-        /*
-        std::lock_guard<std::mutex> lg(m_mutex);
+    }
 
-        if (m_device != nullptr)
+    double get_relative_control(std::uint32_t control_id, double default_value = 0)
+    {
+        std::int32_t real_value = 0;
+
+        if (m_command_controller.get_control(control_id
+                                         , real_value
+                                         , 100
+                                         , true))
         {
-            if (m_device->get_control(control_id, default_value))
-            {
-                auto it = m_control_list.find(control_id);
-
-                if (it != m_control_list.end())
-                {
-                    it->second.current_value = default_value;
-                }
-            }
+            default_value = scale_value<double>(real_value, relative_min, relative_max, 0.0, 1.0);
         }
 
-        return default_value;*/
+        return default_value;
+
     }
+
+    bool set_ptz(double pan
+                 , double tilt
+                 , double zoom)
+    {
+        if (is_opened())
+        {
+            bool result = set_relative_control(ctrl_pan_absolute, pan);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            result &= set_relative_control(ctrl_tilt_absolute, tilt);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            result &= set_relative_control(ctrl_zoom_absolute, zoom);
+        }
+        return true;
+    }
+
+    bool get_ptz(double& pan
+                 , double& tilt
+                 , double& zoom)
+    {
+        if (is_opened())
+        {
+            pan = get_relative_control(ctrl_pan_absolute);
+            tilt = get_relative_control(ctrl_tilt_absolute);
+            zoom = get_relative_control(ctrl_zoom_absolute);
+        }
+        return true;
+    }
+
 };
 //------------------------------------------------------------------------------------------
 void v4l2_device_context_deleter_t::operator()(v4l2_device_context_t *v4l2_device_context_ptr)
@@ -626,6 +695,36 @@ int32_t v4l2_device::get_control(uint32_t control_id
 {
     return m_v4l2_device_context->get_control(control_id
                                               , default_value);
+}
+
+bool v4l2_device::set_relative_control(uint32_t control_id, double value)
+{
+    return m_v4l2_device_context->set_relative_control(control_id
+                                                      , value);
+}
+
+double v4l2_device::get_relatuive_control(uint32_t control_id, double default_value)
+{
+    return m_v4l2_device_context->get_relative_control(control_id
+                                                       , default_value);
+}
+
+bool v4l2_device::get_ptz(double &pan
+                          , double &tilt
+                          , double &zoom)
+{
+    return m_v4l2_device_context->get_ptz(pan
+                                          , tilt
+                                          , zoom);
+}
+
+bool v4l2_device::set_ptz(double pan
+                          , double tilt
+                          , double zoom)
+{
+    return m_v4l2_device_context->set_ptz(pan
+                                          , tilt
+                                          , zoom);
 }
 
 frame_queue_t v4l2_device::fetch_media_queue()

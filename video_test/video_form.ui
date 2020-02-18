@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>video_form</class>
  <widget class="QMainWindow" name="video_form">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -159,6 +162,9 @@
     </property>
    </widget>
    <widget class="QSlider" name="slControl">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>900</x>
@@ -250,6 +256,39 @@
     </property>
     <property name="text">
      <string>PushButton</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="cbbControl">
+    <property name="geometry">
+     <rect>
+      <x>900</x>
+      <y>0</y>
+      <width>161</width>
+      <height>27</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="cbControl">
+    <property name="geometry">
+     <rect>
+      <x>900</x>
+      <y>0</y>
+      <width>161</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="teControl">
+    <property name="geometry">
+     <rect>
+      <x>900</x>
+      <y>0</y>
+      <width>161</width>
+      <height>31</height>
+     </rect>
     </property>
    </widget>
   </widget>
