@@ -13,7 +13,7 @@ namespace video
 
 media_frame_ptr_t video_frame::create(const media_format_t &media_format
                                       , media_buffer_ptr_t media_buffer
-                                      , stream_id_t stream_id
+                                      , frame_id_t frame_id
                                       , timestamp_t timestamp)
 {
     media_frame_ptr_t frame;
@@ -22,6 +22,24 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
     {
         frame.reset(new video_frame(static_cast<const video_format_t&>(media_format)
                                     , media_buffer
+                                    , frame_id
+                                    , timestamp));
+    }
+
+    return frame;
+}
+
+media_frame_ptr_t video_frame::create(const media_format_t &media_format
+                                      , media_data_t &&media_data
+                                      , frame_id_t stream_id
+                                      , timestamp_t timestamp)
+{
+    media_frame_ptr_t frame;
+
+    if (media_format.media_type == media_type_t::video)
+    {
+        frame.reset(new video_frame(static_cast<const video_format_t&>(media_format)
+                                    , std::move(media_data)
                                     , stream_id
                                     , timestamp));
     }
@@ -31,10 +49,22 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
 
 video_frame::video_frame(const video_format_t &video_format
                          , media_buffer_ptr_t media_buffer
-                         , stream_id_t stream_id
+                         , frame_id_t frame_id
                          , timestamp_t timestamp)
     : media_frame(media_buffer
-                  , stream_id
+                  , frame_id
+                  , timestamp)
+    , m_video_format(video_format)
+{
+
+}
+
+video_frame::video_frame(const video_format_t &video_format
+                         , media_data_t &&media_data
+                         , frame_id_t frame_id
+                         , timestamp_t timestamp)
+    : media_frame(std::move(media_data)
+                  , frame_id
                   , timestamp)
     , m_video_format(video_format)
 {
@@ -50,7 +80,7 @@ media_frame_ptr_t video_frame::clone() const
 {
     return create(m_video_format
                   , m_media_buffer->clone()
-                  , stream_id()
+                  , frame_id()
                   , timestamp());
 }
 

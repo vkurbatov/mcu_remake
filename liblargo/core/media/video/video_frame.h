@@ -22,12 +22,22 @@ class video_frame : virtual public i_video_frame
 public:
     static media_frame_ptr_t create(const media_format_t& media_format
                                     , media_buffer_ptr_t media_buffer
-                                    , stream_id_t stream_id = 0
+                                    , frame_id_t frame_id = 0
+                                    , timestamp_t timestamp = 0);
+
+    static media_frame_ptr_t create(const media_format_t& media_format
+                                    , media_data_t&& media_data
+                                    , frame_id_t frame_id = 0
                                     , timestamp_t timestamp = 0);
 
     video_frame(const video_format_t& video_format
                 , media_buffer_ptr_t media_buffer = nullptr
-                , stream_id_t stream_id = 0
+                , frame_id_t frame_id = 0
+                , timestamp_t timestamp = 0);
+
+    video_frame(const video_format_t& video_format
+                , media_data_t&& media_data
+                , frame_id_t frame_id = 0
                 , timestamp_t timestamp = 0);
 
     // i_media_frame interface

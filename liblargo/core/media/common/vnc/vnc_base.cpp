@@ -75,8 +75,10 @@ std::string vnc_server_config_t::uri() const
 }
 
 frame_t::frame_t(const frame_size_t frame_size
+                 , std::uint32_t fps
                  , uint32_t bpp)
     : frame_size(frame_size)
+    , fps(fps)
     , bpp(bpp)
 {
     realloc();
@@ -85,6 +87,12 @@ frame_t::frame_t(const frame_size_t frame_size
 std::size_t frame_t::realloc()
 {
     frame_data.resize((frame_size.size() * bpp) / 8);
+}
+
+vnc_config_t::vnc_config_t(uint32_t fps)
+    : fps(fps)
+{
+
 }
 
 

@@ -64,11 +64,11 @@ protected:
 
 class uvc_camera_control : public camera_control
 {
-    v4l2_device_ptr_t&      m_v4l2_device;
+    v4l2::v4l2_device&      m_v4l2_device;
     bool                    m_mode_b;
 
 public:
-    uvc_camera_control(v4l2_device_ptr_t& v4l2_device
+    uvc_camera_control(v4l2::v4l2_device& v4l2_device
                        , bool mode_b = false)
         : m_v4l2_device(v4l2_device)
         , m_mode_b(mode_b)
@@ -79,22 +79,22 @@ public:
 public:
     bool control_pan(int32_t direction) override
     {
-        if (m_v4l2_device->is_opened())
+        if (m_v4l2_device.is_opened())
         {
             switch (direction)
             {
                 case -1:
                     return m_mode_b
-                            ? m_v4l2_device->set_control(v4l2::ctrl_pan_speed, -8)
-                            : m_v4l2_device->set_relative_control(v4l2::ctrl_pan_absolute, 0);
+                            ? m_v4l2_device.set_control(v4l2::ctrl_pan_speed, -8)
+                            : m_v4l2_device.set_relative_control(v4l2::ctrl_pan_absolute, 0);
                 break;
                 case 0:
-                    return m_v4l2_device->set_control(v4l2::ctrl_pan_speed, 0);
+                    return m_v4l2_device.set_control(v4l2::ctrl_pan_speed, 0);
                 break;
                 case 1:
                 return m_mode_b
-                        ? m_v4l2_device->set_control(v4l2::ctrl_pan_speed, 8)
-                        : m_v4l2_device->set_relative_control(v4l2::ctrl_pan_absolute, 1);
+                        ? m_v4l2_device.set_control(v4l2::ctrl_pan_speed, 8)
+                        : m_v4l2_device.set_relative_control(v4l2::ctrl_pan_absolute, 1);
                 break;
             }
         }
@@ -107,14 +107,14 @@ public:
         {
             case -1:
                 return m_mode_b
-                        ? m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, - 10)
-                        : m_v4l2_device->set_relative_control(v4l2::ctrl_tilt_absolute, 0);
+                        ? m_v4l2_device.set_control(v4l2::ctrl_tilt_speed, -10)
+                        : m_v4l2_device.set_relative_control(v4l2::ctrl_tilt_absolute, 0);
             break;
             case 0:
-                return m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, 0);
+                return m_v4l2_device.set_control(v4l2::ctrl_tilt_speed, 0);
             break;
             case 1:
-                return m_v4l2_device->set_control(v4l2::ctrl_tilt_speed, 10);
+                return m_v4l2_device.set_relative_control(v4l2::ctrl_tilt_absolute, 1);
             break;
         }
 
@@ -127,15 +127,15 @@ public:
         {
             case -1:
                 return m_mode_b
-                        ? m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, -10)
-                        : m_v4l2_device->set_relative_control(v4l2::ctrl_zoom_absolute, 0);
+                        ? m_v4l2_device.set_control(v4l2::ctrl_zoom_speed, -10)
+                        : m_v4l2_device.set_relative_control(v4l2::ctrl_zoom_absolute, 0);
             break;
             case 0:
-                return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, 0)
-                        && m_mode_b || m_v4l2_device->set_control(v4l2::ctrl_zoom_absolute, m_v4l2_device->get_control(v4l2::ctrl_zoom_absolute));
+                return m_v4l2_device.set_control(v4l2::ctrl_zoom_speed, 0)
+                        && m_mode_b || m_v4l2_device.set_control(v4l2::ctrl_zoom_absolute, m_v4l2_device.get_control(v4l2::ctrl_zoom_absolute));
             break;
             case 1:
-                return m_v4l2_device->set_control(v4l2::ctrl_zoom_speed, 10);
+                return m_v4l2_device.set_control(v4l2::ctrl_zoom_speed, 10);
             break;
         }
 
@@ -145,11 +145,11 @@ public:
 protected:
     bool get_ptz_state(double &pan, double &tilt, double &zoom) override
     {
-        return m_v4l2_device->get_ptz(pan, tilt, zoom);
+        return m_v4l2_device.get_ptz(pan, tilt, zoom);
     }
     bool set_ptz_state(double pan, double tilt, double zoom) override
     {
-        return m_v4l2_device->set_ptz(pan, tilt, zoom);
+        return m_v4l2_device.set_ptz(pan, tilt, zoom);
     }
 };
 
@@ -248,11 +248,11 @@ auto fmt_to_string = [](const v4l2::frame_info_t& format)
 };
 
 static void fetch_formats(control_parameter_list_t& controls
-                          , v4l2_device_ptr_t& v4l2_device)
+                          , v4l2::v4l2_device& v4l2_device)
 {
     variant_list_t list;
 
-    auto formats = v4l2_device->get_supported_formats();
+    auto formats = v4l2_device.get_supported_formats();
 
     auto set_handler = [&v4l2_device, formats](variant& value) ->
     bool
@@ -266,7 +266,7 @@ static void fetch_formats(control_parameter_list_t& controls
                     ? value == idx
                     : value == fmt_to_string(fmt))
             {
-                return v4l2_device->set_format(fmt);
+                return v4l2_device.set_format(fmt);
             }
 
             idx++;
@@ -277,7 +277,7 @@ static void fetch_formats(control_parameter_list_t& controls
     auto get_handler = [&v4l2_device](variant& value) ->
     bool
     {
-        value = fmt_to_string(v4l2_device->get_format());
+        value = fmt_to_string(v4l2_device.get_format());
         return true;
     };
 
@@ -289,7 +289,7 @@ static void fetch_formats(control_parameter_list_t& controls
     controls.emplace_back(control_parameter("Resolution"
                                             , control_type_t::list
                                             , list
-                                            , fmt_to_string(v4l2_device->get_format())
+                                            , fmt_to_string(v4l2_device.get_format())
                                             , custom_parameter
                                             , set_handler
                                             , get_handler
@@ -298,9 +298,9 @@ static void fetch_formats(control_parameter_list_t& controls
 }
 
 static void fetch_controls(control_parameter_list_t& controls
-                           , v4l2_device_ptr_t& v4l2_device)
+                           , v4l2::v4l2_device& v4l2_device)
 {
-    auto v4l2_controls = v4l2_device->get_control_list();
+    auto v4l2_controls = v4l2_device.get_control_list();
 
     for (const auto& ctrl : v4l2_controls)
     {
@@ -311,7 +311,7 @@ static void fetch_controls(control_parameter_list_t& controls
             {
                 case v4l2::control_type_t::boolean:
                 case v4l2::control_type_t::numeric:
-                    return v4l2_device->set_control(ctrl.id
+                    return v4l2_device.set_control(ctrl.id
                                                     , value);
                 break;
                 case v4l2::control_type_t::menu:
@@ -325,7 +325,7 @@ static void fetch_controls(control_parameter_list_t& controls
                             ? value == idx
                             : value == item.name)
                         {
-                            return v4l2_device->set_control(ctrl.id
+                            return v4l2_device.set_control(ctrl.id
                                                             , item.id);
                         }
                     }
@@ -338,7 +338,7 @@ static void fetch_controls(control_parameter_list_t& controls
         auto get_handler = [&v4l2_device, ctrl](variant& value) ->
         bool
         {
-            auto real_value = v4l2_device->get_control(ctrl.id
+            auto real_value = v4l2_device.get_control(ctrl.id
                                                   , ctrl.range.min - 1);
 
             if (real_value >= ctrl.range.min)
@@ -471,7 +471,7 @@ class camera_control_helper
     uvc_camera_control      m_uvc_control;
     visca_camera_control    m_visca_control;
 public:
-    camera_control_helper(v4l2_device_ptr_t& v4l2_device
+    camera_control_helper(v4l2::v4l2_device& v4l2_device
                           , visca::visca_device& visca_device
                           , const std::string& mode)
         : m_is_visca(mode == "VISCA")
@@ -491,7 +491,7 @@ public:
 };
 
 static void fetch_custom_parameters(control_parameter_list_t& controls
-                                    , v4l2_device_ptr_t& v4l2_device
+                                    , v4l2::v4l2_device& v4l2_device
                                     , visca::visca_device& visca_device)
 {
 
@@ -621,13 +621,15 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
                           );
 }
 
-static media_frame_ptr_t create_video_frame(v4l2::frame_t&& frame)
+static media_frame_ptr_t create_video_frame(v4l2::frame_t&& frame
+                                            , frame_id_t frame_id)
 {
     auto pixel_format = utils::format_conversion::from_v4l2_format(frame.frame_info.pixel_format);
 
     video::video_format_t video_format(pixel_format
                                        , { frame.frame_info.size.width, frame.frame_info.size.height }
-                                       , frame.frame_info.fps);
+                                       , frame.frame_info.fps
+                                       , frame_id);
 
     return video::video_frame::create(video_format
                                       , media_buffer::create(std::move(frame.frame_data)));
@@ -635,27 +637,29 @@ static media_frame_ptr_t create_video_frame(v4l2::frame_t&& frame)
 
 v4l2_input_media_device::v4l2_input_media_device(i_media_sink &media_sink
                                                  , std::uint32_t buffer_count)
-    : m_buffer_count(buffer_count)
-{
-    auto frame_handler = [&media_sink](v4l2::frame_t&& v4l2_frame) ->
-    bool
-    {
-        auto frame = create_video_frame(std::move(v4l2_frame));
-
-        if (frame != nullptr)
+    : m_frame_counter(0)
+    , m_v4l2_device([&media_sink, this](v4l2::frame_t&& v4l2_frame) ->
+        bool
         {
-            media_sink.on_frame(*frame);
-        }
+            auto frame = create_video_frame(std::move(v4l2_frame)
+                                            , m_frame_counter);
 
-        return true;
-    };
+            if (frame != nullptr)
+            {
+                m_frame_counter++;
+                media_sink.on_frame(*frame);
+            }
 
-    m_v4l2_device.reset(new v4l2::v4l2_device(frame_handler));
+            return true;
+        })
+    , m_buffer_count(buffer_count)
+{
+
 }
 
 bool v4l2_input_media_device::open(const std::string &uri)
 {
-    if (m_v4l2_device->open(uri
+    if (m_v4l2_device.open(uri
                             , m_buffer_count))
     {
 
@@ -682,17 +686,17 @@ bool v4l2_input_media_device::open(const std::string &uri)
 
 bool v4l2_input_media_device::close()
 {
-    return m_v4l2_device->close();
+    return m_v4l2_device.close();
 }
 
 bool v4l2_input_media_device::is_open() const
 {
-    return m_v4l2_device->is_opened();
+    return m_v4l2_device.is_opened();
 }
 
 bool v4l2_input_media_device::is_established() const
 {
-    return m_v4l2_device->is_established();
+    return m_v4l2_device.is_established();
 }
 
 const control_parameter_list_t& v4l2_input_media_device::controls() const

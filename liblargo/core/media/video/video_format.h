@@ -86,7 +86,8 @@ struct video_format_t : public media_format_t
 
     video_format_t(pixel_format_t pixel_format = default_pixel_format
                    , frame_size_t size = default_frame_size
-                   , std::uint32_t fps = default_fps);
+                   , std::uint32_t fps = default_fps
+                   , stream_id_t stream_id = no_stream);
 
     bool operator ==(const media_format_t& media_format) override;
     bool operator !=(const media_format_t& media_format) override;

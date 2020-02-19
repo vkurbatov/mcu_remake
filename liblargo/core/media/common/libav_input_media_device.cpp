@@ -9,7 +9,8 @@ namespace media
 {
 
 static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_info
-                                            , ffmpeg::frame_t&& frame)
+                                            , ffmpeg::frame_t&& frame
+                                            , frame_id_t frame_id)
 {
     auto pixel_format = frame.info.codec_id > 0 && frame.info.codec_id != ffmpeg::codec_id_raw_video
             ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
@@ -17,55 +18,56 @@ static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_
 
     video::video_format_t video_format(pixel_format
                                        , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
-                                       , frame.info.media_info.video_info.fps);
+                                       , frame.info.media_info.video_info.fps
+                                       , frame_id);
 
     video_format.extra_data = stream_info.extra_data;
     return video::video_frame::create(video_format
-                                      , media_buffer::create(std::move(frame.media_data))
-                                      , frame.info.id);
+                                      , media_buffer::create(std::move(frame.media_data)));
 }
 
 libav_input_media_device::libav_input_media_device(i_media_sink& media_sink)
-{
-    auto frame_handler = [&media_sink](const ffmpeg::stream_info_t& stream_info
-                                       , ffmpeg::frame_t&& libav_frame) ->
-    bool
-    {       
+    : m_frame_counter(0)
+    , m_libav_stream_capturer([&media_sink, this](const ffmpeg::stream_info_t& stream_info
+                              , ffmpeg::frame_t&& libav_frame)
+    {
         if (libav_frame.info.media_info.media_type == ffmpeg::media_type_t::video)
         {
-            auto frame = create_video_frame(stream_info
-                                            , std::move(libav_frame));
+           auto frame = create_video_frame(stream_info
+                                           , std::move(libav_frame)
+                                           , m_frame_counter);
 
-            if (frame != nullptr)
-            {
-                media_sink.on_frame(*frame);
-            }
+           if (frame != nullptr)
+           {
+               m_frame_counter++;
+               media_sink.on_frame(*frame);
+           }
         }
 
         return true;
-    };
+    })
+{
 
-    m_libav_stream_capturer.reset(new ffmpeg::libav_stream_capturer(frame_handler));
 }
 
 bool libav_input_media_device::open(const std::string &uri)
 {
-    return m_libav_stream_capturer->open(uri);
+    return m_libav_stream_capturer.open(uri);
 }
 
 bool libav_input_media_device::close()
 {
-    return m_libav_stream_capturer->close();
+    return m_libav_stream_capturer.close();
 }
 
 bool libav_input_media_device::is_open() const
 {
-    return m_libav_stream_capturer->is_opened();
+    return m_libav_stream_capturer.is_opened();
 }
 
 bool libav_input_media_device::is_established() const
 {
-    return m_libav_stream_capturer->is_established();
+    return m_libav_stream_capturer.is_established();
 }
 
 const control_parameter_list_t& libav_input_media_device::controls() const

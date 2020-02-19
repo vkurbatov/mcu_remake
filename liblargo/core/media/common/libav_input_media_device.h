@@ -13,13 +13,14 @@ namespace core
 namespace media
 {
 
-typedef std::unique_ptr<ffmpeg::libav_stream_capturer > libav_stream_capturer_ptr_t;
+//typedef std::unique_ptr<ffmpeg::libav_stream_capturer > libav_stream_capturer_ptr_t;
 
 class libav_input_media_device : virtual public i_media_device,
         virtual public i_media_control
 
 {
-    libav_stream_capturer_ptr_t         m_libav_stream_capturer;
+    std::uint32_t                       m_frame_counter;
+    ffmpeg::libav_stream_capturer       m_libav_stream_capturer;
 
 public:
     libav_input_media_device(i_media_sink& media_sink);

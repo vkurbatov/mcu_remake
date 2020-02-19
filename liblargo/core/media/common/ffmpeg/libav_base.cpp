@@ -42,7 +42,7 @@ const pixel_format_t pixel_format_rgb16 = static_cast<pixel_format_t>(AV_PIX_FMT
 const pixel_format_t pixel_format_bgr24 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR24);
 const pixel_format_t pixel_format_rgb24 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB24);
 const pixel_format_t pixel_format_bgr32 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR32);
-const pixel_format_t pixel_format_rgb32 = static_cast<pixel_format_t>(AV_PIX_FMT_BGR32);
+const pixel_format_t pixel_format_rgb32 = static_cast<pixel_format_t>(AV_PIX_FMT_RGB32);
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
 

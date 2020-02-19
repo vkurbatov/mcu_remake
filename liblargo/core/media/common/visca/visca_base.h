@@ -21,8 +21,8 @@ const std::int32_t visca_tilt_max = 1296;
 const std::int32_t visca_zoom_min = 0;
 const std::int32_t visca_zoom_max = 16384;
 const std::int32_t visca_pan_range = visca_pan_max - visca_pan_min;
-const std::int32_t visca_tilt_range = visca_tilt_min - visca_tilt_max;
-const std::int32_t visca_zoom_range = visca_zoom_min - visca_zoom_max;
+const std::int32_t visca_tilt_range = visca_tilt_max - visca_tilt_min;
+const std::int32_t visca_zoom_range = visca_zoom_max - visca_zoom_min;
 
 
 const std::uint8_t visca_eof = 0xff;

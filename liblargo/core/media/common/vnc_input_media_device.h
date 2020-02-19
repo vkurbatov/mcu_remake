@@ -1,12 +1,11 @@
-#ifndef V4L2_INPUT_MEDIA_DEVICE_H
-#define V4L2_INPUT_MEDIA_DEVICE_H
+#ifndef VNC_INPUT_MEDIA_DEVICE_H
+#define VNC_INPUT_MEDIA_DEVICE_H
 
 #include "i_media_sink.h"
 #include "i_media_device.h"
 #include "i_media_control.h"
 
-#include "media/common/v4l2/v4l2_device.h"
-#include "media/common/visca/visca_device.h"
+#include "media/common/vnc/vnc_device.h"
 
 namespace core
 {
@@ -14,23 +13,19 @@ namespace core
 namespace media
 {
 
-// typedef std::unique_ptr<v4l2::v4l2_device> v4l2_device_ptr_t;
+// typedef std::unique_ptr<vnc::vnc_device> vnc_device_ptr_t;
 
-class v4l2_input_media_device : virtual public i_media_device,
+class vnc_input_media_device : virtual public i_media_device,
         virtual public i_media_control
 
 {
     std::uint32_t               m_frame_counter;
-    v4l2::v4l2_device           m_v4l2_device;
-    visca::visca_device         m_visca_device;
-
-    std::uint32_t               m_buffer_count;
-
+    vnc::vnc_device             m_vnc_device;
     control_parameter_list_t    m_controls;
 
 public:
-    v4l2_input_media_device(i_media_sink& media_sink
-                            , std::uint32_t buffer_count = 2);
+    vnc_input_media_device(i_media_sink& media_sink
+                           , const vnc::vnc_config_t& vnc_config = {});
 
     // i_media_device interface
 public:
@@ -54,4 +49,4 @@ public:
 
 }
 
-#endif // V4L2_INPUT_MEDIA_DEVICE_H
+#endif // VNC_INPUT_MEDIA_DEVICE_H

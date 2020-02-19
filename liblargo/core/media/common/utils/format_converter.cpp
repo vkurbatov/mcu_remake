@@ -56,7 +56,7 @@ const std::unordered_map<video::pixel_format_t
     { video::pixel_format_t::bgra32,    { 0,                    AV_CODEC_ID_NONE,       AV_PIX_FMT_BGRA,        "brga"      }   },
     { video::pixel_format_t::rgba32,    { 0,                    AV_CODEC_ID_NONE,       AV_PIX_FMT_RGBA,        "rgba"      }   },
     { video::pixel_format_t::bgr32,     { V4L2_PIX_FMT_BGR32,   AV_CODEC_ID_NONE,       AV_PIX_FMT_BGR0,        "brg32"     }   },
-    { video::pixel_format_t::rgb32,     { V4L2_PIX_FMT_RGB32,   AV_CODEC_ID_NONE,       AV_PIX_FMT_0RGB,        "rgb32"     }   },
+    { video::pixel_format_t::rgb32,     { V4L2_PIX_FMT_RGB32,   AV_CODEC_ID_NONE,       AV_PIX_FMT_RGB0,        "rgb32"     }   },
     { video::pixel_format_t::gray8,     { V4L2_PIX_FMT_GREY,    AV_CODEC_ID_NONE,       AV_PIX_FMT_GRAY8,       "gray8"     }   },
     { video::pixel_format_t::gray16,    { V4L2_PIX_FMT_Y16,     AV_CODEC_ID_NONE,       AV_PIX_FMT_GRAY16LE,    "gray16"    }   },
     { video::pixel_format_t::gray16x,   { V4L2_PIX_FMT_Y16_BE,  AV_CODEC_ID_NONE,       AV_PIX_FMT_GRAY16BE,    "gray16x"   }   },

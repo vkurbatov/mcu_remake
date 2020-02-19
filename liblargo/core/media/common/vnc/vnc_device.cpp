@@ -276,6 +276,7 @@ struct vnc_client_t
 struct vnc_device_context_t
 {
     frame_handler_t                 m_frame_handler;
+    vnc_config_t                    m_config;
 
     std::thread                     m_stream_thread;
     mutable std::mutex              m_mutex;
@@ -288,8 +289,10 @@ struct vnc_device_context_t
     key_state_queue_t               m_key_state_queue;
     bool                            m_key_send;
 
-    vnc_device_context_t(frame_handler_t frame_handler)
+    vnc_device_context_t(frame_handler_t frame_handler
+                         , const vnc_config_t& config)
         : m_frame_handler(frame_handler)
+        , m_config(config)
         , m_running(false)
         , m_established(false)
         , m_key_send(false)
@@ -297,15 +300,18 @@ struct vnc_device_context_t
 
     }
 
-    bool open(const vnc_server_config_t &server_config
-              , std::uint32_t fps)
+    ~vnc_device_context_t()
+    {
+        close();
+    }
+
+    bool open(const vnc_server_config_t &server_config)
     {
         close();
         m_running = true;
         m_stream_thread = std::thread(&vnc_device_context_t::stream_proc
                                       , this
-                                      , server_config
-                                      , fps);
+                                      , server_config);
     }
 
     bool close()
@@ -359,8 +365,7 @@ struct vnc_device_context_t
         m_key_send = true;
     }
 
-    void stream_proc(const vnc_server_config_t &server_config
-                     , std::uint32_t fps)
+    void stream_proc(const vnc_server_config_t &server_config)
     {
         while (m_running)
         {
@@ -371,11 +376,10 @@ struct vnc_device_context_t
                 {
                     bool is_complete = false;
 
-                    const auto frame_time = 1000 / fps;
-
                     while (m_running
                            && is_complete == false)
                     {
+                        const auto frame_time = 1000 / m_config.fps;
 
                         if (m_key_send)
                         {
@@ -391,6 +395,8 @@ struct vnc_device_context_t
                         frame_t frame;
                         auto io_result = vnc_client->fetch_frame(frame
                                                                  , frame_time * 2);
+
+                        frame.fps = m_config.fps;
 
                         switch (io_result)
                         {
@@ -429,24 +435,22 @@ void vnc_device_context_deleter_t::operator()(vnc_device_context_t *vnc_device_c
     delete vnc_device_context_ptr;
 }
 
-vnc_device::vnc_device(frame_handler_t frame_handler)
-    : m_vnc_device_context(new vnc_device_context_t(frame_handler))
+vnc_device::vnc_device(frame_handler_t frame_handler
+                       , const vnc_config_t& config)
+    : m_vnc_device_context(new vnc_device_context_t(frame_handler
+                                                    , config))
 {
 
 }
 
-bool vnc_device::open(const vnc_server_config_t &server_config
-                      , std::uint32_t fps)
+bool vnc_device::open(const vnc_server_config_t &server_config)
 {
-    return m_vnc_device_context->open(server_config
-                                      , fps);
+    return m_vnc_device_context->open(server_config);
 }
 
-bool vnc_device::open(const std::string &uri
-                      , std::uint32_t fps)
+bool vnc_device::open(const std::string &uri)
 {
-    return m_vnc_device_context->open(vnc_server_config_t::from_uri(uri)
-                                      , fps);
+    return m_vnc_device_context->open(vnc_server_config_t::from_uri(uri));
 }
 
 bool vnc_device::close()
@@ -462,6 +466,17 @@ bool vnc_device::is_opened() const
 bool vnc_device::is_established() const
 {
     return m_vnc_device_context->m_established;
+}
+
+const vnc_config_t &vnc_device::config() const
+{
+    return m_vnc_device_context->m_config;
+}
+
+bool vnc_device::set_config(const vnc_config_t &config)
+{
+    m_vnc_device_context->m_config = config;
+    return true;
 }
 
 void vnc_device::send_key_event(uint32_t virtual_key

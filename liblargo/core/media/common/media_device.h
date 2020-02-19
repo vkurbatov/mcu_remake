@@ -3,7 +3,6 @@
 
 #include "i_media_device.h"
 #include "i_media_control.h"
-#include <map>
 
 namespace core
 {

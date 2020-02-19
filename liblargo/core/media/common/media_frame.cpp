@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "media_plane.h"
+#include "media_buffer.h"
 
 namespace core
 {
@@ -20,16 +21,26 @@ bool media_frame::check_media_buffer(const media_format_t &media_format
 }
 
 media_frame::media_frame(media_buffer_ptr_t media_buffer
-                         , stream_id_t stream_id
+                         , frame_id_t frame_id
                          , timestamp_t timestamp)
     : m_media_buffer(media_buffer)
-    , m_stream_id(stream_id)
+    , m_frame_id(frame_id)
     , m_timestamp(timestamp)
 {
     if (m_timestamp == 0)
     {
         m_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
     }
+}
+
+media_frame::media_frame(media_data_t &&media_data
+                         , frame_id_t frame_id
+                         , timestamp_t timestamp)
+    : media_frame(media_buffer::create(std::move(media_data))
+                  , frame_id
+                  , timestamp)
+{
+
 }
 
 media_frame::~media_frame(){}
@@ -82,9 +93,9 @@ bool media_frame::is_valid() const
                                   , *m_media_buffer);
 }
 
-stream_id_t media_frame::stream_id() const
+frame_id_t media_frame::frame_id() const
 {
-    return m_stream_id;
+    return m_frame_id;
 }
 
 timestamp_t media_frame::timestamp() const

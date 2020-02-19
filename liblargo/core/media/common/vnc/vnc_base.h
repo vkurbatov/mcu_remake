@@ -48,16 +48,19 @@ struct vnc_server_config_t
 
 struct vnc_config_t
 {
-
+    std::uint32_t   fps;
+    vnc_config_t(std::uint32_t fps = default_fps);
 };
 
 struct frame_t
 {
     frame_size_t    frame_size;
     frame_data_t    frame_data;
+    std::uint32_t   fps;
     std::uint32_t   bpp;
 
     frame_t(const frame_size_t frame_size = frame_size_t()
+            , std::uint32_t fps = default_fps
             , std::uint32_t bpp = default_bpp);
 
     std::size_t realloc();

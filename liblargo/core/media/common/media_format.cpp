@@ -6,8 +6,10 @@ namespace core
 namespace media
 {
 
-media_format_t::media_format_t(media_type_t media_type)
+media_format_t::media_format_t(media_type_t media_type
+                               , stream_id_t stream_id)
     : media_type(media_type)
+    , stream_id(stream_id)
 {
 
 }

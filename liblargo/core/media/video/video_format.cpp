@@ -88,8 +88,10 @@ std::string video_format_t::to_string(pixel_format_t pixel_format
 
 video_format_t::video_format_t(pixel_format_t pixel_format
                                , frame_size_t size
-                               , uint32_t fps)
-    : media_format_t(media_type_t::video)
+                               , uint32_t fps
+                               , stream_id_t stream_id)
+    : media_format_t(media_type_t::video
+                     , stream_id)
     , pixel_format(pixel_format)
     , size(size)
     , fps(fps)
