@@ -21,7 +21,6 @@ public:
     virtual bool is_established() const = 0;
 
     virtual media_format_list_t streams() const = 0;
-
     // virtual const device_info_t& device_info() const = 0;
 };
 

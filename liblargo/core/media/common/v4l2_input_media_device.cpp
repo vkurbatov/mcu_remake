@@ -621,6 +621,14 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
                           );
 }
 
+media_format_ptr_t format_form_frame_info(const v4l2::frame_info_t& frame_info)
+{
+    return video::video_format_t::create(utils::format_conversion::from_v4l2_format(frame_info.pixel_format)
+                                         , { frame_info.size.width, frame_info.size.height}
+                                         , frame_info.fps
+                                         , 0);
+}
+
 static media_frame_ptr_t create_video_frame(v4l2::frame_t&& frame
                                             , frame_id_t frame_id)
 {
@@ -699,20 +707,32 @@ bool v4l2_input_media_device::is_established() const
     return m_v4l2_device.is_established();
 }
 
+media_format_list_t v4l2_input_media_device::streams() const
+{
+    media_format_list_t format_list;
+
+    if (m_v4l2_device.is_opened())
+    {
+        format_list.emplace_back(format_form_frame_info(m_v4l2_device.get_format()));
+    }
+
+    return format_list;
+}
+
 const control_parameter_list_t& v4l2_input_media_device::controls() const
 {
     return m_controls;
 }
 
 bool v4l2_input_media_device::set_control(const std::string& control_name
-                                          , const variant control_value)
+                                          , const variant& control_value)
 {
     return m_controls.set(control_name
                           , control_value);
 }
 
 variant v4l2_input_media_device::get_control(const std::string& control_name
-                                             , const variant default_value) const
+                                             , const variant& default_value) const
 {
     variant result = default_value;
 

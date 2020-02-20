@@ -85,6 +85,18 @@ std::string video_format_t::to_string(pixel_format_t pixel_format
                                            << media::utils::format_conversion::get_format_name(pixel_format)).str();
 }
 
+media_format_ptr_t video_format_t::create(pixel_format_t pixel_format
+                                          , frame_size_t size
+                                          , uint32_t fps
+                                          , stream_id_t stream_id)
+{
+    return media_format_ptr_t(new video_format_t(pixel_format
+                                                  , size
+                                                  , fps
+                                                  , stream_id));
+
+}
+
 
 video_format_t::video_format_t(pixel_format_t pixel_format
                                , frame_size_t size
