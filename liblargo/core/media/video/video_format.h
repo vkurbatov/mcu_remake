@@ -109,7 +109,7 @@ struct video_format_t : public media_format_t
 
     std::string to_string() const override;
 
-    std::unique_ptr<media_format_t> clone() const override;
+    media_format_ptr_t clone() const override;
 };
 
 }

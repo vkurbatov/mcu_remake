@@ -1,22 +1,24 @@
 #include "libav_output_media_device.h"
 
+#include "media/video/video_format.h"
+
 namespace core
 {
 
 namespace media
 {
 
-libav_output_media_device::libav_output_media_device(media_format_list_t media_streams)
-    : m_media_streams(media_streams)
+libav_output_media_device::libav_output_media_device(const media_format_list_t& media_streams)
+//    : m_media_streams(std::move(media_streams))
 {
 
 }
 
-bool libav_output_media_device::set_media_streams(media_format_list_t media_streams)
+bool libav_output_media_device::set_media_streams(const media_format_list_t& media_streams)
 {
     if (!m_libav_stream_publisher.is_opened())
     {
-       // m_media_streams = media_streams;
+        // m_media_streams = std::move(media_streams);
         return true;
     }
 
@@ -45,7 +47,7 @@ bool libav_output_media_device::is_established() const
 
 media_format_list_t libav_output_media_device::streams() const
 {
-    return m_media_streams;
+   return m_media_streams;
 }
 
 const control_parameter_list_t &libav_output_media_device::controls() const

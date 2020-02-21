@@ -21,8 +21,8 @@ class libav_output_media_device : virtual public i_media_device
     media_format_list_t                 m_media_streams;
 
 public:
-    libav_output_media_device(media_format_list_t media_streams);
-    bool set_media_streams(media_format_list_t media_streams);
+    libav_output_media_device(const media_format_list_t& media_streams);
+    bool set_media_streams(const media_format_list_t& media_streams);
 
     // i_media_device interface
 public:

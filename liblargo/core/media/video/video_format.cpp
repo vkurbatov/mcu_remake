@@ -181,9 +181,9 @@ std::string video_format_t::to_string() const
                      , fps);
 }
 
-std::unique_ptr<media_format_t> video_format_t::clone() const
+media_format_ptr_t video_format_t::clone() const
 {
-    return std::unique_ptr<media_format_t>(new video_format_t(*this));
+    return std::make_shared<media_format_t>(*this);
 }
 
 

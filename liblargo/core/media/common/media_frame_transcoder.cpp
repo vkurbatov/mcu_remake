@@ -79,7 +79,7 @@ media_frame_transcoder::media_frame_transcoder(const media_format_t& transcoding
           , transcoding_options);
 }
 
-const std::unique_ptr<media_format_t> &media_frame_transcoder::format() const
+const media_format_ptr_t &media_frame_transcoder::format() const
 {
     return m_transcoding_format;
 }

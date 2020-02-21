@@ -27,7 +27,7 @@ const stream_id_t no_stream = -1;
 
 struct media_format_t;
 
-typedef std::unique_ptr<media_format_t> media_format_ptr_t;
+typedef std::shared_ptr<media_format_t> media_format_ptr_t;
 typedef std::vector<media_format_ptr_t> media_format_list_t;
 
 struct media_format_t
