@@ -2,6 +2,7 @@
 #define AUDIO_FORMAT_H
 
 #include "core/media/common/media_types.h"
+#include "core/media/common/media_format.h"
 #include <ostream>
 
 namespace core
@@ -13,9 +14,8 @@ namespace media
 namespace audio
 {
 
-struct audio_format_t
+struct audio_format_t : virtual public i_format_info
 {
-
 	enum class sample_format_t
 	{
 		unknown,
@@ -23,7 +23,10 @@ struct audio_format_t
 		pcm_16,
 		pcm_32,
 		float_32,
-		float_64
+        float_64,
+        pcma,
+        pcmu,
+        aac
 	};
 
 	static const std::uint32_t min_sample_rate = 8000;
@@ -71,6 +74,15 @@ struct audio_format_t
 	std::size_t size_from_format(const audio_format_t& af, std::size_t size) const;
 	std::size_t samples_from_size(std::size_t size) const;
 	std::size_t samples_from_duration(std::uint32_t duration_ms) const;
+
+    // i_format_info interface
+public:
+    bool is_encoded() const override;
+    bool is_convertable() const override;
+    bool is_planar() const override;
+    std::size_t frame_size() const override;
+    std::size_t planes() const override;
+    plane_sizes_t plane_sizes() const override;
 };
 
 static const audio_format_t default_audio_format = { audio_format_t::default_sample_rate, audio_format_t::sample_format_t::pcm_16, audio_format_t::default_channels };

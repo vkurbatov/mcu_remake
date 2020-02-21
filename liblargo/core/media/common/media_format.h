@@ -27,33 +27,85 @@ const stream_id_t no_stream = -1;
 
 struct media_format_t;
 
-typedef std::shared_ptr<media_format_t> media_format_ptr_t;
-typedef std::vector<media_format_ptr_t> media_format_list_t;
+// typedef std::shared_ptr<media_format_t> media_format_ptr_t;
+typedef std::vector<media_format_t> media_format_list_t;
 
-struct media_format_t
+struct info_storage_t;
+//struct info_storage_deleter_t { void operator()(info_storage_t* info_storage_ptr); };
+typedef std::shared_ptr<info_storage_t> info_storage_ptr_t;
+
+namespace video
 {
-    media_type_t        media_type;
-    extra_data_t        extra_data;
-    stream_id_t         stream_id;
+struct video_info_t;
+}
 
-    media_format_t(media_type_t media_type
-                   , stream_id_t stream_id = no_stream);
-    virtual ~media_format_t(){}
+namespace audio
+{
+struct audio_info_t;
+}
 
+namespace data
+{
+struct data_info_t;
+}
+
+class i_format_info
+{
+public:
+    virtual ~i_format_info(){}
     virtual bool is_encoded() const = 0;
     virtual bool is_convertable() const = 0;
     virtual bool is_planar() const = 0;
     virtual std::size_t frame_size() const = 0;
     virtual std::size_t planes() const = 0;
     virtual plane_sizes_t plane_sizes() const = 0;
-    virtual bool is_valid() const;
+};
+
+struct media_format_t : virtual public i_format_info
+{
+    const info_storage_ptr_t        info_storage;
+    media_type_t                    media_type;
+    extra_data_t                    extra_data;
+    stream_id_t                     stream_id;
+    std::string                     parameters;
+
+    media_format_t(media_type_t media_type = media_type_t::data);
+
+    media_format_t(const video::video_info_t& video_info
+                   , stream_id_t stream_id = no_stream);
+
+    media_format_t(const audio::audio_info_t& audio_info
+                   , stream_id_t stream_id = no_stream);
+
+    media_format_t(const data::data_info_t& data_info
+                   , stream_id_t stream_id = no_stream);
+
+    media_format_t(const media_format_t& media_format);
+    media_format_t(media_format_t&& media_format) = default;
+
+    media_format_t &operator=(const media_format_t& media_format);
+    media_format_t &operator=(media_format_t&& media_format) = default;
+
+    bool is_encoded() const override;
+    bool is_convertable() const override;
+    bool is_planar() const override;
+    std::size_t frame_size() const override;
+    std::size_t planes() const override;
+    plane_sizes_t plane_sizes() const override;
+    bool is_valid() const;
+
+    virtual video::video_info_t& video_info();
+    virtual audio::audio_info_t& audio_info();
+    virtual data::data_info_t& data_info();
+
+    virtual const video::video_info_t& video_info() const;
+    virtual const audio::audio_info_t& audio_info() const;
+    virtual const data::data_info_t& data_info() const;
 
     virtual bool operator ==(const media_format_t& media_format);
     virtual bool operator !=(const media_format_t& media_format);
 
     virtual std::string to_string() const;
-
-    virtual media_format_ptr_t clone() const = 0;
 
 };
 

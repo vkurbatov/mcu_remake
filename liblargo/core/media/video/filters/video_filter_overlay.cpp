@@ -59,11 +59,11 @@ bool video_filter_overlay::internal_filter(i_video_frame &video_frame) const
         return false;
     }
 
-    const frame_size_t& frame_size = video_frame.video_format().size;
+    const frame_size_t& frame_size = video_frame.media_format().video_info().size;
 
     frame_rect_t overlay_rect = fetch_total_rect(m_layer_list
                                              ,  frame_size );
-    if ( video_frame.video_format().is_planar())
+    if ( video_frame.media_format().is_planar())
     {
         if (overlay_rect.size.width % width_align != 0)
         {
@@ -77,9 +77,9 @@ bool video_filter_overlay::internal_filter(i_video_frame &video_frame) const
 
     frame_rect_t work_rect(overlay_rect.size);
 
-    video_format_t work_format(pixel_format_t::rgb24
-                               , work_rect.size
-                               , 0);
+    video_info_t work_format(pixel_format_t::rgb24
+                             , work_rect.size
+                             , 0);
 
     if (m_media_buffer_ptr == nullptr
             || m_media_buffer_ptr->size() < work_format.frame_size())

@@ -168,7 +168,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
     // std::string uri = "http://127.0.0.1:1234/feed1.ffm";
     //std::string uri = "/tmp/feed1.ffm";
 
-    const auto& video_format = video_frame.video_format();
+    const auto& media_format = video_frame.media_format();
 
     if (!video_encoder.is_open())
     {
@@ -178,9 +178,9 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
         // s_info.codec_info.codec_params.set_global_header(true);
         s_info.codec_info.codec_params.gop = 12;
         s_info.media_info.media_type = ffmpeg::media_type_t::video;
-        s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
+        s_info.media_info.video_info.size = { media_format.video_info().size.width, media_format.video_info().size.height };
         s_info.media_info.video_info.fps = fps;// video_format.fps;
-        s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format);
+        s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(media_format.video_info().pixel_format);
 
         video_encoder.open(s_info
                            , ffmpeg::transcoder_type_t::encoder
@@ -239,7 +239,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
         {
             static auto video_frames = 0;
             auto video_enc_frames = video_encoder.transcode(video_frame.planes()[0]->data()
-                                                      , video_format.frame_size());
+                                                      , media_format.video_info().frame_size());
 
             video_frames++;
 
@@ -299,9 +299,9 @@ static bool transcoder_test(core::media::video::i_video_frame& video_frame)
     std::string encoder_name = "libx264";
     std::string decoder_name = "h264";
 
-    const auto& video_format = video_frame.video_format();
+    const auto& media_format = video_frame.media_format();
 
-    if (video_format.pixel_format == core::media::video::pixel_format_t::yuv420p)
+    if (media_format.video_info().pixel_format == core::media::video::pixel_format_t::yuv420p)
     {
         if (!encoder.is_open())
         {
@@ -310,9 +310,9 @@ static bool transcoder_test(core::media::video::i_video_frame& video_frame)
             s_info.codec_info.codec_params.bitrate = 1000000;
             s_info.codec_info.codec_params.gop = 12;
             s_info.media_info.media_type = ffmpeg::media_type_t::video;
-            s_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
+            s_info.media_info.video_info.size = { media_format.video_info().size.width, media_format.video_info().size.height };
             s_info.media_info.video_info.fps = 25;// video_format.fps;
-            s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format);
+            s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(media_format.video_info().pixel_format);
 
             encoder.open(s_info
                          , ffmpeg::transcoder_type_t::encoder
@@ -338,13 +338,13 @@ static bool transcoder_test(core::media::video::i_video_frame& video_frame)
                 //auto tp = ffmpeg::adaptive_timer_t::now(1000000);
 
                 auto enc_frames = encoder.transcode(video_frame.planes()[0]->data()
-                                                    , video_format.frame_size());
+                                                    , media_format.video_info().frame_size());
 
                 // tp = ffmpeg::adaptive_timer_t::now(1000000) - tp;
 
                 encoder_delay += (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count() - encoder_delay) * delay_factor;
 
-                auto fsz = video_format.frame_size();
+                auto fsz = media_format.video_info().frame_size();
 
                 while (!enc_frames.empty())
                 {
@@ -455,8 +455,7 @@ video_form::video_form(QWidget *parent) :
 
                 if (frame.media_format().is_encoded())
                 {
-                    if (frame_transcoder == nullptr
-                            || frame_transcoder->format() == nullptr)
+                    if (frame_transcoder == nullptr)
                     {
                         frame_transcoder.reset(new core::media::media_frame_transcoder(frame.media_format()));
                     }
@@ -838,9 +837,10 @@ void video_form::prepare_image()
             filter_flip.set_flip_method(flip_method);
         }
 
+        core::media::video::video_info_t input_video_info( core::media::utils::format_conversion::from_ffmpeg_format(input_info.pixel_format)
+                                                      , { input_info.frame_size.width, input_info.frame_size.height });
 
-        core::media::video::video_format_t input_format( core::media::utils::format_conversion::from_ffmpeg_format(input_info.pixel_format)
-                                                  , { input_info.frame_size.width, input_info.frame_size.height });
+        core::media::media_format_t input_format(input_video_info);
 
         auto input_frame = core::media::video::video_frame::create(input_format
                                                                    , core::media::media_buffer::create(std::move(input_buffer)));
@@ -848,9 +848,10 @@ void video_form::prepare_image()
 
         auto tp = std::chrono::high_resolution_clock::now();
 
-        core::media::video::video_format_t mid_format(input_format);
-        mid_format.size = { mid_info.frame_size.width, mid_info.frame_size.height };
-        mid_format.pixel_format = core::media::video::pixel_format_t::yuv420p;
+
+        core::media::media_format_t mid_format(input_format);
+        mid_format.video_info().size = { mid_info.frame_size.width, mid_info.frame_size.height };
+        mid_format.video_info().pixel_format = core::media::video::pixel_format_t::yuv420p;
 
         /*core::media::video::frame_rect_t input_area = core::media::video::frame_rect_t( { input_info.frame_rect.offset.x, input_info.frame_rect.offset.y }
                                                                                         , frame_sizeinput_info.frame_rect.size.width, input_info.frame_rect.size.height });
@@ -1136,19 +1137,21 @@ void video_form::prepare_image2()
     if (input_frame != nullptr)
     {
         auto& input_video_frame = reinterpret_cast<core::media::video::video_frame&>(*input_frame);
-        const auto& input_video_format = input_video_frame.video_format();
+        const auto& input_media_format = input_video_frame.media_format();
+
+
 
         core::media::video::frame_rect_t input_area( core::media::video::frame_point_t(0, 0)
-                                                     , core::media::video::frame_size_t(input_video_format.size.width, input_video_format.size.height));
+                                                     , core::media::video::frame_size_t(input_media_format.video_info().size.width, input_media_format.video_info().size.height));
 
         auto mid_area = input_area;
         auto output_area = input_area;
 
-        auto mid_format = input_video_format;
-        auto output_format = input_video_format;
+        auto mid_format = input_media_format;
+        auto output_format = input_media_format;
 
-        output_format.pixel_format = core::media::video::pixel_format_t::rgba32;
-        output_format.size = output_area.size = { 1280, 720 };
+        output_format.video_info().pixel_format = core::media::video::pixel_format_t::rgba32;
+        output_format.video_info().size = output_area.size = { 1280, 720 };
 
         input_area.point.x += margin;
         input_area.point.y += margin;
@@ -1163,13 +1166,13 @@ void video_form::prepare_image2()
         const auto k_w = scaling_factor;
         const auto k_h = scaling_factor;
 
-        mid_format.size.width /= k_w;
-        mid_format.size.height /= k_h;
-        mid_area.size = mid_format.size;
-        mid_format.pixel_format = core::media::video::pixel_format_t::yuv420p;
+        mid_format.video_info().size.width /= k_w;
+        mid_format.video_info().size.height /= k_h;
+        mid_area.size = mid_format.video_info().size;
+        mid_format.video_info().pixel_format = core::media::video::pixel_format_t::yuv420p;
 
-        const QSize q_size(output_format.size.width
-                           , output_format.size.height);
+        const QSize q_size(output_format.video_info().size.width
+                           , output_format.video_info().size.height);
 
 
         if (scaling_method != converter.scaling_method())
@@ -1635,9 +1638,9 @@ void video_form::test1()
 
     frame_size_t frame_size = { 1280, 720 };
 
-    video_format_t v_format_1(pixel_format_t::yuv420p
+    video_info_t v_format_1(pixel_format_t::yuv420p
                               , frame_size);
-    video_format_t v_format_2(pixel_format_t::yuv422p
+    video_info_t v_format_2(pixel_format_t::yuv422p
                               , frame_size);
 
 

@@ -31,12 +31,14 @@ static video::pixel_format_t bbp_to_format(std::uint16_t bpp)
     return video::pixel_format_t::unknown;
 }
 
-media_format_ptr_t format_form_frame_info(const vnc::frame_t& frame)
+void format_form_frame_info(const vnc::frame_t& frame, media_format_t& media_format)
 {
-    return video::video_format_t::create(bbp_to_format(frame.bpp)
-                                         , { frame.frame_size.width, frame.frame_size.height}
-                                         , frame.fps
-                                         , 0);
+    video::video_info_t video_info(bbp_to_format(frame.bpp)
+                                   , { frame.frame_size.width, frame.frame_size.height}
+                                   , frame.fps);
+
+    media_format = media_format_t(video_info
+                                  , 0);
 }
 
 vnc_input_media_device::vnc_input_media_device(i_media_sink &media_sink
@@ -50,16 +52,17 @@ vnc_input_media_device::vnc_input_media_device(i_media_sink &media_sink
 
         if (!vnc_frame.frame_data.empty())
         {
-            video::video_format_t video_format(bbp_to_format(vnc_frame.bpp)
-                                               , { vnc_frame.frame_size.width, vnc_frame.frame_size.height}
-                                               , vnc_frame.fps
-                                               , m_frame_counter);
+            media_format_t media_format;
 
-            if (video_format.pixel_format != video::pixel_format_t::unknown
-                    && video_format.size.size() <= vnc_frame.frame_data.size())
+            format_form_frame_info(vnc_frame
+                                   , media_format);
+
+            if (media_format.video_info().pixel_format != video::pixel_format_t::unknown
+                    && media_format.video_info().size.size() <= vnc_frame.frame_data.size())
             {
-                auto frame = video::video_frame::create(video_format
-                                                        , std::move(vnc_frame.frame_data));
+                auto frame = video::video_frame::create(media_format
+                                                        , std::move(vnc_frame.frame_data)
+                                                        , m_frame_counter);
 
                 if (frame != nullptr)
                 {
@@ -123,7 +126,10 @@ media_format_list_t vnc_input_media_device::streams() const
 
     if (m_vnc_device.is_opened())
     {
-        format_list.emplace_back(format_form_frame_info(m_frame_info));
+        media_format_t media_format;
+        format_form_frame_info(m_frame_info
+                               , media_format);
+        format_list.emplace_back(std::move(media_format));
     }
 
     return format_list;

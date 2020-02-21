@@ -16,15 +16,15 @@ static bool stream_info_from_format(const media_format_t& media_format
     {
         case media_type_t::video:
         {
-            auto video_format = static_cast<const video::video_format_t&>(media_format);
+            video::video_info_t video_info = media_format.video_info();
 
-            stream_info.extra_data = video_format.extra_data;
-            stream_info.codec_info.id = utils::format_conversion::to_ffmpeg_codec(video_format.pixel_format);
+            stream_info.extra_data = media_format.extra_data;
+            stream_info.codec_info.id = utils::format_conversion::to_ffmpeg_codec(video_info.pixel_format);
             stream_info.codec_info.name.clear();
             stream_info.media_info.media_type = ffmpeg::media_type_t::video;
-            stream_info.media_info.video_info.fps = video_format.fps;
-            stream_info.media_info.video_info.size = { video_format.size.width, video_format.size.height };
-            stream_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_format(video_format.pixel_format);
+            stream_info.media_info.video_info.fps = video_info.fps;
+            stream_info.media_info.video_info.size = { video_info.size.width, video_info.size.height };
+            stream_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_format(video_info.pixel_format);
 
             return true;
         }
@@ -55,13 +55,18 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
                         ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
                         : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
 
-                video::video_format_t video_format(pixel_format
-                                                   , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
-                                                   , frame.info.media_info.video_info.fps);
 
-                video_format.extra_data = stream_info.extra_data;
+                video::video_info_t video_info(pixel_format
+                                               , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
+                                               , frame.info.media_info.video_info.fps);
 
-                result = video::video_frame::create(video_format
+                media_format_t media_format(media_format_t(video_info
+                                                           , stream_info.stream_id)
+                                            );
+
+                media_format.extra_data = stream_info.extra_data;
+
+                result = video::video_frame::create(media_format
                                                     , buffer);
             }
             break;
@@ -74,12 +79,13 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
 
 media_frame_transcoder::media_frame_transcoder(const media_format_t& transcoding_format
                                                , const std::string& transcoding_options)
+    : m_transcoding_format(transcoding_format)
+    , m_transcoding_options(transcoding_options)
 {
-    setup(transcoding_format
-          , transcoding_options);
+
 }
 
-const media_format_ptr_t &media_frame_transcoder::format() const
+const media_format_t& media_frame_transcoder::format() const
 {
     return m_transcoding_format;
 }
@@ -94,18 +100,18 @@ bool media_frame_transcoder::setup(const media_format_t& transcoding_format
 {
     reset();
 
-    m_transcoding_format = transcoding_format.clone();
+    m_transcoding_format = transcoding_format;
     m_transcoding_options = transcoding_options;
 
-    return (m_transcoding_format != nullptr
-            && m_transcoding_format->is_encoded());
+    return (m_transcoding_format.is_valid()
+            && m_transcoding_format.is_encoded());
 }
 
 bool media_frame_transcoder::transcode(const i_media_frame &input_frame
                                        , media_frame_queue_t &frame_queue)
 {
-    if (m_transcoding_format != nullptr
-            && m_transcoding_format->is_encoded())
+    if (m_transcoding_format.is_valid()
+            && m_transcoding_format.is_encoded())
     {
 
         bool is_encoder =  !input_frame.media_format().is_encoded();
@@ -121,7 +127,7 @@ bool media_frame_transcoder::transcode(const i_media_frame &input_frame
         {
             const auto& target_format = is_encoder
                         ? input_frame.media_format()
-                        : *m_transcoding_format;
+                        : m_transcoding_format;
 
             ffmpeg::stream_info_t stream_info {};
 

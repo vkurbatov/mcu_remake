@@ -12,6 +12,7 @@ extern "C"
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <map>
 
 namespace ffmpeg
 {
@@ -46,6 +47,23 @@ const pixel_format_t pixel_format_rgb32 = static_cast<pixel_format_t>(AV_PIX_FMT
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
 
+const std::string libav_param_name_thread_count     = "libav_thread_count";
+const std::string libav_param_name_bitrate          = "libav_bitrate";
+const std::string libav_param_name_gop              = "libav_gop";
+const std::string libav_param_name_frame_size       = "libav_frame_size";
+const std::string libav_param_name_global_header    = "libav_global_header";
+
+typedef std::map<std::string, custom_parameter_t> custom_parameter_dictionary_t;
+
+const custom_parameter_dictionary_t custom_parameter_dictionary =
+{
+    { libav_param_name_thread_count     , custom_parameter_t::thread_count  },
+    { libav_param_name_bitrate          , custom_parameter_t::bitrate       },
+    { libav_param_name_gop              , custom_parameter_t::gop           },
+    { libav_param_name_frame_size       , custom_parameter_t::frame_size    },
+    { libav_param_name_global_header    , custom_parameter_t::global_header }
+};
+
 std::string error_to_string(int32_t av_error)
 {
     char err[AV_ERROR_MAX_STRING_SIZE] = {};
@@ -53,6 +71,14 @@ std::string error_to_string(int32_t av_error)
     return err;               
 }
 
+custom_parameter_t check_custom_param(const std::string param_name)
+{
+    const auto it = custom_parameter_dictionary.find(param_name);
+
+    return it == custom_parameter_dictionary.end()
+            ? custom_parameter_t::unknown
+            : it->second;
+}
 
 uint32_t audio_info_t::bps(sample_format_t sample_format)
 {
@@ -597,6 +623,37 @@ codec_params_t::codec_params_t(std::int32_t bitrate
 
 }
 
+codec_params_t::codec_params_t(const std::string &codec_params)
+    : codec_params_t()
+{
+    for (const auto& option : parse_option_list(codec_params))
+    {
+        switch(check_custom_param(option.first))
+        {
+            case custom_parameter_t::bitrate:
+                bitrate = std::atoi(option.second.c_str());
+            break;
+            case custom_parameter_t::gop:
+                gop = std::atoi(option.second.c_str());
+            break;
+            case custom_parameter_t::frame_size:
+                frame_size = std::atoi(option.second.c_str());
+            break;
+            case custom_parameter_t::global_header:
+                if (option.second.empty() || std::atoi(option.second.c_str()) != 0)
+                {
+                    flags1 |= CODEC_FLAG_GLOBAL_HEADER;
+                }
+                else
+                {
+                    flags1 &= ~CODEC_FLAG_GLOBAL_HEADER;
+                }
+            break;
+        }
+
+    }
+}
+
 bool codec_params_t::is_global_header() const
 {
     return (flags1 & CODEC_FLAG_GLOBAL_HEADER) != 0;
@@ -608,5 +665,41 @@ void codec_params_t::set_global_header(bool enable)
             ? flags1 | CODEC_FLAG_GLOBAL_HEADER
             : flags1 & ~CODEC_FLAG_GLOBAL_HEADER;
 }
+
+std::string codec_params_t::to_params() const
+{
+    std::string result;
+
+    if (bitrate != 0)
+    {
+        result.append(libav_param_name_bitrate);
+        result.append("=");
+        result.append(std::to_string(bitrate));
+    }
+
+    if (gop!= 0)
+    {
+        result.append(libav_param_name_gop);
+        result.append("=");
+        result.append(std::to_string(gop));
+    }
+
+    if (frame_size != 0)
+    {
+        result.append(libav_param_name_frame_size);
+        result.append("=");
+        result.append(std::to_string(frame_size));
+    }
+
+    if (is_global_header())
+    {
+        result.append(libav_param_name_bitrate);
+        result.append("=1");
+    }
+
+    return result;
+
+}
+
 
 }

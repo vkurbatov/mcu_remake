@@ -56,14 +56,14 @@ static void swap_lines(T* lline
 static bool frame_processor(const i_media_frame &media_frame
                      , plane_processor_handle_t process_handle)
 {
-    const auto& video_format = static_cast<const video_format_t&>(media_frame.media_format());
+    const auto& media_format = media_frame.media_format();
 
-    if (video_format.media_type == media_type_t::video)
+    if (media_format.media_type == media_type_t::video)
     {
         for (const auto& plane : media_frame.planes())
         {
             process_handle(*plane
-                           , video_format.plane_size(plane->plane_id()));
+                           , media_format.video_info().plane_size(plane->plane_id()));
         }
 
         return true;
@@ -125,9 +125,9 @@ bool blackout(const i_media_frame &media_frame)
     if (fill_slices(media_frame
                     , slices))
     {
-        const video_format_t& video_format = static_cast<const video_format_t&>(media_frame.media_format());
-        return ffmpeg::video_info_t::blackout(media::utils::format_conversion::to_ffmpeg_format(video_format.pixel_format)
-                                       , { video_format.size.width, video_format.size.height }
+        const auto& media_format = media_frame.media_format();
+        return ffmpeg::video_info_t::blackout(media::utils::format_conversion::to_ffmpeg_format(media_format.video_info().pixel_format)
+                                       , { media_format.video_info().size.width, media_format.video_info().size.height }
                                        , slices);
     }
 

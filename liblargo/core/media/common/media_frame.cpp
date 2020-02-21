@@ -20,10 +20,12 @@ bool media_frame::check_media_buffer(const media_format_t &media_format
            || media_buffer.size() == media_format.frame_size();
 }
 
-media_frame::media_frame(media_buffer_ptr_t media_buffer
+media_frame::media_frame(const media_format_t& media_format
+                         , media_buffer_ptr_t media_buffer
                          , frame_id_t frame_id
                          , timestamp_t timestamp)
-    : m_media_buffer(media_buffer)
+    : m_media_format(media_format)
+    , m_media_buffer(media_buffer)
     , m_frame_id(frame_id)
     , m_timestamp(timestamp)
 {
@@ -33,10 +35,12 @@ media_frame::media_frame(media_buffer_ptr_t media_buffer
     }
 }
 
-media_frame::media_frame(media_data_t &&media_data
+media_frame::media_frame(const media_format_t& media_format
+                         , media_data_t &&media_data
                          , frame_id_t frame_id
                          , timestamp_t timestamp)
-    : media_frame(media_buffer::create(std::move(media_data))
+    : media_frame(media_format
+                  , media_buffer::create(std::move(media_data))
                   , frame_id
                   , timestamp)
 {
@@ -44,6 +48,11 @@ media_frame::media_frame(media_data_t &&media_data
 }
 
 media_frame::~media_frame(){}
+
+const media_format_t &media_frame::media_format() const
+{
+    return m_media_format;
+}
 
 media_plane_list_t media_frame::planes() const
 {

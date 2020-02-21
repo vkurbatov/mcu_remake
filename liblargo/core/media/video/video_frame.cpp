@@ -20,7 +20,7 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
 
     if (media_buffer != nullptr && media_format.media_type == media_type_t::video)
     {
-        frame.reset(new video_frame(static_cast<const video_format_t&>(media_format)
+        frame.reset(new video_frame(media_format
                                     , media_buffer
                                     , frame_id
                                     , timestamp));
@@ -38,7 +38,7 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
 
     if (media_format.media_type == media_type_t::video)
     {
-        frame.reset(new video_frame(static_cast<const video_format_t&>(media_format)
+        frame.reset(new video_frame(media_format
                                     , std::move(media_data)
                                     , stream_id
                                     , timestamp));
@@ -47,38 +47,33 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
     return frame;
 }
 
-video_frame::video_frame(const video_format_t &video_format
+video_frame::video_frame(const media_format_t& media_format
                          , media_buffer_ptr_t media_buffer
                          , frame_id_t frame_id
                          , timestamp_t timestamp)
-    : media_frame(media_buffer
+    : media_frame(media_format
+                  , media_buffer
                   , frame_id
                   , timestamp)
-    , m_video_format(video_format)
 {
 
 }
 
-video_frame::video_frame(const video_format_t &video_format
+video_frame::video_frame(const media_format_t& media_format
                          , media_data_t &&media_data
                          , frame_id_t frame_id
                          , timestamp_t timestamp)
-    : media_frame(std::move(media_data)
+    : media_frame(media_format
+                  , std::move(media_data)
                   , frame_id
                   , timestamp)
-    , m_video_format(video_format)
 {
 
-}
-
-const media_format_t &video_frame::media_format() const
-{
-    return m_video_format;
 }
 
 media_frame_ptr_t video_frame::clone() const
 {
-    return create(m_video_format
+    return create(m_media_format
                   , m_media_buffer->clone()
                   , frame_id()
                   , timestamp());
@@ -89,10 +84,6 @@ void video_frame::clear()
     video_utils::blackout(*this);
 }
 
-const video_format_t &video_frame::video_format() const
-{
-    return m_video_format;
-}
 
 }
 

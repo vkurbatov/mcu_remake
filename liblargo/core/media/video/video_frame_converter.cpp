@@ -16,7 +16,7 @@ namespace video
 namespace utils
 {
     ffmpeg::fragment_info_t create_fragment(const frame_rect_t& rect
-                                            , const video_format_t& format)
+                                            , const video_info_t& format)
     {
         ffmpeg::fragment_info_t fragment(rect.point.x
                                          , rect.point.y
@@ -139,17 +139,17 @@ void video_frame_converter::reset()
 bool video_frame_converter::convert(const i_media_frame &input_frame
                                     , i_media_frame &output_frame)
 {
-    const auto& input_format = static_cast<const video_format_t&>(input_frame.media_format());
-    const auto& output_format = static_cast<const video_format_t&>(output_frame.media_format());
+    const auto& input_format = input_frame.media_format(); //static_cast<const video_format_t&>(input_frame.media_format().video_info());
+    const auto& output_format = output_frame.media_format(); //static_cast<const video_format_t&>(output_frame.media_format());
 
     if (input_format.media_type == media_type_t::video
             && output_format.media_type == media_type_t::video)
     {
         ffmpeg::fragment_info_t input_fragment = utils::create_fragment(m_input_area
-                                                         , input_format);
+                                                         , input_format.video_info());
 
         ffmpeg::fragment_info_t output_fragment = utils::create_fragment(m_output_area
-                                                         , output_format);
+                                                         , output_format.video_info());
 
 
         void* input_slices[ffmpeg::max_planes] = {};

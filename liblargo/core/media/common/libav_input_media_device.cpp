@@ -8,7 +8,8 @@ namespace core
 namespace media
 {
 
-media_format_ptr_t format_form_stream(const ffmpeg::stream_info_t& stream_info)
+bool format_form_stream(const ffmpeg::stream_info_t& stream_info
+                        , media_format_t & media_format)
 {
 
     auto pixel_format = stream_info.codec_info.is_coded()
@@ -17,13 +18,17 @@ media_format_ptr_t format_form_stream(const ffmpeg::stream_info_t& stream_info)
 
     if (stream_info.media_info.media_type == ffmpeg::media_type_t::video)
     {
-        return video::video_format_t::create(pixel_format
-                                             , { stream_info.media_info.video_info.size.width, stream_info.media_info.video_info.size.height}
-                                             , stream_info.media_info.video_info.fps
-                                             , stream_info.stream_id);
+        video::video_info_t video_info(pixel_format
+                                       , { stream_info.media_info.video_info.size.width, stream_info.media_info.video_info.size.height}
+                                       , stream_info.media_info.video_info.fps);
+
+        media_format = media_format_t(video_info
+                                      , stream_info.stream_id);
+
+        return true;
     }
 
-    return nullptr;
+    return false;
 
 }
 
@@ -35,13 +40,17 @@ static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_
             ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
             : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
 
-    video::video_format_t video_format(pixel_format
-                                       , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height }
-                                       , frame.info.media_info.video_info.fps
-                                       , frame_id);
 
-    video_format.extra_data = stream_info.extra_data;
-    return video::video_frame::create(video_format
+    video::video_info_t video_info(pixel_format
+                                   , { frame.info.media_info.video_info.size.width, frame.info.media_info.video_info.size.height}
+                                   , frame.info.media_info.video_info.fps);
+
+    media_format_t media_format(video_info
+                                , stream_info.stream_id);
+
+
+    media_format.extra_data = stream_info.extra_data;
+    return video::video_frame::create(media_format
                                       , media_buffer::create(std::move(frame.media_data)));
 }
 
@@ -95,10 +104,10 @@ media_format_list_t libav_input_media_device::streams() const
 
     for (const auto& strm : m_libav_stream_capturer.streams())
     {
-        auto format = format_form_stream(strm);
-        if (format != nullptr)
+        media_format_t media_format;
+        if (format_form_stream(strm, media_format))
         {
-            format_list.emplace_back(std::move(format));
+            format_list.emplace_back(std::move(media_format));
         }
     }
 

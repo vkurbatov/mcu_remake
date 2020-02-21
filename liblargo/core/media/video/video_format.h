@@ -62,7 +62,7 @@ enum class pixel_format_t
 const pixel_format_t default_pixel_format = pixel_format_t::yuv420p;
 const std::uint32_t default_fps = 0;
 
-struct video_format_t : public media_format_t
+struct video_info_t : public i_format_info
 {
     pixel_format_t  pixel_format;
     frame_size_t    size;
@@ -84,18 +84,12 @@ struct video_format_t : public media_format_t
                                 , frame_size_t size
                                 , std::uint32_t fps);
 
-    static media_format_ptr_t create(pixel_format_t pixel_format = default_pixel_format
-                                    , frame_size_t size = default_frame_size
-                                    , std::uint32_t fps = default_fps
-                                    , stream_id_t stream_id = no_stream);
-
-    video_format_t(pixel_format_t pixel_format = default_pixel_format
+    video_info_t(pixel_format_t pixel_format = default_pixel_format
                    , frame_size_t size = default_frame_size
-                   , std::uint32_t fps = default_fps
-                   , stream_id_t stream_id = no_stream);
+                   , std::uint32_t fps = default_fps);
 
-    bool operator ==(const media_format_t& media_format) override;
-    bool operator !=(const media_format_t& media_format) override;
+    bool operator ==(const video_info_t& video_info);
+    bool operator !=(const video_info_t& video_info);
 
     bool is_planar() const override;
     bool is_encoded() const override;
@@ -107,9 +101,7 @@ struct video_format_t : public media_format_t
 
     frame_size_t plane_size(std::uint32_t plane_idx) const;
 
-    std::string to_string() const override;
-
-    media_format_ptr_t clone() const override;
+    std::string to_string() const;
 };
 
 }

@@ -1,6 +1,9 @@
 #include "media_control_parameter.h"
+#include "media/common/base/option_base.h"
+
 #include <cstring>
 #include <algorithm>
+
 
 namespace core
 {
@@ -206,6 +209,21 @@ void control_parameter_test()
     cur = parameter_direct.get();
 
     return;
+}
+
+void control_parameter_list_t::append(const std::string &parameters)
+{
+    for (const auto& o : base::parse_option_list(parameters))
+    {
+        if (!set(o.first, o.second))
+        {
+            emplace_back(control_parameter(o.first
+                                           , control_type_t::direct
+                                           , {}
+                                           , o.second
+                                           , custom_parameter));
+        }
+    }
 }
 
 control_parameter_list_t::iterator control_parameter_list_t::find(const std::string &name)

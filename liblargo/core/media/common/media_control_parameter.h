@@ -72,12 +72,13 @@ public:
 
 class control_parameter_list_t : public std::vector<control_parameter>
 {
-public:
+public:    
     typename control_parameter_list_t::iterator find(const std::string& name);
     typename control_parameter_list_t::const_iterator find(const std::string& name) const;
     bool has_parameter(const std::string& name) const;
     bool set(const std::string& name, const variant& value);
     bool get(const std::string& name, variant& value) const;
+    void append(const std::string& parameters);
 };
 
 //typedef std::vector<control_parameter> control_parameter_list_t;

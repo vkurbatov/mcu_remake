@@ -7,6 +7,8 @@
 
 #include "media/common/ffmpeg/libav_stream_publisher.h"
 
+#include <map>
+
 namespace core
 {
 

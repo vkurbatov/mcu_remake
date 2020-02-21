@@ -140,10 +140,38 @@ size_t audio_format_t::samples_from_size(std::size_t size) const
 
 size_t audio_format_t::samples_from_duration(uint32_t duration_ms) const
 {
-	return samples_from_size(size_from_duration(duration_ms));
+    return samples_from_size(size_from_duration(duration_ms));
 }
 
+bool audio_format_t::is_encoded() const
+{
+    return sample_format > sample_format_t::float_64;
+}
 
+bool audio_format_t::is_convertable() const
+{
+    return !is_encoded();
+}
+
+bool audio_format_t::is_planar() const
+{
+    return false;
+}
+
+std::size_t audio_format_t::frame_size() const
+{
+    return 0u;
+}
+
+std::size_t audio_format_t::planes() const
+{
+    return 1;
+}
+
+plane_sizes_t audio_format_t::plane_sizes() const
+{
+    return { frame_size() };
+}
 
 } // audio
 

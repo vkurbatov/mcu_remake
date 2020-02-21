@@ -10,6 +10,7 @@
 #include <queue>
 #include <memory>
 #include <functional>
+#include <map>
 
 namespace ffmpeg
 {
@@ -50,6 +51,25 @@ extern const codec_id_t codec_id_jpeg;
 extern const codec_id_t codec_id_mjpeg;
 extern const codec_id_t codec_id_raw_video;
 extern const codec_id_t codec_id_none;
+
+enum class custom_parameter_t
+{
+    unknown,
+    thread_count,
+    bitrate,
+    gop,
+    frame_size,
+    global_header
+};
+
+extern const std::string libav_param_name_thread_count;
+extern const std::string libav_param_name_bitrate;
+extern const std::string libav_param_name_gop;
+extern const std::string libav_param_name_frame_size;
+extern const std::string libav_param_name_global_header;
+
+custom_parameter_t check_custom_param(const std::string param_name);
+
 
 const std::uint32_t video_sample_rate = 90000;
 const std::uint32_t max_fps = 60;
@@ -255,8 +275,12 @@ struct codec_params_t
                    , std::uint32_t flags1 = 0
                    , std::uint32_t flags2 = 0);
 
+    codec_params_t(const std::string& codec_params);
+
     bool is_global_header() const;
     void set_global_header(bool enable);
+
+    std::string to_params() const;
 
 };
 

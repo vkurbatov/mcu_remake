@@ -13,6 +13,7 @@ namespace media
 class media_frame : virtual public i_media_frame
 {
 protected:
+    media_format_t          m_media_format;
     media_buffer_ptr_t      m_media_buffer;
     frame_id_t              m_frame_id;
     timestamp_t             m_timestamp;
@@ -22,11 +23,13 @@ public:
                                    , const i_media_buffer& media_buffer);
 
 public:
-    media_frame(media_buffer_ptr_t media_buffer
+    media_frame(const media_format_t& media_format
+                , media_buffer_ptr_t media_buffer
                 , frame_id_t frame_id = 0
                 , timestamp_t timestamp = 0);
 
-    media_frame(media_data_t&& media_data
+    media_frame(const media_format_t& media_format
+                , media_data_t&& media_data
                 , frame_id_t frame_id = 0
                 , timestamp_t timestamp = 0);
 
@@ -34,6 +37,7 @@ public:
 
     // i_media_frame interface
 public:
+    const media_format_t &media_format() const override;
     media_plane_list_t planes() const override;
     std::size_t size() const override;
     bool is_valid() const;
@@ -42,7 +46,6 @@ public:
 
     void swap(media_buffer_ptr_t &&media_buffer) override;
     media_buffer_ptr_t release() override;
-
 };
 
 }

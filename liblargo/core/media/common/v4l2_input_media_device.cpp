@@ -242,9 +242,9 @@ protected:
 
 auto fmt_to_string = [](const v4l2::frame_info_t& format)
 {
-    return video::video_format_t(utils::format_conversion::from_v4l2_format(format.pixel_format)
-                                 , {format.size.width, format.size.height}
-                                 , format.fps).to_string();
+    return media_format_t(video::video_info_t(utils::format_conversion::from_v4l2_format(format.pixel_format)
+                                                , {format.size.width, format.size.height}
+                                                , format.fps)).to_string();
 };
 
 static void fetch_formats(control_parameter_list_t& controls
@@ -621,26 +621,26 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
                           );
 }
 
-media_format_ptr_t format_form_frame_info(const v4l2::frame_info_t& frame_info)
+void format_form_frame_info(const v4l2::frame_info_t& frame_info, media_format_t& media_format)
 {
-    return video::video_format_t::create(utils::format_conversion::from_v4l2_format(frame_info.pixel_format)
-                                         , { frame_info.size.width, frame_info.size.height}
-                                         , frame_info.fps
-                                         , 0);
+    video::video_info_t video_info(utils::format_conversion::from_v4l2_format(frame_info.pixel_format)
+                                   , { frame_info.size.width, frame_info.size.height}
+                                   , frame_info.fps);
+
+    media_format = media_format_t(video_info
+                                  , 0);
 }
 
 static media_frame_ptr_t create_video_frame(v4l2::frame_t&& frame
                                             , frame_id_t frame_id)
 {
-    auto pixel_format = utils::format_conversion::from_v4l2_format(frame.frame_info.pixel_format);
+    media_format_t media_format;
+    format_form_frame_info(frame.frame_info
+                           , media_format);
 
-    video::video_format_t video_format(pixel_format
-                                       , { frame.frame_info.size.width, frame.frame_info.size.height }
-                                       , frame.frame_info.fps
-                                       , frame_id);
-
-    return video::video_frame::create(video_format
-                                      , media_buffer::create(std::move(frame.frame_data)));
+    return video::video_frame::create(media_format
+                                      , media_buffer::create(std::move(frame.frame_data))
+                                      , frame_id);
 }
 
 v4l2_input_media_device::v4l2_input_media_device(i_media_sink &media_sink
@@ -713,7 +713,10 @@ media_format_list_t v4l2_input_media_device::streams() const
 
     if (m_v4l2_device.is_opened())
     {
-        format_list.emplace_back(format_form_frame_info(m_v4l2_device.get_format()));
+        media_format_t media_format;
+        format_form_frame_info(m_v4l2_device.get_format()
+                               , media_format);
+        format_list.emplace_back(std::move(media_format));
     }
 
     return format_list;
