@@ -28,20 +28,20 @@ bool video_info_t::is_encoded(pixel_format_t pixel_format)
 
 std::size_t video_info_t::bpp(pixel_format_t pixel_format)
 {
-    return ffmpeg::video_info_t::bpp(utils::format_conversion::to_ffmpeg_format(pixel_format));
+    return ffmpeg::video_info_t::bpp(utils::format_conversion::to_ffmpeg_video_format(pixel_format));
 }
 
 std::size_t video_info_t::frame_size(pixel_format_t pixel_format
                                        , const frame_size_t &size)
 {
-    return ffmpeg::video_info_t::frame_size(utils::format_conversion::to_ffmpeg_format(pixel_format)
+    return ffmpeg::video_info_t::frame_size(utils::format_conversion::to_ffmpeg_video_format(pixel_format)
                                             , { size.width, size.height });
 }
 
 std::size_t video_info_t::planes(pixel_format_t pixel_format)
 {
     return !is_encoded(pixel_format)
-            ? ffmpeg::video_info_t::planes(utils::format_conversion::to_ffmpeg_format(pixel_format))
+            ? ffmpeg::video_info_t::planes(utils::format_conversion::to_ffmpeg_video_format(pixel_format))
             : 1;
 }
 
@@ -50,7 +50,7 @@ plane_sizes_t video_info_t::plane_sizes(pixel_format_t pixel_format
 {
     plane_sizes_t plane_sizes;
 
-    for (const auto& sz : ffmpeg::video_info_t::plane_sizes(utils::format_conversion::to_ffmpeg_format(pixel_format)
+    for (const auto& sz : ffmpeg::video_info_t::plane_sizes(utils::format_conversion::to_ffmpeg_video_format(pixel_format)
                                                           , { size.width, size.height }))
     {
         plane_sizes.push_back(sz.size());
@@ -63,7 +63,7 @@ frame_size_t video_info_t::plane_size(pixel_format_t pixel_format
                                         , const frame_size_t& size
                                         , uint32_t plane_idx)
 {
-    auto sizes = ffmpeg::video_info_t::plane_sizes(utils::format_conversion::to_ffmpeg_format(pixel_format)
+    auto sizes = ffmpeg::video_info_t::plane_sizes(utils::format_conversion::to_ffmpeg_video_format(pixel_format)
                                                               , { size.width, size.height });
 
     return plane_idx < sizes.size()

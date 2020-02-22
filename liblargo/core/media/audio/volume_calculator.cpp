@@ -37,22 +37,22 @@ double VolumeCalculator::CalculateLevel(const void *data, std::size_t size, cons
 
 	switch (format.sample_format)
 	{
-	case audio_format_t::sample_format_t::pcm_8:
+    case sample_format_t::pcm_8:
 		result = level_calculate<std::int8_t>(data, size, format);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_16:
+    case sample_format_t::pcm_16:
 		result = level_calculate<std::int16_t>(data, size, format);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_32:
+    case sample_format_t::pcm_32:
 		result = level_calculate<std::int32_t>(data, size, format);
 		break;
-	case audio_format_t::sample_format_t::float_32:
+    case sample_format_t::float_32:
 		result = level_calculate<float>(data, size, format);
 		break;
 
-	case audio_format_t::sample_format_t::float_64:
+    case sample_format_t::float_64:
 		result = level_calculate<double>(data, size, format);
 		break;
 	}

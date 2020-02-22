@@ -126,7 +126,7 @@ bool blackout(const i_media_frame &media_frame)
                     , slices))
     {
         const auto& media_format = media_frame.media_format();
-        return ffmpeg::video_info_t::blackout(media::utils::format_conversion::to_ffmpeg_format(media_format.video_info().pixel_format)
+        return ffmpeg::video_info_t::blackout(media::utils::format_conversion::to_ffmpeg_video_format(media_format.video_info().pixel_format)
                                        , { media_format.video_info().size.width, media_format.video_info().size.height }
                                        , slices);
     }

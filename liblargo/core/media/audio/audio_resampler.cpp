@@ -72,34 +72,34 @@ std::size_t rescaling_sample(const Tin* input_sample, Tout* output_sample, std::
 }
 
 template<typename Tin>
-std::size_t rescaling_sample(const Tin* input_sample, void* output_sample, audio_format_t::sample_format_t output_sample_format, std::size_t input_channels = 1, std::size_t output_channels = 1)
+std::size_t rescaling_sample(const Tin* input_sample, void* output_sample, sample_format_t output_sample_format, std::size_t input_channels = 1, std::size_t output_channels = 1)
 {
 
 	std::size_t result = 0;
 
 	switch (output_sample_format)
 	{
-	case audio_format_t::sample_format_t::pcm_8:
+    case sample_format_t::pcm_8:
 		result = rescaling_sample(input_sample, static_cast<std::int8_t*>(output_sample), input_channels, output_channels);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_16:
+    case sample_format_t::pcm_16:
 		result = rescaling_sample(input_sample, static_cast<std::int16_t*>(output_sample), input_channels, output_channels);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_32:
+    case sample_format_t::pcm_32:
 		result = rescaling_sample(input_sample, static_cast<std::int32_t*>(output_sample), input_channels, output_channels);
 		break;
 
-	case audio_format_t::sample_format_t::float_32:
+    case sample_format_t::float_32:
 		result = rescaling_sample(input_sample, static_cast<float*>(output_sample), input_channels, output_channels);
 		break;
 
-	case audio_format_t::sample_format_t::float_64:
+    case sample_format_t::float_64:
 		result = rescaling_sample(input_sample, static_cast<double*>(output_sample), input_channels, output_channels);
 		break;
 
-	case audio_format_t::sample_format_t::unknown:
+    case sample_format_t::unknown:
 		// ??
 		break;
 
@@ -110,9 +110,9 @@ std::size_t rescaling_sample(const Tin* input_sample, void* output_sample, audio
 }
 
 std::size_t rescaling_sample(const void* input_sample
-                             , audio_format_t::sample_format_t input_sample_format
+                             , sample_format_t input_sample_format
                              , void* output_sample
-                             , audio_format_t::sample_format_t output_sample_format
+                             , sample_format_t output_sample_format
                              , std::size_t input_channels = 1
                                      , std::size_t output_channels = 1)
 {
@@ -127,27 +127,27 @@ std::size_t rescaling_sample(const void* input_sample
 	{
 		switch (input_sample_format)
 		{
-		case audio_format_t::sample_format_t::pcm_8:
+        case sample_format_t::pcm_8:
 			result = rescaling_sample(static_cast<const std::int8_t*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 			break;
 
-		case audio_format_t::sample_format_t::pcm_16:
+        case sample_format_t::pcm_16:
 			result = rescaling_sample(static_cast<const std::int16_t*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 			break;
 
-		case audio_format_t::sample_format_t::pcm_32:
+        case sample_format_t::pcm_32:
 			result = rescaling_sample(static_cast<const std::int32_t*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 			break;
 
-		case audio_format_t::sample_format_t::float_32:
+        case sample_format_t::float_32:
 			result = rescaling_sample(static_cast<const float*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 			break;
 
-		case audio_format_t::sample_format_t::float_64:
+        case sample_format_t::float_64:
 			result = rescaling_sample(static_cast<const double*>(input_sample), output_sample, output_sample_format, input_channels, output_channels);
 			break;
 
-		case audio_format_t::sample_format_t::unknown:
+        case sample_format_t::unknown:
 			// ??
 			break;
 		}

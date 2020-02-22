@@ -121,23 +121,23 @@ std::size_t mixed(const audio_format_t& audio_format, std::size_t stream_count, 
 
 	switch (audio_format.sample_format)
 	{
-	case audio_format_t::sample_format_t::pcm_8:
+    case sample_format_t::pcm_8:
 		result = mixed<std::int8_t>(stream_count, mix_method, input_data, input_data_size, mixed_data, mixed_data_size, output_data, output_data_size);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_16:
+    case sample_format_t::pcm_16:
 		result = mixed<std::int16_t>(stream_count, mix_method, input_data, input_data_size, mixed_data, mixed_data_size, output_data, output_data_size);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_32:
+    case sample_format_t::pcm_32:
 		result = mixed<std::int32_t>(stream_count, mix_method, input_data, input_data_size, mixed_data, mixed_data_size, output_data, output_data_size);
 		break;
 
-	case audio_format_t::sample_format_t::float_32:
+    case sample_format_t::float_32:
 		result = mixed<float>(stream_count, mix_method, input_data, input_data_size, mixed_data, mixed_data_size, output_data, output_data_size);
 		break;
 
-	case audio_format_t::sample_format_t::float_64:
+    case sample_format_t::float_64:
 		result = mixed<double>(stream_count, mix_method, input_data, input_data_size, mixed_data, mixed_data_size, output_data, output_data_size);
 		break;
 

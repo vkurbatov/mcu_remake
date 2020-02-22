@@ -42,7 +42,7 @@ const std::int32_t default_max_set_hw_retry_count = 10;
 namespace alsa_utils
 {
 
-snd_pcm_format_t snd_format_from_sample_format(audio_format_t::sample_format_t sample_format)
+snd_pcm_format_t snd_format_from_sample_format(sample_format_t sample_format)
 {
 
 	const static snd_pcm_format_t transform_format_array[] =

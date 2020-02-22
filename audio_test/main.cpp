@@ -51,7 +51,7 @@ void test_alsa()
 
 	std::thread recorder_thread([&device_recorder_list, &queue_mutex, &queue]()
 	{
-		core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+        core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 		core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
@@ -89,7 +89,7 @@ void test_alsa()
 
 	std::thread player_thread([&device_playback_list, &queue_mutex, &queue]()
 	{
-		core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, core::media::audio::audio_format_t::sample_format_t::pcm_16, 2 }, duration_ms, true);
+        core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { 48000, core::media::audio::sample_format_t::pcm_16, 2 }, duration_ms, true);
 
 		core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
@@ -104,7 +104,7 @@ void test_alsa()
 
 		auto start = clock::now();
 
-		core::media::audio::audio_format_t input_format(recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1);
+        core::media::audio::audio_format_t input_format(recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1);
 
 		while (player.IsOpen())
 		{
@@ -391,11 +391,11 @@ void test_audio_channel_worker()
 	static const std::uint32_t recorder_sample_rate = 32000;
 	static const std::uint32_t playback_sample_rate = 48000;
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
-	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
@@ -431,11 +431,11 @@ void test_audio_dispatcher()
 	static const std::uint32_t recorder_sample_rate = 32000;
 	static const std::uint32_t playback_sample_rate = 48000;
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
-	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
@@ -469,20 +469,20 @@ void test_composer()
 	const std::string file_session_id1 = "file_audio1";
 	const std::string file_session_id2 = "file_audio2";
 
-	core::media::audio::audio_format_t composer_audio_format = { composer_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 };
+    core::media::audio::audio_format_t composer_audio_format = { composer_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 };
 
 	static const std::size_t media_queue_size = 64000;
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
-	core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t player_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel player(player_params);
 
 	core::media::audio::channels::audio_channel_params_t r_file_params(core::media::audio::channels::channel_direction_t::recorder, core::media::audio::null_audio_format, duration_ms, false);
-	core::media::audio::channels::audio_channel_params_t w_file_params1(core::media::audio::channels::channel_direction_t::playback, { file_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 2 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t w_file_params1(core::media::audio::channels::channel_direction_t::playback, { file_sample_rate, core::media::audio::sample_format_t::pcm_16, 2 }, duration_ms, true);
 
 	core::media::audio::channels::file::FileChannel r_file1(r_file_params, 2);
 	core::media::audio::channels::file::FileChannel r_file2(r_file_params, 60);
@@ -552,13 +552,13 @@ void test_events()
 	auto recorder_device_list = core::media::audio::channels::alsa::AlsaChannel::GetDeviceList(core::media::audio::channels::channel_direction_t::recorder);
 
 
-	core::media::audio::channels::audio_channel_params_t recorder_params( core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms * 8, true );
+    core::media::audio::channels::audio_channel_params_t recorder_params( core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms * 8, true );
 	core::media::audio::channels::alsa::AlsaChannel recorder(recorder_params);
 
-	core::media::audio::channels::audio_channel_params_t player_params1(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate1, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t player_params1(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate1, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 	core::media::audio::channels::alsa::AlsaChannel player1(player_params1);
 
-	core::media::audio::channels::audio_channel_params_t player_params2(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate2, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms * 8, true);
+    core::media::audio::channels::audio_channel_params_t player_params2(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate2, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms * 8, true);
 	core::media::audio::channels::alsa::AlsaChannel player2(player_params2);
 
 	core::media::audio::AudioQueue audio_queue(player1.GetAudioFormat(), 1000, 60, true);
@@ -723,7 +723,7 @@ void test_audio_processor()
 
 
 	audio_processor_config.composer_config.audio_format.sample_rate = 32000;
-	audio_processor_config.composer_config.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+    audio_processor_config.composer_config.audio_format.sample_format = core::media::audio::sample_format_t::pcm_16;
 	audio_processor_config.composer_config.audio_format.channels = 1;
 
 	audio_processor_config.composer_config.compose_window_ms = 60;
@@ -737,7 +737,7 @@ void test_audio_processor()
 	audio_processor_config.recorder_config.channel_params.wait_timeout_ms = 100;
 
 	audio_processor_config.recorder_config.channel_params.audio_format.sample_rate = 8000;
-	audio_processor_config.recorder_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+    audio_processor_config.recorder_config.channel_params.audio_format.sample_format = core::media::audio::sample_format_t::pcm_16;
 	audio_processor_config.recorder_config.channel_params.audio_format.channels = 1;
 
 	audio_processor_config.recorder_config.duration_ms = duration_ms;
@@ -749,7 +749,7 @@ void test_audio_processor()
 	audio_processor_config.playback_config.channel_params.wait_timeout_ms = 100;
 
 	audio_processor_config.playback_config.channel_params.audio_format.sample_rate = 48000;
-	audio_processor_config.playback_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+    audio_processor_config.playback_config.channel_params.audio_format.sample_format = core::media::audio::sample_format_t::pcm_16;
 	audio_processor_config.playback_config.channel_params.audio_format.channels = 1;
 
 	audio_processor_config.playback_config.duration_ms = duration_ms;
@@ -761,7 +761,7 @@ void test_audio_processor()
 	audio_processor_config.aux_playback_config.channel_params.wait_timeout_ms = 100;
 
 	audio_processor_config.aux_playback_config.channel_params.audio_format.sample_rate = 16000;
-	audio_processor_config.aux_playback_config.channel_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+    audio_processor_config.aux_playback_config.channel_params.audio_format.sample_format = core::media::audio::sample_format_t::pcm_16;
 	audio_processor_config.aux_playback_config.channel_params.audio_format.channels = 1;
 
 	audio_processor_config.aux_playback_config.duration_ms = duration_ms;
@@ -776,7 +776,7 @@ void test_audio_processor()
 	recorder_params.wait_timeout_ms = 100;
 
 	recorder_params.audio_format.sample_rate = 16000;
-	recorder_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+    recorder_params.audio_format.sample_format = core::media::audio::sample_format_t::pcm_16;
 	recorder_params.audio_format.channels = 1;
 
 
@@ -785,7 +785,7 @@ void test_audio_processor()
 	player_params.wait_timeout_ms = 100;
 
 	player_params.audio_format.sample_rate = 8000;
-	player_params.audio_format.sample_format = core::media::audio::audio_format_t::sample_format_t::pcm_16;
+    player_params.audio_format.sample_format = core::media::audio::sample_format_t::pcm_16;
 	player_params.audio_format.channels = 1;
 
 	core::media::audio::channels::alsa::AlsaChannel alsa_recorder(recorder_params);
@@ -908,8 +908,8 @@ void test_libav_wrapper()
 	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
 	static const std::uint32_t buffers_count = 10;
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
-	core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel	recorder(recorder_params);
 	core::media::audio::channels::alsa::AlsaChannel	playback(playback_params);
@@ -979,8 +979,8 @@ void test_libav_codec_system()
 	static const std::uint32_t playback_frame_size = 2 * (playback_sample_rate * duration_ms) / 1000;
 	static const std::uint32_t buffers_count = 10;
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
-	core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel	recorder(recorder_params);
 	core::media::audio::channels::alsa::AlsaChannel	playback(playback_params);
@@ -1069,8 +1069,8 @@ void test_aac_codec()
 	static const std::uint32_t recorder_frame_size = 2 * (recorder_sample_rate * duration_ms) / 1000;
 	static const std::uint32_t playback_sample_rate = recorder_sample_rate;
 
-	core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
-	core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::audio_format_t::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t recorder_params(core::media::audio::channels::channel_direction_t::recorder, { recorder_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
+    core::media::audio::channels::audio_channel_params_t playback_params(core::media::audio::channels::channel_direction_t::playback, { playback_sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms, true);
 
 	core::media::audio::channels::alsa::AlsaChannel	recorder(recorder_params);
 	core::media::audio::channels::alsa::AlsaChannel	playback(playback_params);

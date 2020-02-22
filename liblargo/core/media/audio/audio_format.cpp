@@ -14,7 +14,7 @@ bool audio_format_t::is_valid_sample_rate(int32_t sr)
 	return sr >= min_sample_rate && sr <= max_sample_rate;
 }
 
-bool audio_format_t::is_valid_sample_format(audio_format_t::sample_format_t sf)
+bool audio_format_t::is_valid_sample_format(sample_format_t sf)
 {
 	return sf >= sample_format_t::pcm_8 && sf <= sample_format_t::float_64;
 }
@@ -24,23 +24,25 @@ bool audio_format_t::is_valid_channels(int32_t c)
 	return c >= min_channels && c <= max_channels;
 }
 
-bool audio_format_t::is_float_format(audio_format_t::sample_format_t sf)
+bool audio_format_t::is_float_format(sample_format_t sf)
 {
 	return sf == sample_format_t::float_32 || sf == sample_format_t::float_64;
 }
 
-bool audio_format_t::is_integer_format(audio_format_t::sample_format_t sf)
+bool audio_format_t::is_integer_format(sample_format_t sf)
 {
-	return sf == sample_format_t::pcm_8 || sf == sample_format_t::pcm_16 || sf == sample_format_t::pcm_32;
+    return sf == sample_format_t::pcm_8
+            || sf == sample_format_t::pcm_16
+            || sf == sample_format_t::pcm_32;
 }
 
-uint32_t audio_format_t::bit_per_sample(audio_format_t::sample_format_t sf)
+uint32_t audio_format_t::bit_per_sample(sample_format_t sf)
 {
-	static const std::uint32_t size_arr[] = { 0, 8, 16, 32, 32, 64 };
+    static const std::uint32_t size_arr[] = { 0, 8, 16, 32, 32, 64, 0, 0, 0 };
 	return size_arr[static_cast<std::int32_t>(sf)];
 }
 
-audio_format_t::sample_format_t audio_format_t::format_from_bits(uint32_t bit_per_sample, bool integer_proirity)
+sample_format_t audio_format_t::format_from_bits(uint32_t bit_per_sample, bool integer_proirity)
 {
 	sample_format_t result = sample_format_t::unknown;
 
@@ -65,7 +67,7 @@ audio_format_t::sample_format_t audio_format_t::format_from_bits(uint32_t bit_pe
 	return result;
 }
 
-audio_format_t::audio_format_t(uint32_t sr, audio_format_t::sample_format_t sf, uint32_t c)
+audio_format_t::audio_format_t(uint32_t sr, sample_format_t sf, uint32_t c)
 	: sample_rate(sr)
 	, sample_format(sf)
 	, channels(c)
@@ -160,7 +162,7 @@ bool audio_format_t::is_planar() const
 
 std::size_t audio_format_t::frame_size() const
 {
-    return 0u;
+    return bytes_per_sample();
 }
 
 std::size_t audio_format_t::planes() const

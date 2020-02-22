@@ -14,32 +14,33 @@ namespace media
 namespace audio
 {
 
+enum class sample_format_t
+{
+    unknown,
+    pcm_8,
+    pcm_16,
+    pcm_32,
+    float_32,
+    float_64,
+    pcma,
+    pcmu,
+    aac
+};
+
+static const std::uint32_t min_sample_rate = 8000;
+static const std::uint32_t max_sample_rate = 48000;
+static const std::uint32_t default_sample_rate = 8000;
+
+static const std::uint32_t min_bit_per_sample = 8;
+static const std::uint32_t max_bit_per_sample = 32;
+static const std::uint32_t default_bit_per_sample = 16;
+
+static const std::uint32_t min_channels = 1;
+static const std::uint32_t max_channels = 2;
+static const std::uint32_t default_channels = 1;
+
 struct audio_format_t : virtual public i_format_info
 {
-	enum class sample_format_t
-	{
-		unknown,
-		pcm_8,
-		pcm_16,
-		pcm_32,
-		float_32,
-        float_64,
-        pcma,
-        pcmu,
-        aac
-	};
-
-	static const std::uint32_t min_sample_rate = 8000;
-	static const std::uint32_t max_sample_rate = 48000;
-	static const std::uint32_t default_sample_rate = 8000;
-
-	static const std::uint32_t min_bit_per_sample = 8;
-	static const std::uint32_t max_bit_per_sample = 32;
-	static const std::uint32_t default_bit_per_sample = 16;
-
-	static const std::uint32_t min_channels = 1;
-	static const std::uint32_t max_channels = 2;
-	static const std::uint32_t default_channels = 1;
 
 	std::uint32_t   sample_rate;
 	sample_format_t sample_format;
@@ -85,8 +86,8 @@ public:
     plane_sizes_t plane_sizes() const override;
 };
 
-static const audio_format_t default_audio_format = { audio_format_t::default_sample_rate, audio_format_t::sample_format_t::pcm_16, audio_format_t::default_channels };
-static const audio_format_t null_audio_format = { 0, audio_format_t::sample_format_t::unknown, 0 };
+static const audio_format_t default_audio_format = { default_sample_rate, sample_format_t::pcm_16, default_channels };
+static const audio_format_t null_audio_format = { 0, sample_format_t::unknown, 0 };
 
 } // audio
 

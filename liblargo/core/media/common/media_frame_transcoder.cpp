@@ -19,12 +19,12 @@ static bool stream_info_from_format(const media_format_t& media_format
             video::video_info_t video_info = media_format.video_info();
 
             stream_info.extra_data = media_format.extra_data;
-            stream_info.codec_info.id = utils::format_conversion::to_ffmpeg_codec(video_info.pixel_format);
+            stream_info.codec_info.id = utils::format_conversion::to_ffmpeg_video_codec(video_info.pixel_format);
             stream_info.codec_info.name.clear();
             stream_info.media_info.media_type = ffmpeg::media_type_t::video;
             stream_info.media_info.video_info.fps = video_info.fps;
             stream_info.media_info.video_info.size = { video_info.size.width, video_info.size.height };
-            stream_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_format(video_info.pixel_format);
+            stream_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_video_format(video_info.pixel_format);
 
             return true;
         }
@@ -52,8 +52,8 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
             case ffmpeg::media_type_t::video:
             {
                 auto pixel_format = frame.info.is_encoded()
-                        ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
-                        : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
+                        ? utils::format_conversion::from_ffmpeg_video_codec(frame.info.codec_id)
+                        : utils::format_conversion::from_ffmpeg_video_format(frame.info.media_info.video_info.pixel_format);
 
 
                 video::video_info_t video_info(pixel_format

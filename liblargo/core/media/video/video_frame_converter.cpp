@@ -24,7 +24,7 @@ namespace utils
                                          , rect.size.height
                                          , format.size.width
                                          , format.size.height
-                                         , media::utils::format_conversion::to_ffmpeg_format(format.pixel_format));
+                                         , media::utils::format_conversion::to_ffmpeg_video_format(format.pixel_format));
 
         if (fragment.frame_rect.is_null())
         {

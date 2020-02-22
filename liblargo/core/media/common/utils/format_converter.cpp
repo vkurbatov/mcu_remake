@@ -10,6 +10,11 @@ extern "C"
 #include <libavutil/pixfmt.h>
 }
 
+extern "C"
+{
+#include <alsa/asoundlib.h>
+}
+
 
 namespace core
 {
@@ -23,13 +28,32 @@ namespace utils
 namespace format_conversion
 {
 
+typedef std::tuple<alsa::sample_format_t
+                   , ffmpeg::codec_id_t
+                   , ffmpeg::sample_format_t
+                   , std::string> audio_format_desc_t;
+
+const std::unordered_map<audio::sample_format_t
+                , audio_format_desc_t> audio_format_table =
+{
+    { audio::sample_format_t::unknown,  { SND_PCM_FORMAT_UNKNOWN,   AV_CODEC_ID_NONE,       AV_SAMPLE_FMT_NONE,     "unk"     }   },
+    { audio::sample_format_t::pcm_8,    { SND_PCM_FORMAT_S8,        AV_CODEC_ID_NONE,       AV_SAMPLE_FMT_U8,       "pcm8"    }   },
+    { audio::sample_format_t::pcm_16,   { SND_PCM_FORMAT_S16,       AV_CODEC_ID_NONE,       AV_SAMPLE_FMT_S16,      "pcm16"   }   },
+    { audio::sample_format_t::pcm_32,   { SND_PCM_FORMAT_S32,       AV_CODEC_ID_NONE,       AV_SAMPLE_FMT_S32,      "pcm32"   }   },
+    { audio::sample_format_t::float_32, { SND_PCM_FORMAT_FLOAT,     AV_CODEC_ID_NONE,       AV_SAMPLE_FMT_FLT,      "flt32"   }   },
+    { audio::sample_format_t::float_64, { SND_PCM_FORMAT_FLOAT64,   AV_CODEC_ID_NONE,       AV_SAMPLE_FMT_DBL,      "flt64"   }   },
+    { audio::sample_format_t::aac,      { SND_PCM_FORMAT_UNKNOWN,   AV_CODEC_ID_AAC,        AV_SAMPLE_FMT_NONE,     "aac"     }   },
+    { audio::sample_format_t::pcma,     { SND_PCM_FORMAT_A_LAW,     AV_CODEC_ID_PCM_ALAW,   AV_SAMPLE_FMT_NONE,     "pcma"    }   },
+    { audio::sample_format_t::pcmu,     { SND_PCM_FORMAT_MU_LAW,    AV_CODEC_ID_PCM_MULAW,  AV_SAMPLE_FMT_NONE,     "pcmu"    }   }
+};
+
 typedef std::tuple<v4l2::pixel_format_t
                     , ffmpeg::codec_id_t
                     , ffmpeg::pixel_format_t
-                    , std::string> format_desc_t;
+                    , std::string> video_format_desc_t;
 
 const std::unordered_map<video::pixel_format_t
-                , format_desc_t> format_table =
+                , video_format_desc_t> video_format_table =
 {
     { video::pixel_format_t::unknown,   { 0,                    AV_CODEC_ID_NONE,       AV_PIX_FMT_NONE,        "unk"       }   },
     { video::pixel_format_t::yuv420p,   { V4L2_PIX_FMT_YUV420,  AV_CODEC_ID_NONE,       AV_PIX_FMT_YUV420P,     "yuv420p"   }   },
@@ -76,10 +100,10 @@ const std::unordered_map<video::pixel_format_t
 };
 
 template<std::int32_t idx, typename T>
-std::unordered_map<T, video::pixel_format_t> create_sub_table()
+std::unordered_map<T, video::pixel_format_t> create_video_sub_table()
 {
     std::unordered_map<T, video::pixel_format_t> sub_table;
-    for(const auto& f : format_table)
+    for(const auto& f : video_format_table)
     {
         const auto& val = std::get<idx>(f.second);
         if (sub_table.find(val) == sub_table.end())
@@ -92,32 +116,64 @@ std::unordered_map<T, video::pixel_format_t> create_sub_table()
     return std::move(sub_table);
 }
 
-const auto v4l2_format_table = create_sub_table<0, v4l2::pixel_format_t>();
-const auto ffmpeg_codec_table = create_sub_table<1, ffmpeg::codec_id_t>();
-const auto ffmpeg_format_table = create_sub_table<2, ffmpeg::pixel_format_t>();
-
-const format_desc_t unknown_format = format_table.find(video::pixel_format_t::unknown)->second;
-
-const format_desc_t& get_format_desc(video::pixel_format_t pixel_format)
+template<std::int32_t idx, typename T>
+std::unordered_map<T, audio::sample_format_t> create_audio_sub_table()
 {
-    auto it = format_table.find(pixel_format);
+    std::unordered_map<T, audio::sample_format_t> sub_table;
+    for(const auto& f : audio_format_table)
+    {
+        const auto& val = std::get<idx>(f.second);
+        if (sub_table.find(val) == sub_table.end())
+        {
+            sub_table.emplace(val
+                              , f.first);
+        }
+    }
 
-    return it != format_table.end()
+    return std::move(sub_table);
+}
+
+const auto v4l2_video_format_table = create_video_sub_table<0, v4l2::pixel_format_t>();
+const auto ffmpeg_video_codec_table = create_video_sub_table<1, ffmpeg::codec_id_t>();
+const auto ffmpeg_video_format_table = create_video_sub_table<2, ffmpeg::pixel_format_t>();
+
+const auto alsa_audio_format_table = create_audio_sub_table<0, alsa::sample_format_t>();
+const auto ffmpeg_audio_codec_table = create_audio_sub_table<1, ffmpeg::codec_id_t>();
+const auto ffmpeg_audio_format_table = create_audio_sub_table<2, ffmpeg::sample_format_t>();
+
+
+const video_format_desc_t unknown_video_format = video_format_table.find(video::pixel_format_t::unknown)->second;
+const audio_format_desc_t unknown_audio_format = audio_format_table.find(audio::sample_format_t::unknown)->second;
+
+const video_format_desc_t& get_format_desc(video::pixel_format_t pixel_format)
+{
+    auto it = video_format_table.find(pixel_format);
+
+    return it != video_format_table.end()
             ? it->second
-            : unknown_format;
+            : unknown_video_format;
+}
+
+const audio_format_desc_t& get_format_desc(audio::sample_format_t sample_format)
+{
+    auto it = audio_format_table.find(sample_format);
+
+    return it != audio_format_table.end()
+            ? it->second
+            : unknown_audio_format;
 }
 
 template <std::int32_t idx, typename T>
 video::pixel_format_t get_pixel_format(const T& value)
 {
-    auto it = std::find_if(format_table.begin()
-                        , format_table.end()
+    auto it = std::find_if(video_format_table.begin()
+                        , video_format_table.end()
                         , [&value](const std::pair<video::pixel_format_t
-                                                   , format_desc_t>& itm)
+                                                   , video_format_desc_t>& itm)
                         { return std::get<idx>(itm.second) == value; }
     );
 
-    return it != format_table.end()
+    return it != video_format_table.end()
             ? it->first
             : video::pixel_format_t::unknown;
 
@@ -128,22 +184,37 @@ const std::string &get_format_name(video::pixel_format_t pixel_format)
     return std::get<3>(get_format_desc(pixel_format));
 }
 
-v4l2::pixel_format_t to_v4l2_format(video::pixel_format_t pixel_format)
+v4l2::pixel_format_t to_v4l2_video_format(video::pixel_format_t pixel_format)
 {
     return std::get<0>(get_format_desc(pixel_format));
 }
 
-ffmpeg::pixel_format_t to_ffmpeg_format(video::pixel_format_t pixel_format)
+ffmpeg::pixel_format_t to_ffmpeg_video_format(video::pixel_format_t pixel_format)
 {
     return std::get<2>(get_format_desc(pixel_format));
 }
 
-ffmpeg::codec_id_t to_ffmpeg_codec(video::pixel_format_t pixel_format)
+ffmpeg::codec_id_t to_ffmpeg_video_codec(video::pixel_format_t pixel_format)
 {
     return std::get<1>(get_format_desc(pixel_format));
 }
 
-video::pixel_format_t from_v4l2_format(v4l2::pixel_format_t pixel_format)
+alsa::sample_format_t to_alsa_audio_format(audio::sample_format_t sample_format)
+{
+    return std::get<0>(get_format_desc(sample_format));
+}
+
+ffmpeg::sample_format_t to_ffmpeg_audio_format(audio::sample_format_t sample_format)
+{
+    return std::get<2>(get_format_desc(sample_format));
+}
+
+ffmpeg::codec_id_t to_ffmpeg_audio_codec(audio::sample_format_t sample_format)
+{
+    return std::get<1>(get_format_desc(sample_format));
+}
+
+video::pixel_format_t from_v4l2_video_format(v4l2::pixel_format_t pixel_format)
 {
     switch (pixel_format)
     {
@@ -158,15 +229,15 @@ video::pixel_format_t from_v4l2_format(v4l2::pixel_format_t pixel_format)
         break;
     }
 
-    auto it = v4l2_format_table.find(pixel_format);
-    return it != v4l2_format_table.end()
+    auto it = v4l2_video_format_table.find(pixel_format);
+    return it != v4l2_video_format_table.end()
             ? it->second
             :  video::pixel_format_t::unknown;
 
     // return get_pixel_format<0, v4l2::pixel_format_t>(pixel_format);
 }
 
-video::pixel_format_t from_ffmpeg_format(ffmpeg::pixel_format_t pixel_format)
+video::pixel_format_t from_ffmpeg_video_format(ffmpeg::pixel_format_t pixel_format)
 {
     switch (pixel_format)
     {
@@ -181,15 +252,15 @@ video::pixel_format_t from_ffmpeg_format(ffmpeg::pixel_format_t pixel_format)
         break;
     }
 
-    auto it = ffmpeg_format_table.find(pixel_format);
-    return it != ffmpeg_format_table.end()
+    auto it = ffmpeg_video_format_table.find(pixel_format);
+    return it != ffmpeg_video_format_table.end()
             ? it->second
             :  video::pixel_format_t::unknown;
 
     // return get_pixel_format<1>(pixel_format);
 }
 
-video::pixel_format_t from_ffmpeg_codec(ffmpeg::codec_id_t codec_id)
+video::pixel_format_t from_ffmpeg_video_codec(ffmpeg::codec_id_t codec_id)
 {
     switch (codec_id)
     {
@@ -198,12 +269,42 @@ video::pixel_format_t from_ffmpeg_codec(ffmpeg::codec_id_t codec_id)
         break;
     }
 
-    auto it = ffmpeg_codec_table.find(codec_id);
-    return it != ffmpeg_codec_table.end()
+    auto it = ffmpeg_video_codec_table.find(codec_id);
+    return it != ffmpeg_video_codec_table.end()
             ? it->second
             :  video::pixel_format_t::unknown;
 
     // return get_pixel_format<2>(codec_id);
+}
+
+const std::string &get_format_name(audio::sample_format_t sample_format)
+{
+    return std::get<3>(get_format_desc(sample_format));
+}
+
+
+audio::sample_format_t from_alsa_audio_format(alsa::sample_format_t sample_format)
+{
+    auto it = alsa_audio_format_table.find(sample_format);
+    return it != alsa_audio_format_table.end()
+            ? it->second
+            :  audio::sample_format_t::unknown;
+}
+
+audio::sample_format_t from_ffmpeg_audio_format(ffmpeg::sample_format_t sample_format)
+{
+    auto it = ffmpeg_audio_format_table.find(sample_format);
+    return it != ffmpeg_audio_format_table.end()
+            ? it->second
+            :  audio::sample_format_t::unknown;
+}
+
+audio::sample_format_t from_ffmpeg_audio_codec(ffmpeg::codec_id_t codec_id)
+{
+    auto it = ffmpeg_audio_codec_table.find(codec_id);
+    return it != ffmpeg_audio_codec_table.end()
+            ? it->second
+            :  audio::sample_format_t::unknown;
 }
 
 }

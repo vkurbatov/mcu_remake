@@ -22,15 +22,15 @@ static std::size_t fetch_libav_streams(const media_format_list_t& streams
         {
             case media_type_t::video:
                 s_info.media_info.media_type = ffmpeg::media_type_t::video;
-                s_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_format(s.video_info().pixel_format);
+                s_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_video_format(s.video_info().pixel_format);
                 s_info.media_info.video_info.size = { s.video_info().size.width, s.video_info().size.height };
                 s_info.media_info.video_info.fps = s.video_info().fps;
-                s_info.codec_info.id = utils::format_conversion::to_ffmpeg_codec(s.video_info().pixel_format);
+                s_info.codec_info.id = utils::format_conversion::to_ffmpeg_video_codec(s.video_info().pixel_format);
                 s_info.codec_info.codec_params = ffmpeg::codec_params_t(s.parameters);
             break;
             case media_type_t::audio:
                 s_info.media_info.media_type = ffmpeg::media_type_t::video;
-                s_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_format(s.video_info().pixel_format);
+                s_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_video_format(s.video_info().pixel_format);
                 s_info.media_info.video_info.size = { s.video_info().size.width, s.video_info().size.height };
                 s_info.media_info.video_info.fps = s.video_info().fps;
             break;

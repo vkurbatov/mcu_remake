@@ -13,8 +13,8 @@ bool format_form_stream(const ffmpeg::stream_info_t& stream_info
 {
 
     auto pixel_format = stream_info.codec_info.is_coded()
-            ? utils::format_conversion::from_ffmpeg_codec(stream_info.codec_info.id)
-            : utils::format_conversion::from_ffmpeg_format(stream_info.media_info.video_info.pixel_format);
+            ? utils::format_conversion::from_ffmpeg_video_codec(stream_info.codec_info.id)
+            : utils::format_conversion::from_ffmpeg_video_format(stream_info.media_info.video_info.pixel_format);
 
     if (stream_info.media_info.media_type == ffmpeg::media_type_t::video)
     {
@@ -37,8 +37,8 @@ static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_
                                             , frame_id_t frame_id)
 {
     auto pixel_format = frame.info.codec_id > 0 && frame.info.codec_id != ffmpeg::codec_id_raw_video
-            ? utils::format_conversion::from_ffmpeg_codec(frame.info.codec_id)
-            : utils::format_conversion::from_ffmpeg_format(frame.info.media_info.video_info.pixel_format);
+            ? utils::format_conversion::from_ffmpeg_video_codec(frame.info.codec_id)
+            : utils::format_conversion::from_ffmpeg_video_format(frame.info.media_info.video_info.pixel_format);
 
 
     video::video_info_t video_info(pixel_format

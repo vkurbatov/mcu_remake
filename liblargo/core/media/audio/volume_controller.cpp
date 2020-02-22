@@ -28,28 +28,28 @@ void change_volume(const void *sound_data, std::size_t size, void *output_data, 
 	}
 }
 
-bool change_volume(audio_format_t::sample_format_t sample_format, const void *sound_data, std::size_t size, void* output_data, std::uint32_t volume)
+bool change_volume(sample_format_t sample_format, const void *sound_data, std::size_t size, void* output_data, std::uint32_t volume)
 {
 
 	switch (sample_format)
 	{
-	case audio_format_t::sample_format_t::pcm_8:
+    case sample_format_t::pcm_8:
 		change_volume<std::int8_t>(sound_data, size, output_data, volume);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_16:
+    case sample_format_t::pcm_16:
 		change_volume<std::int16_t>(sound_data, size, output_data, volume);
 		break;
 
-	case audio_format_t::sample_format_t::pcm_32:
+    case sample_format_t::pcm_32:
 		change_volume<std::int32_t>(sound_data, size, output_data, volume);
 		break;
 
-	case audio_format_t::sample_format_t::float_32:
+    case sample_format_t::float_32:
 		change_volume<float>(sound_data, size, output_data, volume);
 		break;
 
-	case audio_format_t::sample_format_t::float_64:
+    case sample_format_t::float_64:
 		change_volume<double>(sound_data, size, output_data, volume);
 		break;
 
@@ -69,7 +69,7 @@ VolumeController::VolumeController(std::uint32_t volume)
 
 }
 
-std::uint32_t VolumeController::VolumeChange(audio_format_t::sample_format_t sample_format, uint32_t volume, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
+std::uint32_t VolumeController::VolumeChange(sample_format_t sample_format, uint32_t volume, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
 {
 
 	std::size_t result = std::min(input_size, output_size == 0 ? input_size : output_size);
@@ -104,17 +104,17 @@ std::uint32_t VolumeController::VolumeChange(audio_format_t::sample_format_t sam
 	return result;
 }
 
-uint32_t VolumeController::VolumeChange(audio_format_t::sample_format_t sample_format, uint32_t volume, void* data, std::size_t size)
+uint32_t VolumeController::VolumeChange(sample_format_t sample_format, uint32_t volume, void* data, std::size_t size)
 {
 	return VolumeChange(sample_format, volume, data, size, data, size);
 }
 
-std::uint32_t VolumeController::operator()(audio_format_t::sample_format_t sample_format, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
+std::uint32_t VolumeController::operator()(sample_format_t sample_format, const void* input_data, std::size_t input_size, void* output_data, std::size_t output_size)
 {
 	return VolumeChange(sample_format, m_mute ? min_volume : m_volume, input_data, input_size, output_data, output_size);
 }
 
-uint32_t VolumeController::operator()(audio_format_t::sample_format_t sample_format, void* data, std::size_t size)
+uint32_t VolumeController::operator()(sample_format_t sample_format, void* data, std::size_t size)
 {
 	return VolumeChange(sample_format, m_mute ? min_volume : m_volume, data, size);
 }

@@ -7,7 +7,7 @@ std::ostream &operator<<(std::ostream &ostream, const core::media::audio::audio_
 	       << audio_format.channels;
 }
 
-std::ostream &operator<<(std::ostream &ostream, const core::media::audio::audio_format_t::sample_format_t &sample_format)
+std::ostream &operator<<(std::ostream &ostream, const core::media::audio::sample_format_t &sample_format)
 {
 	static const char* format_string[] =
 	{

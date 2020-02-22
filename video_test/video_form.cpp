@@ -180,7 +180,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
         s_info.media_info.media_type = ffmpeg::media_type_t::video;
         s_info.media_info.video_info.size = { media_format.video_info().size.width, media_format.video_info().size.height };
         s_info.media_info.video_info.fps = fps;// video_format.fps;
-        s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(media_format.video_info().pixel_format);
+        s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_video_format(media_format.video_info().pixel_format);
 
         video_encoder.open(s_info
                            , ffmpeg::transcoder_type_t::encoder
@@ -312,7 +312,7 @@ static bool transcoder_test(core::media::video::i_video_frame& video_frame)
             s_info.media_info.media_type = ffmpeg::media_type_t::video;
             s_info.media_info.video_info.size = { media_format.video_info().size.width, media_format.video_info().size.height };
             s_info.media_info.video_info.fps = 25;// video_format.fps;
-            s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(media_format.video_info().pixel_format);
+            s_info.media_info.video_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_video_format(media_format.video_info().pixel_format);
 
             encoder.open(s_info
                          , ffmpeg::transcoder_type_t::encoder
@@ -665,10 +665,10 @@ video_form::video_form(QWidget *parent) :
         auto v4l2_data_handler = [this, &process_data](v4l2::frame_t&& frame)
         {
 
-            auto video_format = core::media::utils::format_conversion::from_v4l2_format(frame.frame_info.pixel_format);
+            auto video_format = core::media::utils::format_conversion::from_v4l2_video_format(frame.frame_info.pixel_format);
 
-            auto codec = core::media::utils::format_conversion::to_ffmpeg_codec(video_format);
-            auto format = core::media::utils::format_conversion::to_ffmpeg_format(video_format);
+            auto codec = core::media::utils::format_conversion::to_ffmpeg_video_codec(video_format);
+            auto format = core::media::utils::format_conversion::to_ffmpeg_video_format(video_format);
 
             ffmpeg::stream_info_t stream_info;
 
@@ -743,7 +743,7 @@ void video_form::prepare_image()
 
     if (!input_buffer.empty())
     {
-        output_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_format(core::media::video::pixel_format_t::rgba32);
+        output_info.pixel_format = core::media::utils::format_conversion::to_ffmpeg_video_format(core::media::video::pixel_format_t::rgba32);
 
         output_info.frame_rect.size = output_info.frame_size = { 1280, 720 };
 
@@ -837,7 +837,7 @@ void video_form::prepare_image()
             filter_flip.set_flip_method(flip_method);
         }
 
-        core::media::video::video_info_t input_video_info( core::media::utils::format_conversion::from_ffmpeg_format(input_info.pixel_format)
+        core::media::video::video_info_t input_video_info( core::media::utils::format_conversion::from_ffmpeg_video_format(input_info.pixel_format)
                                                       , { input_info.frame_size.width, input_info.frame_size.height });
 
         core::media::media_format_t input_format(input_video_info);

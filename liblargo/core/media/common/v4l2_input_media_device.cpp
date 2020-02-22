@@ -242,7 +242,7 @@ protected:
 
 auto fmt_to_string = [](const v4l2::frame_info_t& format)
 {
-    return media_format_t(video::video_info_t(utils::format_conversion::from_v4l2_format(format.pixel_format)
+    return media_format_t(video::video_info_t(utils::format_conversion::from_v4l2_video_format(format.pixel_format)
                                                 , {format.size.width, format.size.height}
                                                 , format.fps)).to_string();
 };
@@ -623,7 +623,7 @@ static void fetch_custom_parameters(control_parameter_list_t& controls
 
 void format_form_frame_info(const v4l2::frame_info_t& frame_info, media_format_t& media_format)
 {
-    video::video_info_t video_info(utils::format_conversion::from_v4l2_format(frame_info.pixel_format)
+    video::video_info_t video_info(utils::format_conversion::from_v4l2_video_format(frame_info.pixel_format)
                                    , { frame_info.size.width, frame_info.size.height}
                                    , frame_info.fps);
 
