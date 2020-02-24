@@ -85,6 +85,8 @@ const std::unordered_map<video::pixel_format_t
     { video::pixel_format_t::gray16,    { V4L2_PIX_FMT_Y16,     AV_CODEC_ID_NONE,       AV_PIX_FMT_GRAY16LE,    "gray16"    }   },
     { video::pixel_format_t::gray16x,   { V4L2_PIX_FMT_Y16_BE,  AV_CODEC_ID_NONE,       AV_PIX_FMT_GRAY16BE,    "gray16x"   }   },
     { video::pixel_format_t::nv12,      { V4L2_PIX_FMT_NV12,    AV_CODEC_ID_NONE,       AV_PIX_FMT_NV12,        "nv12"      }   },
+    { video::pixel_format_t::nv21,      { V4L2_PIX_FMT_NV21,    AV_CODEC_ID_NONE,       AV_PIX_FMT_NV21,        "nv21"      }   },
+    { video::pixel_format_t::nv16,      { V4L2_PIX_FMT_NV16,    AV_CODEC_ID_NONE,       AV_PIX_FMT_NV16,        "nv16"      }   },
     { video::pixel_format_t::sbggr8,    { V4L2_PIX_FMT_SBGGR8,  AV_CODEC_ID_NONE,       AV_PIX_FMT_BAYER_BGGR8, "bggr8"     }   },
     { video::pixel_format_t::sgbrg8,    { V4L2_PIX_FMT_SGBRG8,  AV_CODEC_ID_NONE,       AV_PIX_FMT_BAYER_GBRG8, "gbrg8"     }   },
     { video::pixel_format_t::sgrbg8,    { V4L2_PIX_FMT_SGRBG8,  AV_CODEC_ID_NONE,       AV_PIX_FMT_BAYER_GRBG8, "grbg8"     }   },
@@ -190,7 +192,7 @@ v4l2::pixel_format_t to_v4l2_video_format(video::pixel_format_t pixel_format)
 }
 
 ffmpeg::pixel_format_t to_ffmpeg_video_format(video::pixel_format_t pixel_format)
-{
+{        
     return std::get<2>(get_format_desc(pixel_format));
 }
 

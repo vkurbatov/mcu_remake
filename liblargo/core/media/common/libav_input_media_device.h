@@ -18,7 +18,8 @@ class libav_input_media_device : virtual public i_media_device,
         virtual public i_media_control
 
 {
-    std::uint32_t                       m_frame_counter;
+    std::uint32_t                       m_video_frame_counter;
+    std::uint32_t                       m_audio_frame_counter;
     ffmpeg::libav_stream_capturer       m_libav_stream_capturer;
 
 public:

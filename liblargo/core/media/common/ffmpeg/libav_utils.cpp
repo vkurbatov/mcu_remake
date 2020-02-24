@@ -126,7 +126,10 @@ AVCodecContext &operator <<(AVCodecContext &av_context
             av_context.width = media_info.video_info.size.width;
             av_context.height = media_info.video_info.size.height;
             av_context.framerate = av_d2q(media_info.video_info.fps, max_fps);
-            av_context.pix_fmt = static_cast<AVPixelFormat>(media_info.video_info.pixel_format);
+            if (media_info.video_info.pixel_format != pixel_format_none)
+            {
+                av_context.pix_fmt = static_cast<AVPixelFormat>(media_info.video_info.pixel_format);
+            }
             av_context.time_base = { 1, media_info.video_info.fps };
             av_context.sample_rate = video_sample_rate;
         break;

@@ -13,18 +13,15 @@ namespace media
 class media_frame_transcoder : virtual public i_media_frame_transcoder
 {
     ffmpeg::libav_transcoder            m_libav_transcoder;
-    std::string                         m_transcoding_options;
     media_format_t                      m_transcoding_format;
 
 public:
-    media_frame_transcoder(const media_format_t& transcoding_format
-                           , const std::string& transcoding_options = "");
+    media_frame_transcoder(const media_format_t& transcoding_format);
 
     const media_format_t& format() const;
 
     void reset();
-    bool setup(const media_format_t& transcoding_format
-               , const std::string& transcoding_options);
+    bool setup(const media_format_t& transcoding_format);
 
 
     // i_media_frame_transcoder interface

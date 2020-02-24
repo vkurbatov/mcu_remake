@@ -1,4 +1,5 @@
 #include "audio_format.h"
+#include "media/common/utils/format_converter.h"
 
 namespace core
 {
@@ -50,18 +51,19 @@ sample_format_t audio_format_t::format_from_bits(uint32_t bit_per_sample, bool i
 	{
 	case 8:
 		result = sample_format_t::pcm_8;
-		break;
+    break;
 
 	case 16:
 		result = sample_format_t::pcm_16;
-		break;
+    break;
 
 	case 32:
 		result = integer_proirity ? sample_format_t::pcm_32 : sample_format_t::float_32;
-		break;
+    break;
 
 	case 64:
 		result = sample_format_t::float_64;
+    break;
 	}
 
 	return result;
@@ -70,8 +72,20 @@ sample_format_t audio_format_t::format_from_bits(uint32_t bit_per_sample, bool i
 audio_format_t::audio_format_t(uint32_t sr, sample_format_t sf, uint32_t c)
 	: sample_rate(sr)
 	, sample_format(sf)
-	, channels(c)
-{}
+    , channels(c)
+{
+
+}
+
+audio_format_t::audio_format_t(sample_format_t sample_format
+                               , uint32_t sample_rate
+                               , uint32_t channels)
+    : sample_rate(sample_rate)
+    , sample_format(sample_format)
+    , channels(channels)
+{
+
+}
 
 bool audio_format_t::is_valid() const
 {
@@ -173,6 +187,17 @@ std::size_t audio_format_t::planes() const
 plane_sizes_t audio_format_t::plane_sizes() const
 {
     return { frame_size() };
+}
+
+std::string audio_format_t::to_string() const
+{
+    std::string format;
+    format.append(utils::format_conversion::get_format_name(sample_format));
+    format.append("/");
+    format.append(std::to_string(sample_rate));
+    format.append("/");
+    format.append(std::to_string(channels));
+    return format;
 }
 
 } // audio

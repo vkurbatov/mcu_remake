@@ -47,6 +47,8 @@ const pixel_format_t pixel_format_rgb32 = static_cast<pixel_format_t>(AV_PIX_FMT
 const pixel_format_t pixel_format_yuv420p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV420P);
 const pixel_format_t pixel_format_yuv422p = static_cast<pixel_format_t>(AV_PIX_FMT_YUV422P);
 
+const sample_format_t sample_format_none = static_cast<sample_format_t>(AV_SAMPLE_FMT_NONE);
+
 const std::string libav_param_name_thread_count     = "libav_thread_count";
 const std::string libav_param_name_bitrate          = "libav_bitrate";
 const std::string libav_param_name_gop              = "libav_gop";
@@ -583,6 +585,70 @@ std::string codec_info_t::codec_name(codec_id_t id)
     return avcodec_get_name(static_cast<AVCodecID>(id));
 }
 
+pixel_formats_t codec_info_t::supported_video_formats(codec_id_t id)
+{
+    pixel_formats_t pixel_formats;
+    auto codec = avcodec_find_encoder(static_cast<AVCodecID>(id));
+    if (codec != nullptr && codec->pix_fmts != nullptr)
+    {
+        auto i = 0;
+        while (codec->pix_fmts[i] != AV_PIX_FMT_NONE)
+        {
+            pixel_formats.push_back(codec->pix_fmts[i]);
+            i++;
+        }
+    }
+    return pixel_formats;
+}
+
+sample_formats_t codec_info_t::supported_audio_formats(codec_id_t id)
+{
+    sample_formats_t sample_formats;
+    auto codec = avcodec_find_encoder(static_cast<AVCodecID>(id));
+    if (codec != nullptr && codec->sample_fmts != nullptr)
+    {
+        auto i = 0;
+        while (codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE)
+        {
+            sample_formats.push_back(codec->sample_fmts[i]);
+            i++;
+        }
+    }
+    return sample_formats;
+}
+
+pixel_formats_t codec_info_t::supported_video_formats(const std::string &name)
+{
+    pixel_formats_t pixel_formats;
+    auto codec = avcodec_find_encoder_by_name(name.c_str());
+    if (codec != nullptr && codec->pix_fmts != nullptr)
+    {
+        auto i = 0;
+        while (codec->pix_fmts[i] != AV_PIX_FMT_NONE)
+        {
+            pixel_formats.push_back(codec->pix_fmts[i]);
+            i++;
+        }
+    }
+    return pixel_formats;
+}
+
+sample_formats_t codec_info_t::supported_audio_formats(const std::string &name)
+{
+    sample_formats_t sample_formats;
+    auto codec = avcodec_find_encoder_by_name(name.c_str());
+    if (codec != nullptr && codec->sample_fmts != nullptr)
+    {
+        auto i = 0;
+        while (codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE)
+        {
+            sample_formats.push_back(codec->sample_fmts[i]);
+            i++;
+        }
+    }
+    return sample_formats;
+}
+
 codec_info_t::codec_info_t(codec_id_t id
                            , const std::string &name
                            , const codec_params_t codec_params)
@@ -607,6 +673,20 @@ std::string codec_info_t::to_string() const
     return name.empty()
             ? codec_name(id)
             : name;
+}
+
+pixel_formats_t codec_info_t::supported_video_formats() const
+{
+    return name.empty()
+            ? supported_video_formats(id)
+            : supported_video_formats(name);
+}
+
+sample_formats_t codec_info_t::supported_audio_formats() const
+{
+    return name.empty()
+            ? supported_audio_formats(id)
+            : supported_audio_formats(name);
 }
 
 codec_params_t::codec_params_t(std::int32_t bitrate

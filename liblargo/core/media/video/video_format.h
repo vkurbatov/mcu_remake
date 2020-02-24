@@ -45,6 +45,8 @@ enum class pixel_format_t
     gray16,
     gray16x,
     nv12,
+    nv21,
+    nv16,
     sbggr8,
     sgbrg8,
     sgrbg8,

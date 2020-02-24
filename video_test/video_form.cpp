@@ -11,6 +11,7 @@
 #include "core/media/common/ffmpeg/libav_stream_capturer.h"
 #include "core/media/common/ffmpeg/libav_stream_publisher.h"
 #include "core/media/common/ffmpeg/libav_transcoder.h"
+#include "core/media/common/ffmpeg/libav_utils.h"
 
 #include "core/media/common/v4l2/v4l2_device.h"
 #include "media/common/utils/format_converter.h"
@@ -34,6 +35,7 @@
 #include "media/common/v4l2_input_media_device.h"
 #include "media/common/vnc_input_media_device.h"
 #include "media/common/media_frame_transcoder.h"
+#include "media/common/libav_output_media_device.h"
 
 
 #include <iostream>
@@ -137,16 +139,12 @@ core::media::libav_input_media_device input_stream_device(sink);
 core::media::v4l2_input_media_device input_camera_device(sink);
 core::media::vnc_input_media_device input_vnc_device(sink);
 
-auto& input_device = input_vnc_device;
+auto& input_device = input_camera_device;
 
 std::unique_ptr<core::media::media_frame_transcoder> frame_transcoder;
 
-
 static void publisher_test(core::media::video::i_video_frame& video_frame)
 {
-
-
-    return;
 
     static std::uint32_t fps = 30;
     static ffmpeg::libav_stream_publisher rtmp_publisher;
@@ -203,7 +201,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
             s_info.codec_info.name = "aac";
             s_info.codec_info.codec_params.bitrate = 128000;
             s_info.codec_info.codec_params.frame_size = 1024;
-            s_info.codec_info.codec_params.set_global_header(true);
+            s_info.codec_info.codec_params.set_global_header(false);
             s_info.media_info.media_type = ffmpeg::media_type_t::audio;
             s_info.media_info.audio_info.channels = 1;
             s_info.media_info.audio_info.sample_rate = 32000;
@@ -257,7 +255,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
                 video_enc_frames.pop();
             }
 
-            while (audio_samples_counter > samples_per_frame)
+            while (audio_samples_counter > 1024)
             {
 /*
                 for (auto& s : null_sound)
@@ -285,8 +283,98 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
                 audio_samples_counter -= 1024;
             }
-
         }
+    }
+
+}
+
+
+static void publisher_test2(core::media::video::i_video_frame& video_frame)
+{
+    static core::media::audio::audio_info_t audio_info(core::media::audio::sample_format_t::float_32
+                                                       , 32000
+                                                       , 1);
+
+    static core::media::media_format_t audio_format(audio_info
+                                                    , 1);
+
+    static auto sample_per_frame = audio_info.sample_rate / 30;//video_frame.media_format().video_info().fps;
+
+    static auto audio_samples_counter = 0;
+    static auto frame_size = 1024;
+
+    std::vector<std::uint8_t> audio_data(1024 * 4, 0);
+
+    std::string uri = "rtmp://x.rtmp.youtube.com/live2/aww3-1y5s-vbtg-4ehy";
+
+    static core::media::media_frame_ptr_t audio_frame = core::media::media_frame::create(audio_format
+                                                                                         , std::move(audio_data));
+
+    static std::unique_ptr<core::media::media_frame_transcoder> video_transcoder;
+    static std::unique_ptr<core::media::media_frame_transcoder> audio_transcoder;
+
+    static std::unique_ptr<core::media::libav_output_media_device> output_media_device;
+
+    if (video_transcoder == nullptr)
+    {
+        auto video_format = video_frame.media_format();
+        video_format.video_info().pixel_format = core::media::video::pixel_format_t::h264;
+        video_format.parameters = "libav_bitrate=1000000;libav_gop=12";
+
+        video_transcoder.reset(new core::media::media_frame_transcoder(video_format));
+
+        auto audio_format = audio_frame->media_format();
+        audio_format.audio_info().sample_format = core::media::audio::sample_format_t::aac;
+        audio_format.parameters = "libav_bitrate=128000;libav_frame_size=1024";
+
+        audio_transcoder.reset(new core::media::media_frame_transcoder(audio_format));
+    }
+
+    if (video_transcoder != nullptr)
+    {
+        if (output_media_device == nullptr)
+        {
+            output_media_device.reset(new core::media::libav_output_media_device({ video_transcoder->format()
+                                                                             , audio_transcoder->format() }));
+        }
+
+        core::media::media_frame_queue_t video_frame_queue;
+
+        if (video_transcoder->transcode(video_frame
+                                        , video_frame_queue))
+        {
+            if (output_media_device->is_open() || output_media_device->open(uri))
+            {
+                while(!video_frame_queue.empty())
+                {
+                    audio_samples_counter += sample_per_frame;
+
+                    output_media_device->on_frame(*video_frame_queue.front());
+
+                    video_frame_queue.pop();
+                }
+
+                while(audio_samples_counter > frame_size)
+                {
+                    core::media::media_frame_queue_t audio_frame_queue;
+
+                    if (audio_transcoder->transcode(*audio_frame
+                                                    , audio_frame_queue))
+                    {
+                        while(!audio_frame_queue.empty())
+                        {
+                            audio_frame_queue.front()->media_format().stream_id = 1;
+                            output_media_device->on_frame(*audio_frame_queue.front());
+                            audio_frame_queue.pop();
+                        }
+                    }
+
+                    audio_samples_counter -= frame_size;
+                }
+            }
+        }
+
+
     }
 
 }
@@ -877,7 +965,7 @@ void video_form::prepare_image()
 
         //transcoder_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
-        publisher_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
+        publisher_test2(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
         filter_flip.filter(*mid_frame);
 
@@ -1199,7 +1287,7 @@ void video_form::prepare_image2()
 
 
 
-        publisher_test(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
+        publisher_test2(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
         filter_flip.filter(*mid_frame);
 
@@ -1290,8 +1378,8 @@ void video_form::on_pushButton_clicked()
 
     // std::string uri = "rtsp://admin:Algont12345678@10.11.4.151";
     // std::string uri = "/home/user/test_file.mp4";
-    // std::string uri = "v4l2://dev/video2";
-    std::string uri = "vnc://123123123@10.11.4.213:5901";
+    std::string uri = "v4l2://dev/video2";
+    // std::string uri = "vnc://123123123@10.11.4.213:5901";
 
     if (input_device.is_open())
     {

@@ -31,7 +31,7 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
 
 media_frame_ptr_t video_frame::create(const media_format_t &media_format
                                       , media_data_t &&media_data
-                                      , frame_id_t stream_id
+                                      , frame_id_t frame_id
                                       , timestamp_t timestamp)
 {
     media_frame_ptr_t frame;
@@ -40,7 +40,7 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
     {
         frame.reset(new video_frame(media_format
                                     , std::move(media_data)
-                                    , stream_id
+                                    , frame_id
                                     , timestamp));
     }
 

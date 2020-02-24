@@ -56,6 +56,7 @@ struct audio_format_t : virtual public i_format_info
 	static sample_format_t format_from_bits(std::uint32_t bit_per_sample, bool integer_proirity = false);
 
 	audio_format_t(std::uint32_t sr = 0, sample_format_t sf = sample_format_t::unknown, std::uint32_t c = 0);
+    audio_format_t(sample_format_t sample_format, std::uint32_t sr = 0, std::uint32_t c = 0);
 
 	bool is_valid() const;
 	bool is_null() const;
@@ -84,6 +85,7 @@ public:
     std::size_t frame_size() const override;
     std::size_t planes() const override;
     plane_sizes_t plane_sizes() const override;
+    std::string to_string() const override;
 };
 
 static const audio_format_t default_audio_format = { default_sample_rate, sample_format_t::pcm_16, default_channels };

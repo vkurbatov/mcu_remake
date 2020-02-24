@@ -20,6 +20,10 @@ typedef std::int32_t pixel_format_t;
 typedef std::int32_t sample_format_t;
 const std::int32_t default_frame_align = 1;
 
+typedef std::vector<pixel_format_t> pixel_formats_t;
+typedef std::vector<sample_format_t> sample_formats_t;
+
+
 const codec_id_t unknown_codec_id = -1;
 const pixel_format_t unknown_pixel_format = -1;
 const sample_format_t unknown_sample_format = -1;
@@ -40,6 +44,8 @@ extern const pixel_format_t pixel_format_yuv422p;
 
 extern const pixel_format_t default_pixel_format;
 extern const sample_format_t default_sample_format;
+
+extern const sample_format_t sample_format_none;
 
 extern const codec_id_t codec_id_flv1;
 extern const codec_id_t codec_id_h263;
@@ -291,14 +297,21 @@ struct codec_info_t
     codec_params_t              codec_params;
 
     static std::string codec_name(codec_id_t id);
+    static pixel_formats_t supported_video_formats(codec_id_t id);
+    static sample_formats_t supported_audio_formats(codec_id_t id);
+    static pixel_formats_t supported_video_formats(const std::string& name);
+    static sample_formats_t supported_audio_formats(const std::string& name);
 
     codec_info_t(codec_id_t id = codec_id_none
                  , const std::string& name = ""
                  , const codec_params_t codec_params = codec_params_t());
 
+
     bool is_coded() const;
     std::string to_string() const;
 
+    pixel_formats_t supported_video_formats() const;
+    sample_formats_t supported_audio_formats() const;
 };
 
 

@@ -41,7 +41,8 @@ struct video_info_t;
 
 namespace audio
 {
-struct audio_info_t;
+struct audio_format_t;
+typedef audio_format_t audio_info_t;
 }
 
 namespace data
@@ -59,6 +60,7 @@ public:
     virtual std::size_t frame_size() const = 0;
     virtual std::size_t planes() const = 0;
     virtual plane_sizes_t plane_sizes() const = 0;
+    virtual std::string to_string() const = 0;
 };
 
 struct media_format_t : virtual public i_format_info
@@ -105,10 +107,9 @@ struct media_format_t : virtual public i_format_info
     virtual bool operator ==(const media_format_t& media_format);
     virtual bool operator !=(const media_format_t& media_format);
 
-    virtual std::string to_string() const;
+    std::string to_string() const override;
 
 };
-
 
 struct external_media_info_t
 {

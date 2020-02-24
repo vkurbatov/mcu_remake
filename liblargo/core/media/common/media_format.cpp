@@ -17,6 +17,7 @@ public:
     std::size_t frame_size() const override { return 0; }
     std::size_t planes() const override { return 0; }
     plane_sizes_t plane_sizes() const override { return { 0 }; }
+    std::string to_string() const override { return ""; }
 };
 
 namespace data
@@ -29,6 +30,7 @@ struct data_info_t : virtual public format_info_stub_t
 
 }
 
+/*
 namespace audio
 {
 
@@ -37,7 +39,7 @@ struct audio_info_t : virtual public format_info_stub_t
 
 };
 
-}
+}*/
 
 struct info_storage_t
 {
@@ -129,6 +131,7 @@ media_format_t::media_format_t(const media_format_t &media_format)
     : info_storage(new info_storage_t(*media_format.info_storage))
     , media_type(media_format.media_type)
     , stream_id(media_format.stream_id)
+    , parameters(media_format.parameters)
 
 {
 
@@ -139,6 +142,7 @@ media_format_t &media_format_t::operator=(const media_format_t &media_format)
     *info_storage = *media_format.info_storage;
     media_type = media_format.media_type;
     stream_id = media_format.stream_id;
+    parameters = media_format.parameters;
 }
 
 bool media_format_t::is_encoded() const
@@ -230,8 +234,10 @@ bool media_format_t::operator !=(const media_format_t &media_format)
 
 std::string media_format_t::to_string() const
 {
-    static std::string names[] = { "audio", "video", "data" };
-    return names[static_cast<std::uint32_t>(media_type)];
+    return info_storage->format_info(media_type).to_string();
+    /*static std::string names[] = { "audio", "video", "data" };
+    return names[static_cast<std::uint32_t>(media_type)];*/
+
 }
 
 external_media_info_t::external_media_info_t(void *data
