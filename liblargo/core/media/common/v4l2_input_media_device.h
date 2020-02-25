@@ -2,8 +2,7 @@
 #define V4L2_INPUT_MEDIA_DEVICE_H
 
 #include "i_media_sink.h"
-#include "i_media_device.h"
-#include "i_media_control.h"
+#include "i_input_media_device.h"
 
 #include "media/common/v4l2/v4l2_device.h"
 #include "media/common/visca/visca_device.h"
@@ -16,9 +15,7 @@ namespace media
 
 // typedef std::unique_ptr<v4l2::v4l2_device> v4l2_device_ptr_t;
 
-class v4l2_input_media_device : virtual public i_media_device,
-        virtual public i_media_control
-
+class v4l2_input_media_device : virtual public i_input_media_device
 {
     std::uint32_t               m_frame_counter;
     v4l2::v4l2_device           m_v4l2_device;

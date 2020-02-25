@@ -2,8 +2,7 @@
 #define VNC_INPUT_MEDIA_DEVICE_H
 
 #include "i_media_sink.h"
-#include "i_media_device.h"
-#include "i_media_control.h"
+#include "i_input_media_device.h"
 
 #include "media/common/vnc/vnc_device.h"
 
@@ -15,9 +14,7 @@ namespace media
 
 // typedef std::unique_ptr<vnc::vnc_device> vnc_device_ptr_t;
 
-class vnc_input_media_device : virtual public i_media_device,
-        virtual public i_media_control
-
+class vnc_input_media_device : virtual public i_input_media_device
 {
     std::uint32_t               m_frame_counter;
     vnc::vnc_device             m_vnc_device;

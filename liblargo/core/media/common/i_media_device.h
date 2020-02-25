@@ -1,7 +1,6 @@
 #ifndef I_MEDIA_DEVICE_H
 #define I_MEDIA_DEVICE_H
 
-#include "device_info.h"
 #include "media_format.h"
 
 namespace core

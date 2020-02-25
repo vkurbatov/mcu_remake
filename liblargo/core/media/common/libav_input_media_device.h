@@ -2,8 +2,7 @@
 #define LIBAV_INPUT_MEDIA_DEVICE_H
 
 #include "i_media_sink.h"
-#include "i_media_device.h"
-#include "i_media_control.h"
+#include "i_input_media_device.h"
 
 #include "media/common/ffmpeg/libav_stream_capturer.h"
 
@@ -14,9 +13,7 @@ namespace media
 {
 
 
-class libav_input_media_device : virtual public i_media_device,
-        virtual public i_media_control
-
+class libav_input_media_device : virtual public i_input_media_device
 {
     std::uint32_t                       m_video_frame_counter;
     std::uint32_t                       m_audio_frame_counter;

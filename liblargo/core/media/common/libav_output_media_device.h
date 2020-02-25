@@ -1,9 +1,7 @@
 #ifndef LIBAV_OUTPUT_MEDIA_DEVICE_H
 #define LIBAV_OUTPUT_MEDIA_DEVICE_H
 
-#include "i_media_sink.h"
-#include "i_media_device.h"
-#include "i_media_control.h"
+#include "i_output_media_device.h"
 
 #include "media/common/ffmpeg/libav_stream_publisher.h"
 
@@ -17,9 +15,7 @@ namespace media
 
 typedef std::map<stream_id_t, media_format_t>    media_format_map_t;
 
-class libav_output_media_device : virtual public i_media_device
-        , virtual public i_media_control
-        , virtual public i_media_sink
+class libav_output_media_device : virtual public i_output_media_device
 {
     ffmpeg::libav_stream_publisher      m_libav_stream_publisher;
     media_format_map_t                  m_media_streams;
