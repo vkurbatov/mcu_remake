@@ -1,6 +1,7 @@
 #include "media_format.h"
 #include "media/video/video_format.h"
 #include "media/audio/audio_format.h"
+#include "codec_params.h"
 
 namespace core
 {
@@ -46,27 +47,34 @@ struct info_storage_t
     video::video_info_t     video_info;
     audio::audio_info_t     audio_info;
     data::data_info_t       data_info;
+    codec_params_t          codec_params;
 
-    info_storage_t(const video::video_info_t& video_info)
+    info_storage_t(const video::video_info_t& video_info
+                   , const codec_params_t& codec_params = codec_params_t())
         : video_info(video_info)
         , audio_info{}
         , data_info{}
+        , codec_params(codec_params)
     {
 
     }
 
-    info_storage_t(const audio::audio_info_t& audio_info)
+    info_storage_t(const audio::audio_info_t& audio_info
+                   , const codec_params_t& codec_params = codec_params_t())
         : video_info{}
         , audio_info(audio_info)
         , data_info{}
+        , codec_params(codec_params)
 
     {
 
     }
-    info_storage_t(const data::data_info_t& data_info = data::data_info_t())
+    info_storage_t(const data::data_info_t& data_info = data::data_info_t()
+                   , const codec_params_t& codec_params = codec_params_t())
         : video_info{}
         , audio_info{}
         , data_info(data_info)
+        , codec_params(codec_params)
     {
 
     }
@@ -131,7 +139,6 @@ media_format_t::media_format_t(const media_format_t &media_format)
     : info_storage(new info_storage_t(*media_format.info_storage))
     , media_type(media_format.media_type)
     , stream_id(media_format.stream_id)
-    , parameters(media_format.parameters)
 
 {
 
@@ -142,7 +149,6 @@ media_format_t &media_format_t::operator=(const media_format_t &media_format)
     *info_storage = *media_format.info_storage;
     media_type = media_format.media_type;
     stream_id = media_format.stream_id;
-    parameters = media_format.parameters;
 }
 
 bool media_format_t::is_encoded() const
@@ -204,6 +210,11 @@ data::data_info_t &media_format_t::data_info()
     return info_storage->data_info;
 }
 
+codec_params_t &media_format_t::codec_params()
+{
+    return info_storage->codec_params;
+}
+
 const video::video_info_t &media_format_t::video_info() const
 {
     return info_storage->video_info;
@@ -219,12 +230,16 @@ const data::data_info_t &media_format_t::data_info() const
     return info_storage->data_info;
 }
 
+const codec_params_t &media_format_t::codec_params() const
+{
+    return info_storage->codec_params;
+}
+
 
 bool media_format_t::operator ==(const media_format_t &media_format)
 {
 
-    return media_type == media_format.media_type
-            && extra_data.size() == media_format.extra_data.size();
+    return media_type == media_format.media_type;
 }
 
 bool media_format_t::operator !=(const media_format_t &media_format)

@@ -36,7 +36,7 @@
 #include "media/common/vnc_input_media_device.h"
 #include "media/common/media_frame_transcoder.h"
 #include "media/common/libav_output_media_device.h"
-
+#include "media/common/codec_params.h"
 
 #include <iostream>
 #include <cstring>
@@ -298,10 +298,11 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
     static core::media::media_format_t audio_format(audio_info
                                                     , 1);
 
+
     static auto sample_per_frame = audio_info.sample_rate / 30;//video_frame.media_format().video_info().fps;
 
     static auto audio_samples_counter = 0;
-    static auto frame_size = 1024;
+    static auto frame_size = 1024;   
 
     std::vector<std::uint8_t> audio_data(1024 * 4, 0);
 
@@ -319,13 +320,15 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
     {
         auto video_format = video_frame.media_format();
         video_format.video_info().pixel_format = core::media::video::pixel_format_t::h264;
-        video_format.parameters = "libav_bitrate=1000000;libav_gop=12";
+        video_format.codec_params().bitrate = 1000000;
+        video_format.codec_params().gop_size = 12;
 
         video_transcoder.reset(new core::media::media_frame_transcoder(video_format));
 
         auto audio_format = audio_frame->media_format();
         audio_format.audio_info().sample_format = core::media::audio::sample_format_t::aac;
-        audio_format.parameters = "libav_bitrate=128000;libav_frame_size=1024";
+        audio_format.codec_params().bitrate = 128000;
+        audio_format.codec_params().frame_size = 1024;
 
         audio_transcoder.reset(new core::media::media_frame_transcoder(audio_format));
     }

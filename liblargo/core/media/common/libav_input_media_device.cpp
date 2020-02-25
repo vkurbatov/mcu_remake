@@ -1,6 +1,7 @@
 #include "libav_input_media_device.h"
 #include "media/video/video_frame.h"
 #include "media/audio/audio_frame.h"
+#include "media/common/codec_params.h"
 #include "media/common/utils/format_converter.h"
 
 namespace core
@@ -70,7 +71,7 @@ static media_frame_ptr_t create_video_frame(const ffmpeg::stream_info_t& stream_
                                 , stream_info.stream_id);
 
 
-    media_format.extra_data = stream_info.extra_data;
+    media_format.codec_params().extra_data = stream_info.extra_data;
     return video::video_frame::create(media_format
                                       , media_buffer::create(std::move(frame.media_data))
                                       , frame_id);
@@ -93,7 +94,7 @@ static media_frame_ptr_t create_audio_frame(const ffmpeg::stream_info_t& stream_
                                 , stream_info.stream_id);
 
 
-    media_format.extra_data = stream_info.extra_data;
+    media_format.codec_params().extra_data = stream_info.extra_data;
     return audio::audio_frame::create(media_format
                                       , media_buffer::create(std::move(frame.media_data))
                                       , frame_id);

@@ -47,6 +47,7 @@ struct audio_format_t : virtual public i_format_info
 	std::uint32_t   channels;
 
 
+    static bool is_encoded(sample_format_t sapmpl_format);
 	static bool is_valid_sample_rate(std::int32_t sr);
 	static bool is_valid_sample_format(sample_format_t sf);
 	static bool is_valid_channels(std::int32_t c);

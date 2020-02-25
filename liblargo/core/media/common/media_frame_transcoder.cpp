@@ -3,6 +3,7 @@
 #include "media/video/video_frame.h"
 #include "media/audio/audio_frame.h"
 #include "media/common/utils/format_converter.h"
+#include "media/common/codec_params.h"
 
 namespace core
 {
@@ -20,15 +21,13 @@ static bool stream_info_from_format(const media_format_t& media_format
             const video::video_info_t& video_info = media_format.video_info();
 
             stream_info.stream_id = media_format.stream_id;
-            stream_info.extra_data = media_format.extra_data;
+            auto ex_data = media_format.codec_params().extra_data;
+            stream_info.extra_data = ex_data;
             stream_info.codec_info.id = utils::format_conversion::to_ffmpeg_video_codec(video_info.pixel_format);
-            stream_info.codec_info.name.clear();
             stream_info.media_info.media_type = ffmpeg::media_type_t::video;
             stream_info.media_info.video_info.fps = video_info.fps;
             stream_info.media_info.video_info.size = { video_info.size.width, video_info.size.height };
             stream_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_video_format(video_info.pixel_format);
-
-            return true;
         }
         break;
         case media_type_t::audio:
@@ -36,20 +35,27 @@ static bool stream_info_from_format(const media_format_t& media_format
             const audio::audio_info_t& audio_info = media_format.audio_info();
 
             stream_info.stream_id = media_format.stream_id;
-            stream_info.extra_data = media_format.extra_data;
+            stream_info.extra_data = media_format.codec_params().extra_data;
             stream_info.codec_info.id = utils::format_conversion::to_ffmpeg_audio_codec(audio_info.sample_format);
-            stream_info.codec_info.name.clear();
+
             stream_info.media_info.media_type = ffmpeg::media_type_t::audio;
             stream_info.media_info.audio_info.sample_rate = audio_info.sample_rate;
             stream_info.media_info.audio_info.channels = audio_info.channels;
             stream_info.media_info.audio_info.sample_format = utils::format_conversion::to_ffmpeg_audio_format(audio_info.sample_format);
-
-            return true;
         }
+        break;
+        default:
+            return false;
         break;
 
     }
-    return false;
+
+    stream_info.codec_info.name.clear();
+    stream_info.codec_info.codec_params.bitrate = media_format.codec_params().bitrate;
+    stream_info.codec_info.codec_params.frame_size = media_format.codec_params().frame_size;
+    stream_info.codec_info.codec_params.gop = media_format.codec_params().gop_size;
+    stream_info.codec_info.codec_params.set_global_header(media_format.codec_params().global_header);
+    return true;
 }
 
 
@@ -79,7 +85,7 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
                                                            , stream_info.stream_id)
                                             );
 
-                media_format.extra_data = stream_info.extra_data;
+                media_format.codec_params().extra_data = stream_info.extra_data;
 
                 result = video::video_frame::create(media_format
                                                     , buffer
@@ -106,7 +112,7 @@ media_frame_ptr_t libav_frame_to_media_frame(ffmpeg::frame_t& frame
                                                            , stream_info.stream_id)
                                             );
 
-                media_format.extra_data = stream_info.extra_data;
+                media_format.codec_params().extra_data = stream_info.extra_data;
 
                 result = audio::audio_frame::create(media_format
                                                     , buffer
@@ -174,8 +180,7 @@ bool media_frame_transcoder::transcode(const i_media_frame &input_frame
                                         , stream_info))
             {            
                 m_libav_transcoder.open(stream_info
-                                        , transcode_type
-                                        , target_format.parameters);
+                                        , transcode_type);
 
             }
         }

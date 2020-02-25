@@ -270,33 +270,12 @@ struct libav_codec_context_t
                 {
                     stream_info.media_info >> *(av_context);
 
-                    if (is_encoder
-                            && av_context->sample_fmt == AV_SAMPLE_FMT_NONE)
-                    {
-                        auto formats = stream_info.codec_info.supported_audio_formats();
-                        if (!formats.empty())
-                        {
-                            av_context->sample_fmt = static_cast<AVSampleFormat>(formats.front());
-                        }
-                    }
-
                     LOG_I << "Transcoder #" << context_id << ". Initialize audio context [" <<  av_context->sample_rate
                           << "/16/" << av_context->channels << "]" LOG_END;
                 }
                 else
                 {
                     stream_info.media_info >> *(av_context);
-
-                    if (is_encoder
-                            && av_context->pix_fmt == AV_PIX_FMT_NONE)
-                    {
-                        auto formats = stream_info.codec_info.supported_video_formats();
-                        if (!formats.empty())
-                        {
-                            av_context->pix_fmt = static_cast<AVPixelFormat>(formats.front());
-                        }
-                    }
-
 
                     switch(av_context->codec_id)
                     {

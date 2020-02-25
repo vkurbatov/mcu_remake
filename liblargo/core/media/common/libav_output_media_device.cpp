@@ -3,6 +3,7 @@
 //#include "media/video/video_format.h"
 #include "media/common/utils/format_converter.h"
 #include "media/common/i_media_frame.h"
+#include "media/common/codec_params.h"
 
 namespace core
 {
@@ -19,8 +20,7 @@ static bool stream_form_format(const media_format_t& format
         {
             const auto& video_info = format.video_info();
             s_info.media_info.media_type = ffmpeg::media_type_t::video;
-            //s_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_video_format(video_info.pixel_format);
-            s_info.media_info.video_info.pixel_format = ffmpeg::pixel_format_yuv420p;
+            s_info.media_info.video_info.pixel_format = utils::format_conversion::to_ffmpeg_video_format(video_info.pixel_format);
             s_info.media_info.video_info.size = { video_info.size.width, video_info.size.height };
             s_info.media_info.video_info.fps = video_info.fps;
             s_info.codec_info.id = utils::format_conversion::to_ffmpeg_video_codec(video_info.pixel_format);
@@ -44,8 +44,11 @@ static bool stream_form_format(const media_format_t& format
     }
 
     s_info.stream_id = format.stream_id;
-    s_info.extra_data = format.extra_data;
-    s_info.codec_info.codec_params = ffmpeg::codec_params_t(format.parameters);
+    s_info.extra_data = format.codec_params().extra_data;
+    s_info.codec_info.codec_params.bitrate = format.codec_params().bitrate;
+    s_info.codec_info.codec_params.frame_size = format.codec_params().frame_size;
+    s_info.codec_info.codec_params.gop = format.codec_params().gop_size;
+    s_info.codec_info.codec_params.set_global_header(format.codec_params().global_header);
 
     return true;
 }

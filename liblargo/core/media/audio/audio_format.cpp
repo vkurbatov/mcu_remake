@@ -10,6 +10,11 @@ namespace media
 namespace audio
 {
 
+bool audio_format_t::is_encoded(sample_format_t sample_format)
+{
+    return sample_format > sample_format_t::float_64;
+}
+
 bool audio_format_t::is_valid_sample_rate(int32_t sr)
 {
 	return sr >= min_sample_rate && sr <= max_sample_rate;
@@ -161,7 +166,7 @@ size_t audio_format_t::samples_from_duration(uint32_t duration_ms) const
 
 bool audio_format_t::is_encoded() const
 {
-    return sample_format > sample_format_t::float_64;
+    return is_encoded(sample_format);
 }
 
 bool audio_format_t::is_convertable() const
