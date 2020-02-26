@@ -20,24 +20,28 @@ device_type_t device_info_t::device_type_from_uri(const std::string &uri)
     {
         { "" }
         , { "v4l2://", "camera://", "/dev/video"}
-        , { "/", "file://" }
+        , { "file://" }
         , { "rtsp://" }
         , { "rtmp://" }
         , { "vnc://" }
+        , { "alsa://" }
+        , { "pulse://" }
     };
 
-    auto i = 1;
-
-    for (const auto& pa : prefixes)
+    if (!uri.empty())
     {
-        for (const auto& p : pa)
+        for (auto i = 1; i < prefixes.size(); i++)
         {
-            if (uri.find(p) == 0)
+            for (const auto& p : prefixes[i])
             {
-                return static_cast<device_type_t>(i);
+                if (uri.find(p) == 0)
+                {
+                    return static_cast<device_type_t>(i);
+                }
             }
         }
-        i++;
+
+        return device_type_t::file;
     }
 
     return device_type_t::undefined;
@@ -48,7 +52,7 @@ device_info_t::device_info_t(device_class_t device_class
                             , std::string name
                             , std::string description
                             , std::string uri
-                            , std::uint32_t device_id)
+                            , device_id_t device_id)
     : device_class(device_class)
     , device_direction(device_direction)
     , name(name)
@@ -82,6 +86,15 @@ bool device_info_t::is_output_device() const
 device_type_t device_info_t::type() const
 {
     return device_type_from_uri(uri);
+}
+
+const std::string& device_info_t::to_string() const
+{
+    return description.empty()
+            ? name.empty()
+                ? uri
+                : name
+            : description;
 }
 
 }

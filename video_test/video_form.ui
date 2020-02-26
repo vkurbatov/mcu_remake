@@ -291,6 +291,16 @@
      </rect>
     </property>
    </widget>
+   <widget class="QComboBox" name="cbDeviceList">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>30</y>
+      <width>261</width>
+      <height>27</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

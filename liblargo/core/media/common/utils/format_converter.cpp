@@ -109,6 +109,7 @@ const std::unordered_map<video::pixel_format_t
     { video::pixel_format_t::srggb8,    { V4L2_PIX_FMT_SRGGB8,  AV_CODEC_ID_NONE,       AV_PIX_FMT_BAYER_RGGB8,                         "rggb8"     }   },
     { video::pixel_format_t::jpeg,      { V4L2_PIX_FMT_JPEG,    AV_CODEC_ID_JPEG2000,   AV_PIX_FMT_NONE,                                "jpeg"      }   },
     { video::pixel_format_t::mjpeg,     { V4L2_PIX_FMT_MJPEG,   AV_CODEC_ID_MJPEG,      AV_PIX_FMT_NONE,                                "mjpeg"     }   },
+    { video::pixel_format_t::gif,       { 0,                    AV_CODEC_ID_GIF,        AV_PIX_FMT_NONE,                                "gif"       }   },
     { video::pixel_format_t::h264,      { V4L2_PIX_FMT_H264,    AV_CODEC_ID_H264,       AV_PIX_FMT_NONE,                                "h264"      }   },
     { video::pixel_format_t::h263,      { V4L2_PIX_FMT_H263,    AV_CODEC_ID_H263,       AV_PIX_FMT_NONE,                                "h263"      }   },
     { video::pixel_format_t::vp8,       { V4L2_PIX_FMT_VP8,     AV_CODEC_ID_VP8,        AV_PIX_FMT_NONE,                                "vp8"       }   },

@@ -11,6 +11,7 @@ namespace media
 
 typedef std::int32_t device_id_t;
 const device_id_t hw_device_id = -1;
+const device_id_t no_device_id = -1;
 
 enum class device_class_t
 {
@@ -26,7 +27,7 @@ enum class device_direction_t
     undefined,
     input = 1,
     output = 2,
-    input_output = device_direction_t::input | device_direction_t::output
+ //   input_output = device_direction_t::input | device_direction_t::output
 };
 
 enum class device_type_t
@@ -36,7 +37,9 @@ enum class device_type_t
     file,
     rtsp,
     rtmp,
-    vnc
+    vnc,
+    alsa,
+    pulse
 };
 
 
@@ -47,7 +50,7 @@ struct device_info_t
     std::string name;
     std::string description;
     std::string uri;
-    std::uint32_t device_id;
+    device_id_t device_id;
 
     static device_type_t device_type_from_uri(const std::string& uri);
 
@@ -56,7 +59,7 @@ struct device_info_t
                   , std::string name = {}
                   , std::string description = {}
                   , std::string uri = {}
-                  , std::uint32_t device_id = {});
+                  , device_id_t device_id = {});
 
     bool is_audio_device() const;
     bool is_video_device() const;
@@ -64,6 +67,7 @@ struct device_info_t
     bool is_output_device() const;
 
     device_type_t type() const;
+    const std::string& to_string() const;
 };
 
 }

@@ -84,7 +84,7 @@ device_type_t fetch_device_type(const std::string &uri)
 
     if (uri.find("/") == 0)
     {
-        return uri.find("/dev/video")
+        return uri.find("/dev/video") == 0
                 ? device_type_t::camera
                 : device_type_t::file;
     }

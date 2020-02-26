@@ -37,6 +37,7 @@
 #include "media/common/media_frame_transcoder.h"
 #include "media/common/libav_output_media_device.h"
 #include "media/common/codec_params.h"
+#include "media/common/media_device_manager.h"
 
 #include <iostream>
 #include <cstring>
@@ -133,11 +134,16 @@ public:
         }
     }
 };
-test_sink sink;
 
-core::media::libav_input_media_device input_stream_device(sink);
-core::media::v4l2_input_media_device input_camera_device(sink);
-core::media::vnc_input_media_device input_vnc_device(sink);
+std::shared_ptr<test_sink> sink(new test_sink());
+
+core::media::libav_input_media_device input_stream_device(*sink);
+core::media::v4l2_input_media_device input_camera_device(*sink);
+core::media::vnc_input_media_device input_vnc_device(*sink);
+
+core::media::media_device_manager device_manager;
+
+core::media::input_media_managed_device_ptr_t input_managed_device_ptr = nullptr;
 
 auto& input_device = input_camera_device;
 
@@ -291,6 +297,7 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
 static void publisher_test2(core::media::video::i_video_frame& video_frame)
 {
+    return;
     static core::media::audio::audio_info_t audio_info(core::media::audio::sample_format_t::float_32
                                                        , 32000
                                                        , 1);
@@ -504,7 +511,30 @@ video_form::video_form(QWidget *parent) :
    // auto list = ffmpeg::libav_parse_option_list("  \r  \n  param1  \r  = \n value1  \r ;  \r  param2  \n = 43\n   \r  ");
     auto list = ffmpeg::parse_option_list("param1=value1;param2=");
 
+    //auto devices = ffmpeg::list_audio_devices();
+
+    core::media::device_info_t device_info_rtsp(core::media::device_class_t::video
+                                               , core::media::device_direction_t::input
+                                               , "rtsp_stream"
+                                               , "Remote IP Camera"
+                                               , "rtsp://admin:Algont12345678@10.11.4.151");
+
+    device_manager.register_device(device_info_rtsp);
+
+    core::media::device_info_t device_info_vnc(core::media::device_class_t::video
+                                               , core::media::device_direction_t::input
+                                               , "vnc_stream"
+                                               , "Remote VNC Desctop"
+                                               , "vnc://123123123@10.11.4.213:5901");
+
+    device_manager.register_device(device_info_vnc);
+
+    auto device_list = device_manager.device_info_list(core::media::device_class_t::video
+                                                       , core::media::device_direction_t::input);
+
+
     list.clear();
+
     //painter.drawImage( 0, 0, test_image);
 
 
@@ -595,7 +625,7 @@ video_form::video_form(QWidget *parent) :
             return true;
         };
 
-        sink.set_handler(frame_handler);
+        sink->set_handler(frame_handler);
 
         auto process_data = [](const ffmpeg::stream_info_t& stream_info
                           , ffmpeg::media_data_t&& media_data)
@@ -791,6 +821,11 @@ video_form::video_form(QWidget *parent) :
     ui->cbbControl->hide();
     ui->cbControl->hide();
     ui->teControl->hide();
+
+    for (const auto& d : device_list)
+    {
+        ui->cbDeviceList->addItem(QString::fromStdString(d.to_string()));
+    }
 }
 
 video_form::~video_form()
@@ -1384,17 +1419,28 @@ void video_form::on_pushButton_clicked()
     std::string uri = "v4l2://dev/video2";
     // std::string uri = "vnc://123123123@10.11.4.213:5901";
 
-    if (input_device.is_open())
+    if (input_managed_device_ptr != nullptr)
     {
-        input_device.close();
+        input_managed_device_ptr.reset();
     }
     else
     {
-        input_device.open(uri);
+        auto device_idx = ui->cbDeviceList->currentIndex();
+
+        auto device_list = device_manager.device_info_list(core::media::device_class_t::video
+                                                           , core::media::device_direction_t::input);
+
+
+        input_managed_device_ptr = device_manager.create_input_device(device_list[device_idx]
+                                                                      , sink);
+
+        input_managed_device_ptr->open();
+
+        // input_device.open(uri);
 
         ui->cbResoulution->clear();
         ui->cbControlList->clear();
-        const auto& controls = input_device.controls();
+        const auto& controls = input_managed_device_ptr->controls();
 
         for (const auto& c : controls)
         {
@@ -1422,7 +1468,7 @@ void video_form::on_pushButton_clicked()
        // on_cbControlList_activated(ui->cbControlList->currentText());
     }
 
-    ui->pushButton->setText(input_device.is_open() ? "Stop" : "Start");
+    ui->pushButton->setText(input_managed_device_ptr != nullptr ? "Stop" : "Start");
 
     return;
 

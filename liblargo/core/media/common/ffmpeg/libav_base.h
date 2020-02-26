@@ -123,6 +123,34 @@ enum stream_mask_t : std::uint32_t
     stream_mask_all = stream_mask_only_media | stream_mask_data
 };
 
+struct device_info_t;
+
+typedef std::vector<device_info_t> device_info_list_t;
+typedef std::vector<std::string> device_class_list_t;
+
+struct device_info_t
+{
+    static device_class_list_t device_class_list(media_type_t media_type
+                                                 , bool is_source);
+    static device_info_list_t device_list(media_type_t media_type
+                                          , bool is_source
+                                          , const std::string& device_class = {});
+
+    media_type_t media_type;
+    std::string name;
+    std::string description;
+    std::string device_class;
+    bool        is_source;
+    device_info_t(media_type_t media_type
+                  , const std::string& name = {}
+                  , const std::string& description = {}
+                  , const std::string& device_class = {}
+                  , bool is_source = true);
+
+    std::string to_uri() const;
+
+};
+
 typedef std::uint32_t option_type_t;
 
 enum class option_format_t

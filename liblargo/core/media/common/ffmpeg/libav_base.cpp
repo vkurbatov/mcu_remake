@@ -4,6 +4,7 @@ extern "C"
 {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavdevice/avdevice.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
@@ -80,6 +81,124 @@ custom_parameter_t check_custom_param(const std::string param_name)
     return it == custom_parameter_dictionary.end()
             ? custom_parameter_t::unknown
             : it->second;
+}
+
+device_class_list_t device_info_t::device_class_list(media_type_t media_type
+                                                     , bool is_source)
+{
+    device_class_list_t device_class_list;
+
+    if (media_type != media_type_t::data)
+    {
+        if (is_source)
+        {
+            auto get_device = media_type == media_type_t::audio
+                    ? av_input_audio_device_next
+                    : av_input_video_device_next;
+
+            for (AVInputFormat* input_format = get_device(nullptr)
+                    ; input_format != nullptr
+                    ; input_format = get_device(input_format))
+            {
+                if (input_format->name != nullptr)
+                {
+                    device_class_list.emplace_back(input_format->name);
+                    if (device_class_list.back().find("video4linux") != std::string::npos)
+                    {
+                        device_class_list.back() = "v4l2";
+                    }
+                }
+            }
+        }
+        else
+        {
+            auto get_device = media_type == media_type_t::audio
+                    ? av_output_audio_device_next
+                    : av_output_video_device_next;
+
+            for (AVOutputFormat* output_format = get_device(nullptr)
+                    ; output_format != nullptr
+                    ; output_format = get_device(output_format))
+            {
+                if (output_format->name != nullptr)
+                {
+                    device_class_list.emplace_back(output_format->name);
+                }
+            }
+        }
+    }
+
+    return device_class_list;
+}
+
+device_info_list_t device_info_t::device_list(media_type_t media_type
+                                              , bool is_source
+                                              , const std::string& device_class)
+{
+    device_info_list_t device_info_list;
+
+    auto class_list = device_class_list(media_type
+                                        , is_source);
+
+    if (!class_list.empty())
+    {
+        for (const auto& c : class_list)
+        {
+            if (device_class.empty()
+                    || c == device_class)
+            {
+                AVDeviceInfoList* av_device_list = nullptr;
+
+                std::int32_t result = is_source
+                                      ? avdevice_list_input_sources(nullptr
+                                                                    , c.c_str()
+                                                                    , nullptr
+                                                                    , &av_device_list)
+                                      : avdevice_list_output_sinks(nullptr
+                                                                   , c.c_str()
+                                                                   , nullptr
+                                                                   , &av_device_list);
+
+                if (result >= 0)
+                {
+                    for (auto i = 0; i < av_device_list->nb_devices; i++)
+                    {
+                        auto device = av_device_list->devices[i];
+                        device_info_t device_info(media_type
+                                                  , device->device_name
+                                                  , device->device_description
+                                                  , c
+                                                  , is_source);
+                        device_info_list.emplace_back(std::move(device_info));
+                    }
+                }
+            }
+        }
+    }
+
+    return device_info_list;
+}
+
+device_info_t::device_info_t(media_type_t media_type
+                             , const std::string &name
+                             , const std::string &description
+                             , const std::string &device_class
+                             , bool is_source)
+    : media_type(media_type)
+    , name(name)
+    , description(description)
+    , device_class(device_class)
+    , is_source(is_source)
+{
+
+}
+
+std::string device_info_t::to_uri() const
+{
+    std::string device_uri = device_class;
+    device_uri.append("://");
+    device_uri.append(name);
+    return device_uri;
 }
 
 uint32_t audio_info_t::bps(sample_format_t sample_format)

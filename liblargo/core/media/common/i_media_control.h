@@ -22,7 +22,7 @@ public:
 
 
     virtual variant get_control(const std::string& control_name
-                                , const variant& control_value = {}) const = 0;
+                                , const variant& default_value = {}) const = 0;
 
 };
 
