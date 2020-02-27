@@ -1422,6 +1422,7 @@ void video_form::on_pushButton_clicked()
     if (input_managed_device_ptr != nullptr)
     {
         input_managed_device_ptr.reset();
+        frame_transcoder.reset();
     }
     else
     {
