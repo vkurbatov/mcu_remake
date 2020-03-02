@@ -87,12 +87,14 @@ struct video_info_t : public i_format_info
                                 , frame_size_t size
                                 , std::uint32_t fps);
 
+    static pixel_format_t raw_pixel_format(pixel_format_t pixel_format);
+
     video_info_t(pixel_format_t pixel_format = default_pixel_format
                    , frame_size_t size = default_frame_size
                    , std::uint32_t fps = default_fps);
 
-    bool operator ==(const video_info_t& video_info);
-    bool operator !=(const video_info_t& video_info);
+    bool operator ==(const video_info_t& video_info) const;
+    bool operator !=(const video_info_t& video_info) const;
 
     bool is_planar() const override;
     bool is_encoded() const override;
@@ -101,6 +103,7 @@ struct video_info_t : public i_format_info
     std::size_t frame_size() const override;
     std::size_t planes() const override;
     plane_sizes_t plane_sizes() const override;
+    pixel_format_t raw_pixel_format() const;
 
     frame_size_t plane_size(std::uint32_t plane_idx) const;
 

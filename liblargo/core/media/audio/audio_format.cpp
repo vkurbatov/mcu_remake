@@ -71,7 +71,16 @@ sample_format_t audio_format_t::format_from_bits(uint32_t bit_per_sample, bool i
     break;
 	}
 
-	return result;
+    return result;
+}
+
+sample_format_t audio_format_t::raw_sample_format(sample_format_t sample_format)
+{
+    if (is_encoded(sample_format))
+    {
+        return utils::format_conversion::from_ffmpeg_audio_format(utils::format_conversion::to_ffmpeg_audio_format(sample_format));
+    }
+    return sample_format;
 }
 
 audio_format_t::audio_format_t(uint32_t sr, sample_format_t sf, uint32_t c)
@@ -162,6 +171,11 @@ size_t audio_format_t::samples_from_size(std::size_t size) const
 size_t audio_format_t::samples_from_duration(uint32_t duration_ms) const
 {
     return samples_from_size(size_from_duration(duration_ms));
+}
+
+sample_format_t audio_format_t::raw_sample_format() const
+{
+    return raw_sample_format(sample_format);
 }
 
 bool audio_format_t::is_encoded() const

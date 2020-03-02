@@ -236,13 +236,28 @@ const codec_params_t &media_format_t::codec_params() const
 }
 
 
-bool media_format_t::operator ==(const media_format_t &media_format)
+bool media_format_t::operator ==(const media_format_t &media_format) const
 {
+    if (media_type == media_format.media_type)
+    {
+        switch(media_type)
+        {
+            case media_type_t::video:
+                return video_info() == media_format.video_info();
+            break;
+            case media_type_t::audio:
+                return audio_info() == media_format.audio_info();
+            break;
+            case media_type_t::data:
+                return true;
+            break;
+        }
+    }
 
-    return media_type == media_format.media_type;
+    return false;
 }
 
-bool media_format_t::operator !=(const media_format_t &media_format)
+bool media_format_t::operator !=(const media_format_t &media_format) const
 {
     return !operator == (media_format);
 }

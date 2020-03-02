@@ -143,7 +143,9 @@ bool video_frame_converter::convert(const i_media_frame &input_frame
     const auto& output_format = output_frame.media_format(); //static_cast<const video_format_t&>(output_frame.media_format());
 
     if (input_format.media_type == media_type_t::video
-            && output_format.media_type == media_type_t::video)
+            && output_format.media_type == media_type_t::video
+            && input_format.is_convertable()
+            && output_format.is_convertable())
     {
         ffmpeg::fragment_info_t input_fragment = utils::create_fragment(m_input_area
                                                          , input_format.video_info());
@@ -185,7 +187,9 @@ media_frame_ptr_t video_frame_converter::convert(const i_media_frame &input_fram
                                                  , media_format_t &output_format)
 {
     if (input_frame.media_format().media_type == media_type_t::video
-            && output_format.media_type == media_type_t::video)
+            && output_format.media_type == media_type_t::video
+            && input_frame.media_format().is_convertable()
+            && output_format.is_convertable())
     {
         auto frame = video_frame::create(output_format
                                          , media_buffer::create(nullptr

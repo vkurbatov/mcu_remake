@@ -17,7 +17,13 @@ class i_media_frame_transcoder
 public:
     virtual bool transcode(const i_media_frame& input_frame
                            , media_frame_queue_t& frame_queue) = 0;
+
+    virtual const media_format_t& format() const = 0;
+
+    virtual void reset() = 0;
+    virtual bool setup(const media_format_t& transcoding_format) = 0;
 };
+
 
 }
 

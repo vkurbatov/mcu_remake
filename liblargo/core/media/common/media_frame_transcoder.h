@@ -20,8 +20,8 @@ public:
 
     const media_format_t& format() const;
 
-    void reset();
-    bool setup(const media_format_t& transcoding_format);
+    void reset() override;
+    bool setup(const media_format_t& transcoding_format) override;
 
 
     // i_media_frame_transcoder interface

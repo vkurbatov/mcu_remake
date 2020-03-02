@@ -55,6 +55,7 @@ struct audio_format_t : virtual public i_format_info
 	static bool is_integer_format(sample_format_t sf);
 	static std::uint32_t bit_per_sample(sample_format_t sf);
 	static sample_format_t format_from_bits(std::uint32_t bit_per_sample, bool integer_proirity = false);
+    static sample_format_t raw_sample_format(sample_format_t sample_format);
 
 	audio_format_t(std::uint32_t sr = 0, sample_format_t sf = sample_format_t::unknown, std::uint32_t c = 0);
     audio_format_t(sample_format_t sample_format, std::uint32_t sr = 0, std::uint32_t c = 0);
@@ -77,6 +78,7 @@ struct audio_format_t : virtual public i_format_info
 	std::size_t size_from_format(const audio_format_t& af, std::size_t size) const;
 	std::size_t samples_from_size(std::size_t size) const;
 	std::size_t samples_from_duration(std::uint32_t duration_ms) const;
+    sample_format_t raw_sample_format() const;
 
     // i_format_info interface
 public:

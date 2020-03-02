@@ -53,6 +53,7 @@ public:
     const media_format_t &media_format() const override;
     media_format_t &media_format() override;
     media_plane_list_t planes() const override;
+    const void* data(std::int32_t offset = 0) const override;
     std::size_t size() const override;
     bool is_valid() const override;
     frame_id_t frame_id() const override;

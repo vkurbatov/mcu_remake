@@ -38,6 +38,8 @@
 #include "media/common/libav_output_media_device.h"
 #include "media/common/codec_params.h"
 #include "media/common/media_device_manager.h"
+#include "media/video/video_frame_normalizer.h"
+#include "media/audio/audio_frame_normalizer.h"
 
 #include <iostream>
 #include <cstring>
@@ -82,6 +84,7 @@ core::media::video::filters::video_filter_flip      filter_flip;
 
 core::media::video::filters::layer_list_t           overlay_list;
 core::media::video::filters::video_filter_overlay   filter_overlay(overlay_list);
+
 
 //core::media::video::filters::video_filter_custom    filter_custom;
 //core::media::video::filters::video_drawing_text_filter  filter_text("Hello world!!!", { 100, 100 });
@@ -297,7 +300,8 @@ static void publisher_test(core::media::video::i_video_frame& video_frame)
 
 static void publisher_test2(core::media::video::i_video_frame& video_frame)
 {
-    return;
+
+
     static core::media::audio::audio_info_t audio_info(core::media::audio::sample_format_t::float_32
                                                        , 32000
                                                        , 1);
@@ -306,7 +310,7 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
                                                     , 1);
 
 
-    static auto sample_per_frame = audio_info.sample_rate / 30;//video_frame.media_format().video_info().fps;
+    static auto sample_per_frame = audio_info.sample_rate / 25;//video_frame.media_format().video_info().fps;
 
     static auto audio_samples_counter = 0;
     static auto frame_size = 1024;   
@@ -318,6 +322,67 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
     static core::media::media_frame_ptr_t audio_frame = core::media::media_frame::create(audio_format
                                                                                          , std::move(audio_data));
 
+    static std::unique_ptr<core::media::audio::audio_frame_normalizer> audio_normalizer;
+    static std::unique_ptr<core::media::video::video_frame_normalizer> video_normalizer;
+
+    static std::unique_ptr<core::media::libav_output_media_device> output_media_device;
+
+    if (video_normalizer == nullptr)
+    {
+        auto video_format = video_frame.media_format();
+        video_format.video_info().fps = 25;
+        video_format.video_info().size = { 1280, 720 };
+        video_format.video_info().pixel_format = core::media::video::pixel_format_t::h264;
+        video_format.codec_params().bitrate = 2000000;
+        video_format.codec_params().gop_size = 12;
+        video_format.codec_params().extra_data.clear();
+
+        auto audio_format = audio_frame->media_format();
+        audio_format.audio_info().sample_format = core::media::audio::sample_format_t::aac;
+        audio_format.codec_params().bitrate = 128000;
+        audio_format.codec_params().frame_size = 1024;
+
+
+        video_normalizer.reset(new core::media::video::video_frame_normalizer(video_format));
+
+        audio_normalizer.reset(new core::media::audio::audio_frame_normalizer(audio_format));
+
+        if (output_media_device == nullptr)
+        {
+            output_media_device.reset(new core::media::libav_output_media_device({ video_format
+                                                                             , audio_format }));
+        }
+
+    }
+
+    if (output_media_device->is_open() || output_media_device->open(uri))
+    {
+
+        auto normalize_video_frame = video_normalizer->normalize(video_frame.clone());
+
+        if (normalize_video_frame != nullptr)
+        {
+            audio_samples_counter += sample_per_frame;
+            output_media_device->on_frame(*normalize_video_frame);
+
+            while(audio_samples_counter > frame_size)
+            {
+                auto normalize_audio_frame = audio_normalizer->normalize(audio_frame);
+
+                if (normalize_audio_frame != nullptr)
+                {
+                    normalize_audio_frame->media_format().stream_id = 1;
+
+                    output_media_device->on_frame(*normalize_audio_frame);
+
+                }
+
+                audio_samples_counter -= frame_size;
+            }
+        }
+
+    }
+/*
     static std::unique_ptr<core::media::media_frame_transcoder> video_transcoder;
     static std::unique_ptr<core::media::media_frame_transcoder> audio_transcoder;
 
@@ -386,7 +451,7 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
 
 
     }
-
+*/
 }
 
 static bool transcoder_test(core::media::video::i_video_frame& video_frame)
@@ -535,6 +600,7 @@ video_form::video_form(QWidget *parent) :
 
     list.clear();
 
+
     //painter.drawImage( 0, 0, test_image);
 
 
@@ -601,7 +667,7 @@ video_form::video_form(QWidget *parent) :
                 }
                 else
                 {
-                    last_video_frame = frame.clone();
+                    last_video_frame = frame.clone();                    
                 }
 
                 real_frame_count++;
@@ -1643,7 +1709,9 @@ void video_form::on_cbScaling_currentIndexChanged(int index)
 
 void video_form::on_cbResoulution_activated(const QString &arg1)
 {
-    input_device.set_control("Resolution", arg1.toStdString());
+    if (input_managed_device_ptr == nullptr)
+        return;
+    input_managed_device_ptr->set_control("Resolution", arg1.toStdString());
 }
 
 void video_form::on_cbResoulution_activated(int index)
@@ -1668,8 +1736,10 @@ void video_form::on_cbControlList_activated(int index)
 void video_form::on_cbControlList_activated(const QString &arg1)
 {
 
+    if (input_managed_device_ptr == nullptr)
+        return;
 
-    for (const auto& c : input_device.controls())
+    for (const auto& c : input_managed_device_ptr->controls())
     {
         if (c.name() == arg1.toStdString())
         {
@@ -1756,7 +1826,9 @@ void video_form::on_slControl_actionTriggered(int action)
 
 void video_form::on_slControl_sliderMoved(int position)
 {
-    input_device.set_control(ui->cbControlList->currentText().toStdString()
+    if (input_managed_device_ptr == nullptr)
+        return;
+    input_managed_device_ptr->set_control(ui->cbControlList->currentText().toStdString()
                                     , position);
 
     /*

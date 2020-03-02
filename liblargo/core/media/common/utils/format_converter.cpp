@@ -338,6 +338,16 @@ audio::sample_format_t from_alsa_audio_format(alsa::sample_format_t sample_forma
 
 audio::sample_format_t from_ffmpeg_audio_format(ffmpeg::sample_format_t sample_format)
 {
+    switch (sample_format)
+    {
+        case AV_SAMPLE_FMT_FLTP:
+            sample_format = AV_SAMPLE_FMT_FLT;
+        break;
+        case AV_SAMPLE_FMT_DBLP:
+            sample_format = AV_SAMPLE_FMT_DBL;
+        break;
+    }
+
     auto it = ffmpeg_audio_format_table.find(sample_format);
     return it != ffmpeg_audio_format_table.end()
             ? it->second

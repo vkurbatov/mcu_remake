@@ -105,8 +105,8 @@ struct media_format_t : virtual public i_format_info
     const data::data_info_t& data_info() const;
     const codec_params_t& codec_params() const;
 
-    virtual bool operator ==(const media_format_t& media_format);
-    virtual bool operator !=(const media_format_t& media_format);
+    virtual bool operator ==(const media_format_t& media_format) const;
+    virtual bool operator !=(const media_format_t& media_format) const;
 
     std::string to_string() const override;
 

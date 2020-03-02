@@ -147,9 +147,18 @@ media_plane_list_t media_frame::planes() const
     return std::move(plane_list);
 }
 
+const void *media_frame::data(std::int32_t offset) const
+{
+    return m_media_buffer != nullptr
+            ? m_media_buffer->data(offset)
+            : nullptr;
+}
+
 std::size_t media_frame::size() const
 {
-    return m_media_buffer->size();
+    return m_media_buffer != nullptr
+            ? m_media_buffer->size()
+            : 0;
 }
 
 bool media_frame::is_valid() const

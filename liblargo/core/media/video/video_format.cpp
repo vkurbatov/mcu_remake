@@ -85,6 +85,15 @@ std::string video_info_t::to_string(pixel_format_t pixel_format
                                            << media::utils::format_conversion::get_format_name(pixel_format)).str();
 }
 
+pixel_format_t video_info_t::raw_pixel_format(pixel_format_t pixel_format)
+{
+    if (is_encoded(pixel_format))
+    {
+        return utils::format_conversion::from_ffmpeg_video_format(utils::format_conversion::to_ffmpeg_video_format(pixel_format));
+    }
+    return pixel_format;
+}
+
 video_info_t::video_info_t(pixel_format_t pixel_format
                                , frame_size_t size
                                , uint32_t fps)
@@ -95,14 +104,14 @@ video_info_t::video_info_t(pixel_format_t pixel_format
 
 }
 
-bool video_info_t::operator ==(const video_info_t& video_info)
+bool video_info_t::operator ==(const video_info_t& video_info) const
 {
     return pixel_format == video_info.pixel_format
                     && size == video_info.size
                     && fps == video_info.fps;
 }
 
-bool video_info_t::operator !=(const video_info_t& video_info)
+bool video_info_t::operator !=(const video_info_t& video_info) const
 {
     return !operator ==(video_info);
 }
@@ -143,6 +152,11 @@ plane_sizes_t video_info_t::plane_sizes() const
 {
     return plane_sizes(pixel_format
                        , size);
+}
+
+pixel_format_t video_info_t::raw_pixel_format() const
+{
+    return raw_pixel_format(pixel_format);
 }
 
 

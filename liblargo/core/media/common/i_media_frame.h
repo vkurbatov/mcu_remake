@@ -37,6 +37,7 @@ public:
     virtual const media_format_t& media_format() const = 0;
     virtual media_format_t& media_format() = 0;
     virtual media_plane_list_t planes() const = 0;
+    virtual const void* data(std::int32_t offset = 0) const = 0;
     virtual std::size_t size() const = 0;
     virtual bool is_valid() const = 0;    
     virtual frame_id_t frame_id() const = 0;

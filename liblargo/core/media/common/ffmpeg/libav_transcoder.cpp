@@ -220,21 +220,21 @@ struct libav_codec_context_t
 
         if (av_context != nullptr)
         {
+            av_context->extradata = nullptr;
+            av_context->extradata_size = 0;
+
             if (avcodec_is_open(av_context) > 0)
             {
                 avcodec_close(av_context);
             }
 
-             av_context->extradata = nullptr;
-             av_context->extradata_size = 0;
-
-             avcodec_free_context(&av_context);
-             LOG_I << "Transcoder #" << context_id << ". Free context resource success" LOG_END;
+            avcodec_free_context(&av_context);
+            LOG_I << "Transcoder #" << context_id << ". Free context resource success" LOG_END;
 
 
-             av_context = nullptr;
-             av_frame = {};
-             av_packet = {};
+            av_context = nullptr;
+            av_frame = {};
+            av_packet = {};
         }
     }
 
@@ -660,6 +660,11 @@ struct libav_transcoder_context_t
     libav_transcoder_context_t()
     {
 
+    }
+
+    ~libav_transcoder_context_t()
+    {
+        close();
     }
 
     bool open(const stream_info_t& steam_info
