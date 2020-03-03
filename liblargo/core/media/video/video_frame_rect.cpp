@@ -10,6 +10,7 @@ namespace video
 {
 
 template class frame_rect_base_t<std::int32_t>;
+template class frame_rect_base_t<double>;
 
 template<typename T>
 frame_rect_base_t<T>::frame_rect_base_t(const frame_point_base_t<T> &point

@@ -19,8 +19,8 @@ struct frame_rect_base_t
     frame_point_base_t<T>   point;
     frame_size_base_t<T>    size;
 
-    frame_rect_base_t(const frame_point_base_t<T> & point = default_frame_point
-                 , const frame_size_base_t<T>& size = default_frame_size);
+    frame_rect_base_t(const frame_point_base_t<T>& point = frame_point_base_t<T>()
+            , const frame_size_base_t<T>& size = frame_size_base_t<T>());
 
     frame_rect_base_t(const frame_point_base_t<T> & point
                  , const frame_point_base_t<T> & br_point);

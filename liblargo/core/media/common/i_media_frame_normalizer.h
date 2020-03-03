@@ -14,6 +14,8 @@ class i_media_frame_normalizer
 public:
     virtual ~i_media_frame_normalizer(){}
     virtual media_frame_ptr_t normalize(media_frame_ptr_t input_frame) = 0;
+    virtual bool set_format(const media_format_t& format) = 0;
+    virtual const media_format_t& format() const = 0;
     virtual void reset() = 0;
 };
 

@@ -21,8 +21,8 @@ class audio_frame_normalizer : public i_media_frame_normalizer
 public:
     audio_frame_normalizer(const media_format_t& output_format);
 
-    const media_format_t& format() const;
-    bool set_format(const media_format_t& format);
+    bool set_format(const media_format_t& format) override;
+    const media_format_t& format() const override;
 
     // i_media_frame_normalizer interface
 public:

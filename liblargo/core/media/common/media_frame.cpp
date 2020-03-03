@@ -72,6 +72,19 @@ media_frame_ptr_t media_frame::create(const media_format_t &media_format
     }
 }
 
+media_frame_ptr_t media_frame::create(const media_format_t &media_format
+                                      , const void *data
+                                      , std::size_t size
+                                      , frame_id_t frame_id
+                                      , timestamp_t timestamp)
+{
+    return create(media_format
+                  , media_buffer::create(data
+                                         , size)
+                  , frame_id
+                  , timestamp);
+}
+
 media_frame::media_frame(const media_format_t& media_format
                          , media_buffer_ptr_t media_buffer
                          , frame_id_t frame_id
@@ -94,6 +107,20 @@ media_frame::media_frame(const media_format_t& media_format
                          , timestamp_t timestamp)
     : media_frame(media_format
                   , media_buffer::create(std::move(media_data))
+                  , frame_id
+                  , timestamp)
+{
+
+}
+
+media_frame::media_frame(const media_format_t &media_format
+                         , const void *data
+                         , std::size_t size
+                         , frame_id_t frame_id
+                         , timestamp_t timestamp)
+    : media_frame(media_format
+                  , media_buffer::create(data
+                                         , size)
                   , frame_id
                   , timestamp)
 {

@@ -108,6 +108,8 @@ set(SOURCES
     "core/media/video/video_frame_factory.cpp"
     "core/media/video/video_frame_converter.cpp"
     "core/media/video/video_frame_normalizer.cpp"
+    "core/media/video/video_composer.cpp"
+    "core/media/video/video_layout_manager_auto.cpp"
     "core/media/video/filters/video_filter.cpp"
     "core/media/video/filters/video_filter_flip.cpp"
     "core/media/video/filters/video_filter_overlay.cpp"
@@ -194,6 +196,8 @@ set(PRIVATE_HEADERS
     "core/media/video/video_frame_factory.h"
     "core/media/video/video_frame_converter.h"
     "core/media/video/video_frame_normalizer.h"
+    "core/media/video/video_composer.h"
+    "core/media/video/video_layout_manager_auto.h"
     "core/media/video/filters/video_filter.h"
     "core/media/video/filters/video_filter_flip.h"
     "core/media/video/filters/video_filter_overlay.h"
@@ -255,6 +259,7 @@ set(PUBLIC_HEADERS
     "core/media/video/i_video_frame.h"
     "core/media/video/i_video_frame_factory.h"
     "core/media/video/i_video_frame_builder.h"
+    "core/media/video/i_video_layout_manager.h"
     "core/media/video/filters/i_video_layer.h"
 )
 

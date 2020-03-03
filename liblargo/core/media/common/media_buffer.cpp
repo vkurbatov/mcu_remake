@@ -11,10 +11,14 @@ namespace media
 
 media_buffer::media_buffer(const void *data
                            , std::size_t size)
-    : media_buffer(&data
-                   , plane_sizes_t({ size }))
+    : m_media_data(size, 0)
 {
-
+    if (data != nullptr && size > 0)
+    {
+        std::memcpy(m_media_data.data()
+                    , data
+                    , size);
+    }
 }
 
 media_buffer::media_buffer(const void * const slices[]

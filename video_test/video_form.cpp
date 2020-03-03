@@ -41,6 +41,8 @@
 #include "media/video/video_frame_normalizer.h"
 #include "media/audio/audio_frame_normalizer.h"
 
+#include "media/video/video_layout_manager_auto.h"
+
 #include <iostream>
 #include <cstring>
 #include <mutex>
@@ -599,6 +601,25 @@ video_form::video_form(QWidget *parent) :
 
 
     list.clear();
+
+    core::media::video::video_layout_manager_auto lyt_mgr_auto;
+
+    core::media::video::relative_layout_list_t layout_list;
+
+    const auto layounts = 2;
+
+    for (auto i = 0; i < layounts; i++)
+    {
+        core::media::video::relative_frame_rect_t lay;
+        if (lyt_mgr_auto.fetch_layout(layounts
+                                      , i
+                                      , lay))
+        {
+            layout_list.push_back(lay);
+        }
+    }
+
+    return;
 
 
     //painter.drawImage( 0, 0, test_image);

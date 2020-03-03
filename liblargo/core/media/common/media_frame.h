@@ -20,10 +20,10 @@ protected:
     frame_attributes_t      m_attributes;
 
 public:
+    static timestamp_t now_timestamp();
     static bool check_media_buffer(const media_format_t& media_format
                                    , const i_media_buffer& media_buffer);
 
-    static timestamp_t now_timestamp();
 
     static media_frame_ptr_t create(const media_format_t& media_format
                                     , media_buffer_ptr_t media_buffer
@@ -35,6 +35,13 @@ public:
                                     , frame_id_t frame_id = 0
                                     , timestamp_t timestamp = 0);
 
+    static media_frame_ptr_t create(const media_format_t& media_format
+                                    , const void *data
+                                    , std::size_t size
+                                    , frame_id_t frame_id = 0
+                                    , timestamp_t timestamp = 0);
+
+
 public:
     media_frame(const media_format_t& media_format
                 , media_buffer_ptr_t media_buffer
@@ -43,6 +50,12 @@ public:
 
     media_frame(const media_format_t& media_format
                 , media_data_t&& media_data
+                , frame_id_t frame_id = 0
+                , timestamp_t timestamp = 0);
+
+    media_frame(const media_format_t& media_format
+                , const void *data
+                , std::size_t size
                 , frame_id_t frame_id = 0
                 , timestamp_t timestamp = 0);
 

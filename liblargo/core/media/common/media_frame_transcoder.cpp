@@ -170,9 +170,7 @@ bool media_frame_transcoder::transcode(const i_media_frame &input_frame
 
         if (need_initialize)
         {
-            const auto& target_format = /*is_encoder
-                        ? input_frame.media_format()
-                        : */m_transcoding_format;
+            const auto& target_format = m_transcoding_format;
 
             ffmpeg::stream_info_t stream_info {};
 

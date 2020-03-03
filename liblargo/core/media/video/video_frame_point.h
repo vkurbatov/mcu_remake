@@ -38,6 +38,8 @@ struct frame_point_base_t
 typedef frame_point_base_t<std::int32_t> frame_point_t;
 typedef frame_point_base_t<double> relative_frame_point_t;
 
+
+
 const frame_point_t default_frame_point = { default_frame_x
                                         , default_frame_y };
 
