@@ -45,6 +45,7 @@ public:
     virtual media_frame_ptr_t clone() const = 0;
     virtual frame_attributes_t frame_attributes() const = 0;
 
+    virtual void* data(std::int32_t offset = 0) = 0;
     virtual void set_frame_id(frame_id_t frame_id) = 0;
     virtual void set_timestamp(timestamp_t timestamp) = 0;
     virtual void set_attributes(frame_attributes_t attributes) = 0;

@@ -73,6 +73,7 @@ public:
     timestamp_t timestamp() const override;
     frame_attributes_t frame_attributes() const override;
 
+    void* data(std::int32_t offset = 0) override;
     void set_frame_id(frame_id_t frame_id) override;
     void set_timestamp(timestamp_t timestamp) override;
     void set_attributes(frame_attributes_t attribute) override;

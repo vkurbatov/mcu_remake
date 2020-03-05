@@ -43,22 +43,6 @@ namespace utils
         }
     }
 
-    void aspect_ratio(const ffmpeg::frame_rect_t& input_rect
-                      , ffmpeg::frame_rect_t& output_rect)
-    {
-        auto adjusted_width = (output_rect.size.height * input_rect.size.width) / input_rect.size.height;
-        auto adjusted_height = (output_rect.size.width * input_rect.size.height) / input_rect.size.width;
-
-        auto new_width = std::min(adjusted_width, output_rect.size.width);
-        auto new_height = std::min(adjusted_height, output_rect.size.height);
-
-        output_rect.offset.x += (output_rect.size.width - new_width) / 2;
-        output_rect.offset.y += (output_rect.size.height - new_height) / 2;
-
-        output_rect.size.width = new_width;
-        output_rect.size.height = new_height;
-    }
-
     void aspect_ratio(ffmpeg::frame_rect_t& input_rect
                       , ffmpeg::frame_rect_t& output_rec
                       , aspect_ratio_mode_t aspect_ratio_mode)
@@ -66,10 +50,10 @@ namespace utils
         switch (aspect_ratio_mode)
         {
             case aspect_ratio_mode_t::crop:
-                aspect_ratio(output_rec, input_rect);
+                ffmpeg::frame_rect_t::aspect_ratio(output_rec, input_rect);
             break;
             case aspect_ratio_mode_t::fill:
-                aspect_ratio(input_rect, output_rec);
+                ffmpeg::frame_rect_t::aspect_ratio(input_rect, output_rec);
             break;
         }
     }

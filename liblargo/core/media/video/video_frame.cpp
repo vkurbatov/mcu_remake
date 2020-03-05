@@ -57,6 +57,11 @@ media_frame_ptr_t video_frame::create(const media_format_t &media_format
 
     if (media_format.media_type == media_type_t::video)
     {
+        if (size == 0 && !media_format.is_encoded())
+        {
+            size = media_format.frame_size();
+        }
+
         frame.reset(new video_frame(media_format
                                     , data
                                     , size

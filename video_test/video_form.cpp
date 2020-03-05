@@ -42,6 +42,7 @@
 #include "media/audio/audio_frame_normalizer.h"
 
 #include "media/video/video_layout_manager_auto.h"
+#include "media/video/video_composer.h"
 
 #include <iostream>
 #include <cstring>
@@ -109,6 +110,7 @@ std::uint32_t   frame_count = 0;
 std::uint32_t   real_fps = 0;
 std::uint32_t   real_frame_count = 0;
 
+std::uint32_t   mcu_count = 1;
 
 auto last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
@@ -140,7 +142,9 @@ public:
     }
 };
 
+
 std::shared_ptr<test_sink> sink(new test_sink());
+std::shared_ptr<test_sink> sink2(new test_sink());
 
 core::media::libav_input_media_device input_stream_device(*sink);
 core::media::v4l2_input_media_device input_camera_device(*sink);
@@ -149,6 +153,10 @@ core::media::vnc_input_media_device input_vnc_device(*sink);
 core::media::media_device_manager device_manager;
 
 core::media::input_media_managed_device_ptr_t input_managed_device_ptr = nullptr;
+
+std::shared_ptr<core::media::video::video_composer> video_composer;
+
+core::media::video::video_layout_manager_auto layout_manager;
 
 auto& input_device = input_camera_device;
 
@@ -562,6 +570,8 @@ video_form::video_form(QWidget *parent) :
 
     auto serials = serial::serial_device::serial_devices();
 
+
+
     // visca_device.open("/dev/ttyUSB0");
 
     // auto visca_open_flag = visca::open_device("/dev/ttyUSB0");
@@ -602,24 +612,18 @@ video_form::video_form(QWidget *parent) :
 
     list.clear();
 
-    core::media::video::video_layout_manager_auto lyt_mgr_auto;
 
-    core::media::video::relative_layout_list_t layout_list;
+    core::media::video::video_info_t video_info(core::media::video::pixel_format_t::yuv420p
+                                                , { 1280, 720 }
+                                                , 30);
 
-    const auto layounts = 2;
+    core::media::media_format_t composer_format(video_info);
 
-    for (auto i = 0; i < layounts; i++)
-    {
-        core::media::video::relative_frame_rect_t lay;
-        if (lyt_mgr_auto.fetch_layout(layounts
-                                      , i
-                                      , lay))
-        {
-            layout_list.push_back(lay);
-        }
-    }
+    video_composer.reset(new core::media::video::video_composer(composer_format
+                                                                , layout_manager
+                                                                , *sink2));
 
-    return;
+    //return;
 
 
     //painter.drawImage( 0, 0, test_image);
@@ -650,6 +654,22 @@ video_form::video_form(QWidget *parent) :
         }
 */
 
+        auto frame_provider = [this](const core::media::i_media_frame& frame)
+        {
+            mutex.lock();
+
+            last_video_frame = frame.clone();
+            if (image_change == false)
+            {
+                image_change = true;
+                QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
+            }
+
+            mutex.unlock();
+
+            return true;
+        };
+
         auto frame_handler = [this](const core::media::i_media_frame& frame) ->
         bool
         {
@@ -659,7 +679,7 @@ video_form::video_form(QWidget *parent) :
             {
                 auto tp = std::chrono::high_resolution_clock::now();
 
-                mutex.lock();
+                core::media::media_frame_ptr_t media_frame;
 
                 if (frame.media_format().is_encoded())
                 {
@@ -680,7 +700,7 @@ video_form::video_form(QWidget *parent) :
                         {
                             //auto decoded_frame = frames.front();
 
-                            last_video_frame = frames.front();
+                            media_frame = frames.front();
 
                             frames.pop();
                         }
@@ -688,8 +708,32 @@ video_form::video_form(QWidget *parent) :
                 }
                 else
                 {
-                    last_video_frame = frame.clone();                    
+                    media_frame = frame.clone();
                 }
+
+
+                for (auto i = 0; i < mcu_count; i++)
+                {
+                    video_composer->on_frame(*media_frame);
+                    media_frame->media_format().stream_id++;
+                }
+
+
+                real_frame_count++;
+
+                if (current_seconds != real_last_seconds)
+                {
+                    real_fps = real_frame_count;
+                    real_frame_count = 0;
+                    real_last_seconds = current_seconds;
+                }
+/*
+                if (media_frame != nullptr)
+                {
+                    sink2->on_frame(*media_frame);
+                }
+
+                mutex.lock();
 
                 real_frame_count++;
 
@@ -707,12 +751,14 @@ video_form::video_form(QWidget *parent) :
                     image_change = true;
                     QMetaObject::invokeMethod(this, "on_update", Qt::QueuedConnection);
                 }
+                */
             }
 
             return true;
         };
 
         sink->set_handler(frame_handler);
+        sink2->set_handler(frame_provider);
 
         auto process_data = [](const ffmpeg::stream_info_t& stream_info
                           , ffmpeg::media_data_t&& media_data)
@@ -1519,6 +1565,7 @@ void video_form::on_pushButton_clicked()
                                                            , core::media::device_direction_t::input);
 
 
+
         input_managed_device_ptr = device_manager.create_input_device(device_list[device_idx]
                                                                       , sink);
 
@@ -2019,4 +2066,9 @@ void video_form::on_cbbControl_currentIndexChanged(const QString &arg1)
 void video_form::on_cbControl_clicked(bool checked)
 {
     input_device.set_control(ui->cbControlList->currentText().toStdString(), checked);
+}
+
+void video_form::on_spMCU_valueChanged(int arg1)
+{
+    mcu_count = arg1;
 }

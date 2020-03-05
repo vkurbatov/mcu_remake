@@ -51,6 +51,8 @@ private slots:
 
     void on_cbControl_clicked(bool checked);
 
+    void on_spMCU_valueChanged(int arg1);
+
 protected:
     void keyPressEvent(QKeyEvent *key_event);
     void keyReleaseEvent(QKeyEvent *key_event);

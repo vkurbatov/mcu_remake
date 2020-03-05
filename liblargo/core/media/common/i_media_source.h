@@ -1,7 +1,7 @@
 #ifndef I_MEDIA_SOURCE_H
 #define I_MEDIA_SOURCE_H
 
-#include "i_media_sink.h"
+#include "i_media_frame.h"
 
 namespace core
 {
@@ -15,10 +15,7 @@ class i_media_source
 {
 public:
     virtual ~i_media_source(){}
-
-    virtual sink_id_t add_sink(media_sink_ptr_t sink) = 0;
-    virtual bool remove_sink(sink_id_t sink_id) = 0;
-    virtual bool has_sink(sink_id_t sink_id) const = 0;
+    virtual media_frame_ptr_t read_frame(stream_id_t stream_id_t) = 0;
 };
 
 }

@@ -1,8 +1,7 @@
 #ifndef I_INPUT_MEDIA_DEVICE_H
 #define I_INPUT_MEDIA_DEVICE_H
 
-#include "i_media_device.h"
-#include "i_media_control.h"
+#include "i_media_device_control.h"
 
 namespace core
 {
@@ -10,8 +9,7 @@ namespace core
 namespace media
 {
 
-class i_input_media_device : virtual public i_media_device
-        , virtual public i_media_control
+class i_input_media_device : virtual public i_media_device_control
 {
 public:
     virtual ~i_input_media_device(){}

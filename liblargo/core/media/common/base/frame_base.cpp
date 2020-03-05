@@ -1,4 +1,5 @@
 #include "frame_base.h"
+#include <algorithm>
 
 namespace base
 {
@@ -103,6 +104,22 @@ frame_rect_t::frame_rect_t(uint32_t x
 
 }
 
+void frame_rect_t::aspect_ratio(const frame_rect_t &input_rect
+                                , frame_rect_t &output_rect)
+{
+    auto adjusted_width = (output_rect.size.height * input_rect.size.width) / input_rect.size.height;
+    auto adjusted_height = (output_rect.size.width * input_rect.size.height) / input_rect.size.width;
+
+    auto new_width = std::min(adjusted_width, output_rect.size.width);
+    auto new_height = std::min(adjusted_height, output_rect.size.height);
+
+    output_rect.offset.x += (output_rect.size.width - new_width) / 2;
+    output_rect.offset.y += (output_rect.size.height - new_height) / 2;
+
+    output_rect.size.width = new_width;
+    output_rect.size.height = new_height;
+}
+
 bool frame_rect_t::operator ==(const frame_rect_t &frame_rect) const
 {
     return offset == frame_rect.offset && size == frame_rect.size;
@@ -129,6 +146,12 @@ bool frame_rect_t::is_join(const frame_size_t &frame_size) const
 {
     return frame_size.width >= (offset.x + size.width)
             && frame_size.height >= (offset.y + size.height);
+}
+
+void frame_rect_t::aspect_ratio(const frame_rect_t &rect)
+{
+    aspect_ratio(rect
+                 , *this);
 }
 
 bool frame_rect_t::is_null() const

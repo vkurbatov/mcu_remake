@@ -2,6 +2,7 @@
 #define VIDEO_COMPOSER_H
 
 #include "media/common/i_output_media_device.h"
+#include "media/video/i_video_layout_manager.h"
 
 namespace core
 {
@@ -12,15 +13,21 @@ namespace media
 namespace video
 {
 
+struct video_composer_context_t;
+
+typedef std::shared_ptr<video_composer_context_t> video_composer_context_ptr_t;
+
 class video_composer : virtual public i_output_media_device
 {
-
+    video_composer_context_ptr_t    m_video_composer_context;
 public:
-    video_composer();
+    video_composer(const media_format_t& output_format
+                   , i_video_layout_manager& video_layout_manager
+                   , i_media_sink& media_sink);
 
     // i_media_device interface
 public:
-    bool open(const std::string &uri) override;
+    bool open(const std::string &uri = {}) override;
     bool close() override;
     bool is_open() const override;
     bool is_established() const override;

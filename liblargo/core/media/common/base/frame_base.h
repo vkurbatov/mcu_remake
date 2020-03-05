@@ -56,13 +56,17 @@ struct frame_rect_t
                  , std::uint32_t width
                  , std::uint32_t height);
 
+    static void aspect_ratio(const frame_rect_t& input_rect
+                             , frame_rect_t& output_rect);
+
     bool operator ==(const frame_rect_t& frame_rect) const;
     bool operator !=(const frame_rect_t& frame_rect) const;
 
     frame_rect_t& operator +=(const frame_size_t& frame_size);
-    frame_rect_t& operator +=(const frame_point_t& frame_point);
+    frame_rect_t& operator +=(const frame_point_t& frame_point);       
 
     bool is_join(const frame_size_t& frame_size) const;
+    void aspect_ratio(const frame_rect_t& rect);
     bool is_null() const;
 };
 }

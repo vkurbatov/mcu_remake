@@ -1,7 +1,8 @@
 #include "media_frame.h"
 #include <numeric>
 #include <cstring>
-#include <chrono>
+
+#include "media/common/base/time_base.h"
 
 #include "media/video/video_frame.h"
 #include "media/audio/audio_frame.h"
@@ -25,7 +26,7 @@ bool media_frame::check_media_buffer(const media_format_t &media_format
 
 timestamp_t media_frame::now_timestamp()
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    return base::adaptive_timer_t::now();
 }
 
 media_frame_ptr_t media_frame::create(const media_format_t &media_format
@@ -209,6 +210,13 @@ timestamp_t media_frame::timestamp() const
 frame_attributes_t media_frame::frame_attributes() const
 {
     return m_attributes;
+}
+
+void* media_frame::data(int32_t offset)
+{
+    return m_media_buffer != nullptr
+            ? m_media_buffer->data(offset)
+            : nullptr;
 }
 
 void media_frame::set_frame_id(frame_id_t frame_id)

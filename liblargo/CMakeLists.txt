@@ -236,6 +236,7 @@ set(PUBLIC_HEADERS
     "core/media/common/i_media_device_manager.h"
     "core/media/common/device_info.h"
     "core/media/common/i_media_device.h"
+    "core/media/common/i_media_device_control.h"
     "core/media/common/i_input_media_device.h"
     "core/media/common/i_output_media_device.h"
     "core/media/common/i_process_state_notifier.h" 
