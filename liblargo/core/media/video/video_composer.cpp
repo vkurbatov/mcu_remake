@@ -131,7 +131,6 @@ struct video_composer_context_t
         typedef std::map<stream_id_t, stream_info_t> stream_info_map_t;
 
         stream_info_map_t                                       streams;
-        std::vector<std::reference_wrapper<stream_info_t>>      active_streams;
         std::uint64_t                                           stream_timeout;
         base::adaptive_timer_t                                  adaptive_timer;
 
@@ -160,11 +159,6 @@ struct video_composer_context_t
 
             if (result)
             {
-                if (it->second.media_frame->media_format().video_info()
-                        != frame.media_format().video_info())
-                {
-                    active_streams.clear();
-                }
                 it->second.alive_timer.reset();
                 it->second.media_frame = frame.clone();
 
@@ -173,7 +167,6 @@ struct video_composer_context_t
             {
                 if (streams.size() < max_streams)
                 {
-                    active_streams.clear();
                     streams.emplace(stream_id
                                     , stream_info_t(frame.clone()));
                     result = true;
@@ -213,42 +206,31 @@ struct video_composer_context_t
                 result = true;
             }
 
-            result |= active_streams.empty()
-                    && !streams.empty();
-
-            if (result)
-            {
-                refresh_active_streams();
-            }
+            result |= !streams.empty();
 
             return result;
         }
 
-        stream_id_t get_best_stream()
+        stream_id_t get_best_stream() const
         {
-            double weight = 0.0;
+            double weight = -1.0;
             stream_id_t stream_id = -1;
 
-            for (auto& s : streams)
+            for (const auto& s : streams)
             {
-
+                if (s.second.weight > weight)
+                {
+                    weight = s.second.weight;
+                    stream_id = s.first;
+                }
             }
 
             return stream_id;
         }
 
-        void refresh_active_streams()
-        {
-            active_streams.clear();
-            for (auto& s : streams)
-            {
-                active_streams.emplace_back(std::ref(s.second));
-            }
-        }
 
         void reset()
         {
-            active_streams.clear();
             streams.clear();
             adaptive_timer.reset();
         }
@@ -315,9 +297,9 @@ struct video_composer_context_t
         {
             std::lock_guard<std::mutex> lg(m_mutex);
 
-            for (const auto& s : m_stream_manager.active_streams)
+            for (const auto& s : m_stream_manager.streams)
             {
-                streams.push_back(s.get().media_frame->media_format());
+                streams.push_back(s.second.media_frame->media_format());
             }
         }
         return streams;
@@ -327,7 +309,7 @@ struct video_composer_context_t
     {
         auto frame_time = 1000 / std::max(5u, m_output_format.video_info().fps);
 
-        auto stream_count = m_stream_manager.active_streams.size();
+        auto stream_count = m_stream_manager.streams.size();
 
         bool is_compose = m_frame_timer.wait(frame_time
                                              , false)
@@ -343,11 +325,11 @@ struct video_composer_context_t
     void compose()
     {
 
-        auto layout_id = m_stream_manager.active_streams.size();
+        auto layout_id = m_stream_manager.streams.size();
 
         if (layout_id == 1)
         {
-            m_media_sink.on_frame(*m_stream_manager.active_streams.front().get().media_frame);
+            m_media_sink.on_frame(*m_stream_manager.streams.begin()->second.media_frame);
             return;
         }
 
@@ -363,12 +345,27 @@ struct video_composer_context_t
 
             m_output_frame->clear();
 
-            stream_id_t stream_order = 0;
+            stream_order_t stream_counter = 0;
+            stream_id_t best_stream = m_stream_manager.get_best_stream();
 
-            for (auto& s : m_stream_manager.active_streams)
+            for (auto& s : m_stream_manager.streams)
             {
-                auto& stream = s.get();
+                auto& stream = s.second;
                 relative_frame_rect_t layout;
+
+                auto stream_order = stream_counter;
+
+                if (best_stream >= 0)
+                {
+                    if (best_stream == s.first)
+                    {
+                        stream_order = 0;
+                    }
+                    else if (stream_order < best_stream)
+                    {
+                        stream_order++;
+                    }
+                }
 
                 if (m_video_layout_manager.fetch_layout(layout_id
                                                         , stream_order
@@ -380,7 +377,7 @@ struct video_composer_context_t
 
                 }
 
-                stream_order++;
+                stream_counter++;
             }
 
             m_output_frame->set_frame_id(m_frame_id++);
