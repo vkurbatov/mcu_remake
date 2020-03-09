@@ -80,8 +80,8 @@ static bool draw_rectangles(const qt::draw_format_t& draw_format
             qt::draw_rect(draw_format
                           , { polylines[i - 1].x
                               , polylines[i - 1].y
-                              , polylines[i - 1].x - polylines[i].x
-                              , polylines[i - 1].y - polylines[i].y}
+                              , polylines[i].x - polylines[i - 1].x
+                              , polylines[i].y - polylines[i - 1].y}
                           , pixel_data
                           , { frame_size.width, frame_size.height });
         }
@@ -101,8 +101,8 @@ static bool draw_ellipses(const qt::draw_format_t& draw_format
             qt::draw_ellipse(draw_format
                              , { polylines[i - 1].x
                                  , polylines[i - 1].y
-                                 , polylines[i - 1].x - polylines[i].x
-                                 , polylines[i - 1].y - polylines[i].y}
+                                 , polylines[i].x - polylines[i - 1].x
+                                 , polylines[i].y - polylines[i - 1].y}
                              , pixel_data
                              , { frame_size.width, frame_size.height });
         }

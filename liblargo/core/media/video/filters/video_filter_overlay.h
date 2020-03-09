@@ -21,13 +21,15 @@ namespace filters
 
 class video_filter_overlay : virtual public video_filter
 {
-    const layer_list_t&                         m_layer_list;
+    layer_list_t                                m_layer_list;
     std::unique_ptr<video_frame_converter>      m_input_converter;
     std::unique_ptr<video_frame_converter>      m_output_converter;
     mutable media_buffer_ptr_t                  m_media_buffer_ptr;
 
 public:
-    video_filter_overlay(const layer_list_t& layer_list);
+    video_filter_overlay(const layer_list_t& layer_list = {});
+
+    void set_overlays(const layer_list_t& layer_list);
 
 protected:
     bool internal_filter(i_video_frame &video_frame) const override;

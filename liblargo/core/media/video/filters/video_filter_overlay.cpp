@@ -52,6 +52,11 @@ video_filter_overlay::video_filter_overlay(const layer_list_t& layer_list)
 
 }
 
+void video_filter_overlay::set_overlays(const layer_list_t &layer_list)
+{
+    m_layer_list = layer_list;
+}
+
 bool video_filter_overlay::internal_filter(i_video_frame &video_frame) const
 {
     if (m_layer_list.empty())

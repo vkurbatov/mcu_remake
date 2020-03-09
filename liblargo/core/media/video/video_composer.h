@@ -25,6 +25,8 @@ public:
                    , i_video_layout_manager& video_layout_manager
                    , i_media_sink& media_sink);
 
+    void set_stream_weight(stream_id_t stream_id
+                           , double weight);
     // i_media_device interface
 public:
     bool open(const std::string &uri = {}) override;

@@ -5,6 +5,8 @@
 #include "media/video/video_frame.h"
 #include "media/common/utils/format_converter.h"
 #include "media/common/ffmpeg/libav_converter.h"
+#include "media/video/filters/video_filter_overlay.h"
+#include "media/video/filters/video_layer_figure.h"
 
 #include <map>
 #include <mutex>
@@ -29,17 +31,28 @@ struct video_composer_context_t
     {
         struct stream_info_t
         {
-            media_frame_ptr_t           media_frame;
-            base::adaptive_timer_t      alive_timer;
-            stream_order_t              stream_order;
-            ffmpeg::libav_converter     libav_converter;
+            media_frame_ptr_t                               media_frame;
+            base::adaptive_timer_t                          alive_timer;
+            ffmpeg::libav_converter                         libav_converter;
+            std::shared_ptr<filters::video_layer_figure>    figure_layer;
+            filters::video_filter_overlay                   video_filter;
+            double                                          weight;
 
             stream_info_t(media_frame_ptr_t frame = nullptr)
                 : media_frame(frame)
-                , stream_order(0)
                 , libav_converter()
+                , video_filter()
+                , weight(0)
             {
+                filters::figure_format_t figure_format(filters::figure_type_t::rectangle
+                                                       , 0x00FF007F
+                                                       , 0
+                                                       , 16);
 
+                figure_layer.reset(new filters::video_layer_figure(figure_format
+                                                                   , { }));
+
+                video_filter.set_overlays({ figure_layer });
             }
 
             bool check_alive(std::uint64_t timeout_ms)
@@ -49,18 +62,15 @@ struct video_composer_context_t
             }
 
             bool draw_frame(const relative_frame_rect_t& layout
-                            , i_media_frame& output_frame)
+                            , i_media_frame& output_frame
+                            , bool is_selected = false)
             {
 
                 auto align_framgent = [](ffmpeg::fragment_info_t& fragment
                         , std::int32_t align)
                 {
                     fragment.frame_rect.offset.x -= fragment.frame_rect.offset.x % align;
-                    //fragment.frame_rect.offset.y -= fragment.frame_rect.offset.y % align;
                     fragment.frame_rect.size.width -= fragment.frame_rect.size.width % align;
-                    //fragment.frame_rect.size.height -= fragment.frame_rect.size.height % align;
-                    /*fragment.frame_size.width -= fragment.frame_size.width % align;
-                    fragment.frame_size.height -= fragment.frame_size.height % align;*/
                 };
 
                 if (media_frame != nullptr)
@@ -103,6 +113,17 @@ struct video_composer_context_t
                                                    , output_framgent
                                                    , output_frame.data());
 
+                    if (is_selected)
+                    {
+                        figure_layer->set_polylines({
+                                                     { output_framgent.frame_rect.offset.x
+                                                     , output_framgent.frame_rect.offset.y }
+                                                     , { output_framgent.frame_rect.offset.x + output_framgent.frame_rect.size.width
+                                                     , output_framgent.frame_rect.offset.y + output_framgent.frame_rect.size.height }
+                                                     } );
+                        video_filter.filter(output_frame);
+                    }
+
                 }
             }
         };
@@ -120,6 +141,16 @@ struct video_composer_context_t
 
         }
 
+        void set_stream_weight(stream_id_t stream_id
+                               , double weight)
+        {
+            auto it = streams.find(stream_id);
+            if (it != streams.end())
+            {
+                it->second.weight = weight;
+            }
+        }
+
         bool push_frame(const i_media_frame &frame)
         {
             auto stream_id = frame.media_format().stream_id;
@@ -129,7 +160,8 @@ struct video_composer_context_t
 
             if (result)
             {
-                if (it->second.media_frame->media_format().video_info() != frame.media_format().video_info())
+                if (it->second.media_frame->media_format().video_info()
+                        != frame.media_format().video_info())
                 {
                     active_streams.clear();
                 }
@@ -192,13 +224,24 @@ struct video_composer_context_t
             return result;
         }
 
+        stream_id_t get_best_stream()
+        {
+            double weight = 0.0;
+            stream_id_t stream_id = -1;
+
+            for (auto& s : streams)
+            {
+
+            }
+
+            return stream_id;
+        }
+
         void refresh_active_streams()
         {
             active_streams.clear();
-            stream_order_t stream_order = 0;
             for (auto& s : streams)
             {
-                s.second.stream_order = stream_order++;
                 active_streams.emplace_back(std::ref(s.second));
             }
         }
@@ -320,20 +363,24 @@ struct video_composer_context_t
 
             m_output_frame->clear();
 
+            stream_id_t stream_order = 0;
+
             for (auto& s : m_stream_manager.active_streams)
             {
                 auto& stream = s.get();
                 relative_frame_rect_t layout;
 
                 if (m_video_layout_manager.fetch_layout(layout_id
-                                                        , stream.stream_order
+                                                        , stream_order
                                                         , layout))
                 {
-
                     stream.draw_frame(layout
-                                      , *m_output_frame);
+                                      , *m_output_frame
+                                      , stream.weight >= 0.5);
 
                 }
+
+                stream_order++;
             }
 
             m_output_frame->set_frame_id(m_frame_id++);
@@ -358,6 +405,13 @@ struct video_composer_context_t
 
         return false;
     }
+
+    void set_stream_weight(stream_id_t stream_id
+                           , double weight)
+    {
+        m_stream_manager.set_stream_weight(stream_id
+                                           , weight);
+    }
 };
 
 video_composer::video_composer(const media_format_t &output_format
@@ -370,6 +424,13 @@ video_composer::video_composer(const media_format_t &output_format
                                )
 {
 
+}
+
+void video_composer::set_stream_weight(stream_id_t stream_id
+                                       , double weight)
+{
+    return m_video_composer_context->set_stream_weight(stream_id
+                                                       , weight);
 }
 
 bool video_composer::open(const std::string& /*uri*/)
