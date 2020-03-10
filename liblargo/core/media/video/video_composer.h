@@ -38,6 +38,7 @@ struct composer_config_t
 class video_composer : virtual public i_output_media_device
 {
     video_composer_context_ptr_t    m_video_composer_context;
+    control_parameter_list_t        m_controls;
 public:
     video_composer(const media_format_t& output_format
                    , i_video_layout_manager& video_layout_manager

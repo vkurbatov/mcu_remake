@@ -564,12 +564,45 @@ video_composer::video_composer(const media_format_t &output_format
             }
             break;
             case composer_control_type_t::vad_enable:
-
+                m_video_composer_context->m_config.vad_highlight = value;
             break;
         }
 
         return true;
     };
+
+    auto get_handler = [this](variant& value
+                              , composer_control_type_t control_type)
+    {
+        std::lock_guard<std::mutex> lg(m_video_composer_context->m_mutex);
+        switch(control_type)
+        {
+            case composer_control_type_t::resolution:
+            {
+                value = std::to_string(m_video_composer_context->m_output_format.video_info().size.width)
+                            + "x" + std::to_string(m_video_composer_context->m_output_format.video_info().size.height);
+            }
+            break;
+            case composer_control_type_t::aspect_ratio:
+            {
+                value = m_video_composer_context->m_config.clamp_aspect_ratio;
+            }
+            break;
+            case composer_control_type_t::layout_type:
+            {
+                static std::string layouts_strings[] = { "mosaic", "presenter", "selector" };
+                value = layouts_strings[static_cast<std::int32_t>(m_video_composer_context->m_config.layout_type)];
+            }
+            break;
+            case composer_control_type_t::vad_enable:
+                value = m_video_composer_context->m_config.vad_highlight;
+            break;
+        }
+
+        return true;
+    };
+
+
 }
 
 void video_composer::set_stream_weight(stream_id_t stream_id
@@ -606,13 +639,14 @@ media_format_list_t video_composer::streams() const
 
 const control_parameter_list_t &video_composer::controls() const
 {
-
+    return m_controls;
 }
 
 bool video_composer::set_control(const std::string &control_name
                                  , const variant &control_value)
 {
-
+    return m_controls.set(control_name
+                          , control_value);
 }
 
 variant video_composer::get_control(const std::string &control_name
