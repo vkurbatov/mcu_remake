@@ -7,6 +7,7 @@
 #include "media/common/ffmpeg/libav_converter.h"
 #include "media/video/filters/video_filter_overlay.h"
 #include "media/video/filters/video_layer_figure.h"
+#include "media/video/video_layout_manager_custom.h"
 
 #include <map>
 #include <mutex>
@@ -25,12 +26,48 @@ const std::size_t max_streams = 16;
 const std::uint64_t default_check_streams_interval = 1000;
 const std::uint64_t default_stream_timeout = 2000;
 
+class selector_layout_manager : virtual public i_video_layout_manager
+{
+
+
+    // i_video_layout_manager interface
+public:
+    bool fetch_layout(layout_id_t layout_id
+                      , stream_order_t order
+                      , relative_frame_rect_t &layout) override
+    {
+        if (order == 0)
+        {
+            layout = { 0.0, 0.0, 1.0, 1.0 };
+            return true;
+        }
+
+        return false;
+    }
+};
+
 struct video_composer_context_t
 {
     struct stream_manager_t
     {
+        static ffmpeg::scaling_method_t smethod_form_qlevel(std::uint32_t qlevel)
+        {
+            switch(qlevel)
+            {
+                case 0:
+                    return ffmpeg::scaling_method_t::point;
+                break;
+                case 1:
+                    return ffmpeg::scaling_method_t::bilinear;
+                break;
+            }
+
+            return ffmpeg::scaling_method_t::bicublin;
+        }
+
         struct stream_info_t
         {
+            const composer_config_t&                        config;
             media_frame_ptr_t                               media_frame;
             base::adaptive_timer_t                          alive_timer;
             ffmpeg::libav_converter                         libav_converter;
@@ -38,16 +75,18 @@ struct video_composer_context_t
             filters::video_filter_overlay                   video_filter;
             double                                          weight;
 
-            stream_info_t(media_frame_ptr_t frame = nullptr)
-                : media_frame(frame)
-                , libav_converter()
+            stream_info_t(const composer_config_t& config
+                          , media_frame_ptr_t frame = nullptr)
+                : config(config)
+                , media_frame(frame)
+                , libav_converter(smethod_form_qlevel(config.scaling_quality))
                 , video_filter()
                 , weight(0)
             {
                 filters::figure_format_t figure_format(filters::figure_type_t::rectangle
                                                        , 0x00FF007F
                                                        , 0
-                                                       , 16);
+                                                       , 16);                
 
                 figure_layer.reset(new filters::video_layer_figure(figure_format
                                                                    , { }));
@@ -69,7 +108,7 @@ struct video_composer_context_t
                 auto align_framgent = [](ffmpeg::fragment_info_t& fragment
                         , std::int32_t align)
                 {
-                    fragment.frame_rect.offset.x -= fragment.frame_rect.offset.x % align;
+                    //fragment.frame_rect.offset.x -= fragment.frame_rect.offset.x % align;
                     fragment.frame_rect.size.width -= fragment.frame_rect.size.width % align;
                 };
 
@@ -101,12 +140,19 @@ struct video_composer_context_t
                     };
 
 
-                    output_framgent.frame_rect.aspect_ratio(input_framgent.frame_rect);
+                    if (config.clamp_aspect_ratio)
+                    {
+                        input_framgent.frame_rect.aspect_ratio(output_framgent.frame_rect);
+                    }
+                    else
+                    {
+                        output_framgent.frame_rect.aspect_ratio(input_framgent.frame_rect);
+                    }
 
                     align_framgent(input_framgent
-                                   , 32);
+                                   , 16);
                     align_framgent(output_framgent
-                                   , 32);
+                                   , 16);
 
                     libav_converter.convert_frames(input_framgent
                                                    , media_frame->data()
@@ -130,15 +176,16 @@ struct video_composer_context_t
 
         typedef std::map<stream_id_t, stream_info_t> stream_info_map_t;
 
-        stream_info_map_t                                       streams;
-        std::uint64_t                                           stream_timeout;
+        stream_info_map_t                                       streams;     
         base::adaptive_timer_t                                  adaptive_timer;
+        const composer_config_t&                                config;
 
-        stream_manager_t(std::uint64_t stream_timeout = default_stream_timeout)
-            : stream_timeout(stream_timeout)
+        stream_manager_t(const composer_config_t& config)
+            : config(config)
         {
 
         }
+
 
         void set_stream_weight(stream_id_t stream_id
                                , double weight)
@@ -168,7 +215,10 @@ struct video_composer_context_t
                 if (streams.size() < max_streams)
                 {
                     streams.emplace(stream_id
-                                    , stream_info_t(frame.clone()));
+                                    , stream_info_t(config
+                                                    , frame.clone()
+                                                    )
+                                    );
                     result = true;
                 }
             }
@@ -188,12 +238,11 @@ struct video_composer_context_t
             if (adaptive_timer.wait(default_check_streams_interval
                                     , false))
             {
-
                 auto it = streams.begin();
 
                 while (it != streams.end())
                 {
-                    if (it->second.check_alive(stream_timeout))
+                    if (it->second.check_alive(config.stream_timeout))
                     {
                         it++;
                     }
@@ -211,10 +260,12 @@ struct video_composer_context_t
             return result;
         }
 
-        stream_id_t get_best_stream() const
+        stream_id_t get_best_stream(stream_order_t& order) const
         {
             double weight = -1.0;
-            stream_id_t stream_id = -1;
+            stream_id_t stream_id = no_stream;
+
+            stream_order_t i = 0;
 
             for (const auto& s : streams)
             {
@@ -222,7 +273,9 @@ struct video_composer_context_t
                 {
                     weight = s.second.weight;
                     stream_id = s.first;
+                    order = i;
                 }
+                i++;
             }
 
             return stream_id;
@@ -260,8 +313,12 @@ struct video_composer_context_t
     media_format_t              m_output_format;
     media_frame_ptr_t           m_output_frame;
 
-    i_video_layout_manager&     m_video_layout_manager;
+    i_video_layout_manager&     m_custom_layout_manager;
     i_media_sink&               m_media_sink;
+    composer_config_t           m_config;
+
+
+    video_layout_manager_custom m_mosaic_layout_manager;
     bool                        m_is_enabled;
     frame_id_t                  m_frame_id;
     stream_manager_t            m_stream_manager;
@@ -270,12 +327,15 @@ struct video_composer_context_t
 
     video_composer_context_t(const media_format_t &output_format
                              , i_video_layout_manager& video_layout_manager
-                             , i_media_sink& media_sink)
+                             , i_media_sink& media_sink
+                             , const composer_config_t& config)
         : m_output_format(output_format)
-        , m_video_layout_manager(video_layout_manager)
+        , m_custom_layout_manager(video_layout_manager)
         , m_media_sink(media_sink)
+        , m_config(config)
         , m_is_enabled(false)
         , m_frame_id(0)
+        , m_stream_manager(m_config)
     {
 
     }
@@ -322,6 +382,26 @@ struct video_composer_context_t
 
     }
 
+    i_video_layout_manager& get_layout_manager()
+    {
+        static selector_layout_manager selecor_layout_manager;
+
+        switch(m_config.layout_type)
+        {
+            case layout_type_t::mosaic:
+                return m_mosaic_layout_manager;
+            break;
+            case layout_type_t::presenter:
+                return m_custom_layout_manager;
+            break;
+            case layout_type_t::selector:
+                return selecor_layout_manager;
+            break;
+        }
+
+        return m_mosaic_layout_manager;
+    }
+
     void compose()
     {
 
@@ -335,6 +415,7 @@ struct video_composer_context_t
 
         if (layout_id > 1)
         {
+
             if (m_output_frame == nullptr
                      || m_output_frame->media_format().video_info() != m_output_format.video_info())
             {
@@ -345,39 +426,45 @@ struct video_composer_context_t
 
             m_output_frame->clear();
 
+
             stream_order_t stream_counter = 0;
-            stream_id_t best_stream = m_stream_manager.get_best_stream();
+            stream_order_t kick_order = 0;
+            stream_id_t best_stream = m_stream_manager.get_best_stream(kick_order);
+
+            auto& layout_manager = get_layout_manager();
 
             for (auto& s : m_stream_manager.streams)
             {
                 auto& stream = s.second;
                 relative_frame_rect_t layout;
 
-                auto stream_order = stream_counter;
+                bool is_select = m_config.vad_highlight
+                        && stream.weight >= m_config.vad_level;
+
+                auto stream_order = stream_counter++;
 
                 if (best_stream >= 0)
                 {
                     if (best_stream == s.first)
                     {
+                        is_select = false;
                         stream_order = 0;
                     }
-                    else if (stream_order < best_stream)
+                    else if (stream_order == 0)
                     {
-                        stream_order++;
+                        stream_order = kick_order;
                     }
                 }
 
-                if (m_video_layout_manager.fetch_layout(layout_id
-                                                        , stream_order
-                                                        , layout))
+                if (layout_manager.fetch_layout(layout_id
+                                                , stream_order
+                                                , layout))
                 {
+
                     stream.draw_frame(layout
                                       , *m_output_frame
-                                      , stream.weight >= 0.5);
-
+                                      , is_select);
                 }
-
-                stream_counter++;
             }
 
             m_output_frame->set_frame_id(m_frame_id++);
@@ -413,14 +500,76 @@ struct video_composer_context_t
 
 video_composer::video_composer(const media_format_t &output_format
                                , i_video_layout_manager& video_layout_manager
-                               , i_media_sink& media_sink)
+                               , i_media_sink& media_sink
+                               , const composer_config_t& config)
     : m_video_composer_context(new video_composer_context_t(output_format
                                                             , video_layout_manager
                                                             , media_sink
-                                                            )
+                                                            , config)
                                )
 {
+    enum class composer_control_type_t
+    {
+        resolution,
+        aspect_ratio,
+        layout_type,
+        vad_enable
+    };
 
+    static std::map<std::string, frame_size_t> resolutions =
+    {
+        { "800x600", { 800, 600 } }
+        , { "1280x720", { 1280, 720 } }
+        , { "1920x1080", { 1920, 1080 } }
+        , { "3840×2160", { 3840, 2160 } }
+    };
+
+    static std::map<std::string, layout_type_t> layouts =
+    {
+        { "mosaic", layout_type_t::mosaic }
+        , { "presenter", layout_type_t::presenter  }
+        , { "selector", layout_type_t::selector  }
+    };
+
+
+    auto set_handler = [this](variant& value
+                              , composer_control_type_t control_type)
+    {
+        std::lock_guard<std::mutex> lg(m_video_composer_context->m_mutex);
+        switch(control_type)
+        {
+            case composer_control_type_t::resolution:
+            {
+                auto it = resolutions.find(value);
+                if (it == resolutions.end())
+                {
+                    return false;
+                }
+                m_video_composer_context->m_output_format.video_info().size = it->second;
+            }
+            break;
+            case composer_control_type_t::aspect_ratio:
+            {
+                m_video_composer_context->m_config.clamp_aspect_ratio = value;
+            }
+            break;
+            case composer_control_type_t::layout_type:
+            {
+                auto it = layouts.find(value);
+                if (it == layouts.end())
+                {
+                    return false;
+                }
+                m_video_composer_context->m_config.layout_type = it->second;
+            }
+            break;
+            case composer_control_type_t::vad_enable:
+
+            break;
+        }
+
+        return true;
+    };
 }
 
 void video_composer::set_stream_weight(stream_id_t stream_id

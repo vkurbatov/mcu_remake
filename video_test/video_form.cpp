@@ -1529,6 +1529,8 @@ void video_form::prepare_image2()
                                                                                        , text_format
                                                                                        , { 1117, 300 }));
 
+            filter_overlay.set_overlays(overlay_list);
+
         }
 
         filter_overlay.filter(*mid_frame);

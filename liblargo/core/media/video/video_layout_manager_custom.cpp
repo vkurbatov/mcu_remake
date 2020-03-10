@@ -10,14 +10,13 @@ namespace media
 namespace video
 {
 
-const layout_id_t max_layout_id = 16;
+const layout_id_t max_layout_id = 17;
 
 static relative_layout_list_t create_auto_layout_list(layout_id_t layout_id)
 {
     if (layout_id < 2)
     {
-        return { relative_frame_rect_t( relative_frame_point_t(0.0, 0.0)
-                                            , relative_frame_size_t(1.0, 1.0)) };
+        return { { 0.0, 0.0, 1.0, 1.0 } };
     }
 
     relative_layout_list_t layout_list;
@@ -93,7 +92,6 @@ bool video_layout_manager_custom::fetch_layout(layout_id_t layout_id
             : layout_id;
 
     const auto& current_layout = layout_id < m_custom_layouts.size()
-                        && m_custom_layouts[layout_id].size() >= layout_id
                         ? m_custom_layouts
                         : auto_layouts;
 

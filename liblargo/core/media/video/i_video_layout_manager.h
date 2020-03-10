@@ -16,7 +16,11 @@ namespace video
 
 
 typedef std::uint32_t layout_id_t;
+
 typedef std::uint32_t stream_order_t;
+
+const stream_order_t no_order = -1;
+
 typedef std::vector<relative_frame_rect_t> relative_layout_list_t;
 
 class i_video_layout_manager

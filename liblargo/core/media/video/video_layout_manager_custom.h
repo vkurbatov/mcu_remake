@@ -15,9 +15,9 @@ typedef std::vector<relative_layout_list_t> layouts_list_t;
 
 class video_layout_manager_custom : virtual public i_video_layout_manager
 {
-   layouts_list_t           m_custom_layouts;
+    layouts_list_t           m_custom_layouts;
 public:
-    video_layout_manager_custom(const layouts_list_t& custom_layouts);
+    video_layout_manager_custom(const layouts_list_t& custom_layouts = {});
 
     void set_layouts(const layouts_list_t& custom_layouts);
     const layouts_list_t& layouts() const;

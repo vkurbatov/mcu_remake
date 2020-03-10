@@ -30,6 +30,7 @@ public:
     video_filter_overlay(const layer_list_t& layer_list = {});
 
     void set_overlays(const layer_list_t& layer_list);
+    const layer_list_t& overlays() const;
 
 protected:
     bool internal_filter(i_video_frame &video_frame) const override;
