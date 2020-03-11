@@ -136,7 +136,7 @@ libav_input_media_device::libav_input_media_device(i_media_sink& media_sink)
 
        if (frame != nullptr)
        {
-           media_sink.on_frame(*frame);
+           media_sink.on_frame(frame);
        }
 
         return true;

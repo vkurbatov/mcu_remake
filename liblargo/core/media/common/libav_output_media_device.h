@@ -40,7 +40,7 @@ public:
 
     // i_media_sink interface
 public:
-    bool on_frame(const i_media_frame &frame) override;
+    bool on_frame(media_frame_ptr_t frame) override;
 };
 
 }

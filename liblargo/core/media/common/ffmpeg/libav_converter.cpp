@@ -257,7 +257,7 @@ struct libav_converter_context_t
             {
                 auto h_corr = sz_input == sz_output
                         && input_fragment_info.frame_rect.size == output_fragment_info.frame_rect.size
-                            ? 1
+                            ? 2
                             : 0;
 
                 auto sws_result = sws_scale(m_sws_context

@@ -40,6 +40,7 @@
 #include "media/common/media_device_manager.h"
 #include "media/video/video_frame_normalizer.h"
 #include "media/audio/audio_frame_normalizer.h"
+#include "media/video/video_frame_processor.h"
 
 #include "media/video/video_layout_manager_custom.h"
 #include "media/video/video_composer.h"
@@ -133,11 +134,11 @@ public:
         m_frame_handler = frame_handler;
     }
 
-    bool on_frame(const core::media::i_media_frame &frame) override
+    bool on_frame(core::media::media_frame_ptr_t frame) override
     {
         if (m_frame_handler != nullptr)
         {
-            return m_frame_handler(frame);
+            return m_frame_handler(*frame);
         }
     }
 };
@@ -146,6 +147,8 @@ public:
 std::shared_ptr<test_sink> sink(new test_sink());
 std::shared_ptr<test_sink> sink2(new test_sink());
 
+std::shared_ptr<core::media::video::video_frame_processor> frame_processor;
+
 core::media::libav_input_media_device input_stream_device(*sink);
 core::media::v4l2_input_media_device input_camera_device(*sink);
 core::media::vnc_input_media_device input_vnc_device(*sink);
@@ -153,6 +156,7 @@ core::media::vnc_input_media_device input_vnc_device(*sink);
 core::media::media_device_manager device_manager;
 
 core::media::input_media_managed_device_ptr_t input_managed_device_ptr = nullptr;
+std::shared_ptr<core::media::i_media_control> device_control_ptr = nullptr;
 
 std::shared_ptr<core::media::video::video_composer> video_composer;
 
@@ -389,7 +393,7 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
         if (normalize_video_frame != nullptr)
         {
             audio_samples_counter += sample_per_frame;
-            output_media_device->on_frame(*normalize_video_frame);
+            output_media_device->on_frame(normalize_video_frame);
 
             while(audio_samples_counter > frame_size)
             {
@@ -399,7 +403,7 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
                 {
                     normalize_audio_frame->media_format().stream_id = 1;
 
-                    output_media_device->on_frame(*normalize_audio_frame);
+                    output_media_device->on_frame(normalize_audio_frame);
 
                 }
 
@@ -450,7 +454,7 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
                 {
                     audio_samples_counter += sample_per_frame;
 
-                    output_media_device->on_frame(*video_frame_queue.front());
+                    output_media_device->on_frame(video_frame_queue.front());
 
                     video_frame_queue.pop();
                 }
@@ -465,7 +469,7 @@ static void publisher_test2(core::media::video::i_video_frame& video_frame)
                         while(!audio_frame_queue.empty())
                         {
                             audio_frame_queue.front()->media_format().stream_id = 1;
-                            output_media_device->on_frame(*audio_frame_queue.front());
+                            output_media_device->on_frame(audio_frame_queue.front());
                             audio_frame_queue.pop();
                         }
                     }
@@ -596,6 +600,11 @@ video_form::video_form(QWidget *parent) :
     test_image = test_image.convertToFormat(QImage::Format_RGB888);
 
     QImage dst(draw_image_buffer.data(), draw_image_size.width, draw_image_size.height, QImage::Format_RGB888);
+
+    frame_processor.reset(new core::media::video::video_frame_processor());
+    // frame_processor->set_control("Flip method", "rotate");
+
+    frame_processor->add_sink(sink);
 
 
     QPainter painter(&dst);
@@ -730,12 +739,18 @@ video_form::video_form(QWidget *parent) :
 
                 for (auto i = 0; i < mcu_count; i++)
                 {                    
-                    video_composer->on_frame(*media_frame);
+                    video_composer->on_frame(media_frame);
 
                     if (i == 4)
                     {
                         video_composer->set_stream_weight(media_frame->media_format().stream_id
                                                           , 0.51);
+                    }
+
+                    if (i == 2)
+                    {
+                        video_composer->set_stream_weight(media_frame->media_format().stream_id
+                                                          , 0.3);
                     }
 
                     media_frame->media_format().stream_id++;
@@ -754,7 +769,7 @@ video_form::video_form(QWidget *parent) :
 /*
                 if (media_frame != nullptr)
                 {
-                    sink2->on_frame(*media_frame);
+                    sink2->on_frame(media_frame);
                 }
 
                 mutex.lock();
@@ -1580,6 +1595,10 @@ void video_form::on_pushButton_clicked()
 
     if (input_managed_device_ptr != nullptr)
     {
+        if (device_control_ptr == input_managed_device_ptr)
+        {
+            device_control_ptr.reset();
+        }
         input_managed_device_ptr.reset();
         frame_transcoder.reset();
     }
@@ -1593,7 +1612,8 @@ void video_form::on_pushButton_clicked()
 
 
         input_managed_device_ptr = device_manager.create_input_device(device_list[device_idx]
-                                                                      , sink);
+                                                                      , frame_processor);
+        device_control_ptr = video_composer;//input_managed_device_ptr;
 
         input_managed_device_ptr->open();
 
@@ -1601,7 +1621,7 @@ void video_form::on_pushButton_clicked()
 
         ui->cbResoulution->clear();
         ui->cbControlList->clear();
-        const auto& controls = input_managed_device_ptr->controls();
+        const auto& controls = device_control_ptr->controls();
 
         for (const auto& c : controls)
         {
@@ -1803,9 +1823,9 @@ void video_form::on_cbScaling_currentIndexChanged(int index)
 
 void video_form::on_cbResoulution_activated(const QString &arg1)
 {
-    if (input_managed_device_ptr == nullptr)
+    if (device_control_ptr == nullptr)
         return;
-    input_managed_device_ptr->set_control("Resolution", arg1.toStdString());
+    device_control_ptr->set_control("Resolution", arg1.toStdString());
 }
 
 void video_form::on_cbResoulution_activated(int index)
@@ -1830,10 +1850,10 @@ void video_form::on_cbControlList_activated(int index)
 void video_form::on_cbControlList_activated(const QString &arg1)
 {
 
-    if (input_managed_device_ptr == nullptr)
+    if (device_control_ptr == nullptr)
         return;
 
-    for (const auto& c : input_managed_device_ptr->controls())
+    for (const auto& c : device_control_ptr->controls())
     {
         if (c.name() == arg1.toStdString())
         {
@@ -1920,9 +1940,9 @@ void video_form::on_slControl_actionTriggered(int action)
 
 void video_form::on_slControl_sliderMoved(int position)
 {
-    if (input_managed_device_ptr == nullptr)
+    if (device_control_ptr == nullptr)
         return;
-    input_managed_device_ptr->set_control(ui->cbControlList->currentText().toStdString()
+    device_control_ptr->set_control(ui->cbControlList->currentText().toStdString()
                                     , position);
 
     /*
@@ -2081,17 +2101,20 @@ void video_form::on_pushButton_2_clicked()
 
 void video_form::on_teControl_textChanged()
 {
-    input_device.set_control(ui->cbControlList->currentText().toStdString(), ui->teControl->toPlainText().toStdString());
+    if (device_control_ptr != nullptr)
+        device_control_ptr->set_control(ui->cbControlList->currentText().toStdString(), ui->teControl->toPlainText().toStdString());
 }
 
 void video_form::on_cbbControl_currentIndexChanged(const QString &arg1)
 {
-    input_device.set_control(ui->cbControlList->currentText().toStdString(), arg1.toStdString());
+    if (device_control_ptr != nullptr)
+        device_control_ptr->set_control(ui->cbControlList->currentText().toStdString(), arg1.toStdString());
 }
 
 void video_form::on_cbControl_clicked(bool checked)
 {
-    input_device.set_control(ui->cbControlList->currentText().toStdString(), checked);
+    if (device_control_ptr != nullptr)
+        device_control_ptr->set_control(ui->cbControlList->currentText().toStdString(), checked);
 }
 
 void video_form::on_spMCU_valueChanged(int arg1)

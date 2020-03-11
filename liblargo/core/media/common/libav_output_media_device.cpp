@@ -148,25 +148,25 @@ variant libav_output_media_device::get_control(const std::string &control_name
     return default_value;
 }
 
-bool libav_output_media_device::on_frame(const i_media_frame &frame)
+bool libav_output_media_device::on_frame(media_frame_ptr_t frame)
 {
-    if (m_libav_stream_publisher.is_opened())
+    if (m_libav_stream_publisher.is_opened() && frame != nullptr)
     {
-        auto it = m_media_streams.find(frame.media_format().stream_id);
+        auto it = m_media_streams.find(frame->media_format().stream_id);
 
         if (it != m_media_streams.end())
         {
-            if (it->second.media_type == frame.media_format().media_type)
+            if (it->second.media_type == frame->media_format().media_type)
             {
                 ffmpeg::stream_info_t s_info;
-                if (stream_form_format(frame.media_format()
+                if (stream_form_format(frame->media_format()
                                        , s_info))
                 {
-                    bool key_frame = static_cast<std::uint32_t>(frame.frame_attributes()) & static_cast<std::uint32_t>(frame_attributes_t::key_frame)
+                    bool key_frame = static_cast<std::uint32_t>(frame->frame_attributes()) & static_cast<std::uint32_t>(frame_attributes_t::key_frame)
                             != static_cast<std::uint32_t>(frame_attributes_t::undefined);
                     return m_libav_stream_publisher.push_frame(s_info.stream_id
-                                                               , frame.planes()[0]->data()
-                                                               , frame.size()
+                                                               , frame->planes()[0]->data()
+                                                               , frame->size()
                                                                , key_frame);
                 }
             }

@@ -12,6 +12,7 @@
 #include <map>
 #include <mutex>
 #include <algorithm>
+#include <functional>
 
 namespace core
 {
@@ -108,8 +109,22 @@ struct video_composer_context_t
                 auto align_framgent = [](ffmpeg::fragment_info_t& fragment
                         , std::int32_t align)
                 {
-                    //fragment.frame_rect.offset.x -= fragment.frame_rect.offset.x % align;
-                    fragment.frame_rect.size.width -= fragment.frame_rect.size.width % align;
+                    auto dw = fragment.frame_rect.size.width % align;
+
+                    fragment.frame_rect.size.width -= dw;
+                    fragment.frame_rect.offset.x += dw / 2;
+                    /*
+                    auto dx = fragment.frame_rect.offset.x % align;
+
+                    if (dx > 0)
+                    fragment.frame_rect.offset.x -= dx;
+
+                    auto dw = fragment.frame_rect.size.width % align;
+
+                    if (dw > 0)
+                    fragment.frame_rect.size.width += align - dw;*/
+
+                    //fragment.frame_rect.size.height -= fragment.frame_rect.size.height % (align / 4);
                 };
 
                 if (media_frame != nullptr)
@@ -150,9 +165,9 @@ struct video_composer_context_t
                     }
 
                     align_framgent(input_framgent
-                                   , 16);
+                                   , 32);
                     align_framgent(output_framgent
-                                   , 16);
+                                   , 32);
 
                     libav_converter.convert_frames(input_framgent
                                                    , media_frame->data()
@@ -409,7 +424,7 @@ struct video_composer_context_t
 
         if (layout_id == 1)
         {
-            m_media_sink.on_frame(*m_stream_manager.streams.begin()->second.media_frame);
+            m_media_sink.on_frame(m_stream_manager.streams.begin()->second.media_frame);
             return;
         }
 
@@ -443,17 +458,21 @@ struct video_composer_context_t
 
                 auto stream_order = stream_counter++;
 
-                if (best_stream >= 0)
+                if (m_config.layout_type != layout_type_t::mosaic)
                 {
-                    if (best_stream == s.first)
+                    if (best_stream >= 0)
                     {
-                        is_select = false;
-                        stream_order = 0;
+                        if (best_stream == s.first)
+                        {
+                            is_select = false;
+                            stream_order = 0;
+                        }
+                        else if (stream_order == 0)
+                        {
+                            stream_order = kick_order;
+                        }
                     }
-                    else if (stream_order == 0)
-                    {
-                        stream_order = kick_order;
-                    }
+
                 }
 
                 if (layout_manager.fetch_layout(layout_id
@@ -468,7 +487,7 @@ struct video_composer_context_t
             }
 
             m_output_frame->set_frame_id(m_frame_id++);
-            m_media_sink.on_frame(*m_output_frame);
+            m_media_sink.on_frame(m_output_frame);
         }
 
     }
@@ -508,14 +527,6 @@ video_composer::video_composer(const media_format_t &output_format
                                                             , config)
                                )
 {
-    enum class composer_control_type_t
-    {
-        resolution,
-        aspect_ratio,
-        layout_type,
-        vad_enable
-    };
-
     static std::map<std::string, frame_size_t> resolutions =
     {
         { "800x600", { 800, 600 } }
@@ -531,77 +542,101 @@ video_composer::video_composer(const media_format_t &output_format
         , { "selector", layout_type_t::selector  }
     };
 
-
-    auto set_handler = [this](variant& value
-                              , composer_control_type_t control_type)
+    auto set_resolution = [this](variant& resolution) -> bool
     {
-        std::lock_guard<std::mutex> lg(m_video_composer_context->m_mutex);
-        switch(control_type)
+        auto it = resolutions.find(resolution);
+        if (it != resolutions.end())
         {
-            case composer_control_type_t::resolution:
-            {
-                auto it = resolutions.find(value);
-                if (it == resolutions.end())
-                {
-                    return false;
-                }
-                m_video_composer_context->m_output_format.video_info().size = it->second;
-            }
-            break;
-            case composer_control_type_t::aspect_ratio:
-            {
-                m_video_composer_context->m_config.clamp_aspect_ratio = value;
-            }
-            break;
-            case composer_control_type_t::layout_type:
-            {
-                auto it = layouts.find(value);
-                if (it == layouts.end())
-                {
-                    return false;
-                }
-                m_video_composer_context->m_config.layout_type = it->second;
-            }
-            break;
-            case composer_control_type_t::vad_enable:
-                m_video_composer_context->m_config.vad_highlight = value;
-            break;
+            std::lock_guard<std::mutex> lg(m_video_composer_context->m_mutex);
+            m_video_composer_context->m_output_format.video_info().size = it->second;
+            return true;
         }
 
-        return true;
+        return false;
     };
 
-    auto get_handler = [this](variant& value
-                              , composer_control_type_t control_type)
+    auto get_resolution = [this](variant& resolution) -> bool
     {
         std::lock_guard<std::mutex> lg(m_video_composer_context->m_mutex);
-        switch(control_type)
-        {
-            case composer_control_type_t::resolution:
-            {
-                value = std::to_string(m_video_composer_context->m_output_format.video_info().size.width)
-                            + "x" + std::to_string(m_video_composer_context->m_output_format.video_info().size.height);
-            }
-            break;
-            case composer_control_type_t::aspect_ratio:
-            {
-                value = m_video_composer_context->m_config.clamp_aspect_ratio;
-            }
-            break;
-            case composer_control_type_t::layout_type:
-            {
-                static std::string layouts_strings[] = { "mosaic", "presenter", "selector" };
-                value = layouts_strings[static_cast<std::int32_t>(m_video_composer_context->m_config.layout_type)];
-            }
-            break;
-            case composer_control_type_t::vad_enable:
-                value = m_video_composer_context->m_config.vad_highlight;
-            break;
-        }
-
+        resolution = std::to_string(m_video_composer_context->m_output_format.video_info().size.width)
+                + "x" + std::to_string(m_video_composer_context->m_output_format.video_info().size.height);
         return true;
+
     };
 
+    auto set_layout_type = [this](variant& layout_type) -> bool
+    {
+        auto it = layouts.find(layout_type);
+        if (it != layouts.end())
+        {
+            m_video_composer_context->m_config.layout_type = it->second;
+            return true;
+        }
+
+        return false;
+    };
+
+    auto get_layout_type = [this](variant& layout_type) -> bool
+    {
+        auto it = std::find_if(layouts.begin(), layouts.end(), [this](const std::map<std::string, layout_type_t>::value_type& value) { return value.second == m_video_composer_context->m_config.layout_type; } );
+        if (it != layouts.end())
+        {
+            layout_type = it->first;
+            return true;
+        }
+
+        return false;
+    };
+
+    variant_list_t  resolution_list;
+
+    for (const auto& r : resolutions)
+    {
+        resolution_list.emplace_back(r.first);
+    }
+
+    variant_list_t  layout_list;
+
+    for (const auto& l : layouts)
+    {
+        layout_list.emplace_back(l.first);
+    }
+
+    m_controls.emplace_back(control_parameter("Resolution"
+                                              , control_type_t::list
+                                              , resolution_list
+                                              , "1280x720"
+                                              , custom_parameter
+                                              , [set_resolution](variant& value){ return set_resolution(value); }
+                                              , [get_resolution](variant& value){ return get_resolution(value); }
+                                              ));
+
+    m_controls.emplace_back(control_parameter("Layout"
+                                              , control_type_t::list
+                                              , layout_list
+                                              , layout_list.front()
+                                              , custom_parameter
+                                              , [set_layout_type](variant& value){ return set_layout_type(value); }
+                                              , [get_layout_type](variant& value){ return get_layout_type(value); }
+                                              ));
+
+    m_controls.emplace_back(control_parameter("Crop aspect ratio"
+                                              , control_type_t::check
+                                              , { false, true }
+                                              , false
+                                              , custom_parameter
+                                              , [this](variant& value){ m_video_composer_context->m_config.clamp_aspect_ratio = value; return true; }
+                                              , [this](variant& value){ value = m_video_composer_context->m_config.clamp_aspect_ratio; return true; }
+                                              ));
+
+   m_controls.emplace_back(control_parameter("Vad highlight"
+                                              , control_type_t::check
+                                              , { false, true }
+                                              , false
+                                              , custom_parameter
+                                              , [this](variant& value){ m_video_composer_context->m_config.vad_highlight = value; return true; }
+                                              , [this](variant& value){ value = m_video_composer_context->m_config.vad_highlight; return true; }
+                                              ));
 
 }
 
@@ -652,12 +687,14 @@ bool video_composer::set_control(const std::string &control_name
 variant video_composer::get_control(const std::string &control_name
                                     , const variant &default_value) const
 {
-
+    auto value = default_value;
+    return m_controls.get(control_name
+                          , value);
 }
 
-bool video_composer::on_frame(const i_media_frame &frame)
+bool video_composer::on_frame(media_frame_ptr_t frame)
 {
-    return m_video_composer_context->push_frame(frame);
+    return m_video_composer_context->push_frame(*frame);
 }
 
 }

@@ -94,11 +94,13 @@ struct normalizer_context_t
 
             conv_output_format.video_info().pixel_format = conv_output_format.video_info().raw_pixel_format();
 
+            converter_format = conv_output_format;
+
+            /*
             if (conv_input_format != conv_output_format)
             {
-                converter_format = conv_output_format;
                 converter.reset(new video_frame_converter());
-            }
+            }*/
 
             this->input_format = input_format;
 
@@ -116,6 +118,22 @@ struct normalizer_context_t
         }
 
         return is_init;
+    }
+
+    void check_converter(media_format_t& input_format)
+    {
+        converter_format.video_info().fps = input_format.video_info().fps;
+        if (input_format != converter_format)
+        {
+            if (converter == nullptr)
+            {
+                converter.reset(new video_frame_converter());
+            }
+        }
+        else
+        {
+            converter.reset();
+        }
     }
 
     media_frame_ptr_t normalize(media_frame_ptr_t media_frame)
@@ -136,7 +154,9 @@ struct normalizer_context_t
                 }
 
                 out_frame = std::move(decoded_frames.back());
-            }
+            }           
+
+            check_converter(out_frame->media_format());
 
             if (converter != nullptr)
             {

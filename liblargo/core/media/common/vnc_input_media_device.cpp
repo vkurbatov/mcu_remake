@@ -67,7 +67,7 @@ vnc_input_media_device::vnc_input_media_device(i_media_sink &media_sink
                 if (frame != nullptr)
                 {
                     m_frame_counter++;
-                    media_sink.on_frame(*frame);
+                    media_sink.on_frame(frame);
                 }
             }
         }

@@ -69,9 +69,10 @@ static output_media_device_ptr_t create_output_device(const device_info_t& devic
 class input_media_managed_device : virtual public i_input_media_managed_device
         , virtual public i_media_sink
 {
-    device_info_t               m_device_info;
-    media_sink_ptr_t            m_media_sink;
-    input_media_device_ptr_t    m_input_media_device;
+    device_info_t                       m_device_info;
+    media_sink_ptr_t                    m_media_sink;
+    input_media_device_ptr_t            m_input_media_device;
+
 
 public:
     input_media_managed_device(const device_info_t& device_info
@@ -106,6 +107,7 @@ public:
     variant get_control(const std::string &control_name
                         , const variant &default_value) const override
     {
+
         return m_input_media_device->get_control(control_name
                                                  , default_value);
     }
@@ -144,7 +146,7 @@ public:
 
     // i_media_sink interface
 public:
-    bool on_frame(const i_media_frame &frame) override
+    bool on_frame(media_frame_ptr_t frame) override
     {
         return m_media_sink != nullptr
                 && m_media_sink->on_frame(frame);
@@ -217,7 +219,7 @@ public:
 
     // i_media_sink interface
 public:
-    bool on_frame(const i_media_frame &frame) override
+    bool on_frame(media_frame_ptr_t frame) override
     {
         return m_output_media_device->on_frame(frame);
     }

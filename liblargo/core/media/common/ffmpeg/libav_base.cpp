@@ -172,6 +172,11 @@ device_info_list_t device_info_t::device_list(media_type_t media_type
                         device_info_list.emplace_back(std::move(device_info));
                     }
                 }
+
+                if (av_device_list != nullptr)
+                {
+                    av_freep(av_device_list);
+                }
             }
         }
     }

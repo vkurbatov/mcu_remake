@@ -21,9 +21,9 @@ enum class layout_type_t
 {
     mosaic,
     presenter,
-    selector,
-
+    selector
 };
+
 
 struct composer_config_t
 {
@@ -32,7 +32,7 @@ struct composer_config_t
     layout_type_t       layout_type = layout_type_t::mosaic;
     std::uint32_t       stream_timeout = 2000;
     bool                vad_highlight = true;
-    double              vad_level = 0.5;
+    double              vad_level = 0.3;
 };
 
 class video_composer : virtual public i_output_media_device
@@ -65,7 +65,7 @@ public:
 
     // i_media_sink interface
 public:
-    bool on_frame(const i_media_frame &frame) override;
+    bool on_frame(media_frame_ptr_t frame) override;
 };
 
 
