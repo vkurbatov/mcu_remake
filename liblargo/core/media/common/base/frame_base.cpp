@@ -4,7 +4,7 @@
 namespace base
 {
 
-frame_point_t::frame_point_t(uint32_t x, uint32_t y)
+frame_point_t::frame_point_t(int32_t x, int32_t y)
     : x(x)
     , y(y)
 {
@@ -43,7 +43,7 @@ frame_point_t &frame_point_t::operator +=(const frame_size_t &frame_size)
     return *this;
 }
 
-frame_size_t::frame_size_t(uint32_t width, uint32_t height)
+frame_size_t::frame_size_t(int32_t width, int32_t height)
     : width(width)
     , height(height)
 {
@@ -94,10 +94,10 @@ frame_rect_t::frame_rect_t(const frame_point_t &offset, const frame_size_t &size
 
 }
 
-frame_rect_t::frame_rect_t(uint32_t x
-                           , uint32_t y
-                           , uint32_t width
-                           , uint32_t height)
+frame_rect_t::frame_rect_t(int32_t x
+                           , int32_t y
+                           , int32_t width
+                           , int32_t height)
     : frame_rect_t({ x, y }
                    , { width, height })
 {

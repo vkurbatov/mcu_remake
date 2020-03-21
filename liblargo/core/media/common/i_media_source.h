@@ -15,7 +15,7 @@ class i_media_source
 {
 public:
     virtual ~i_media_source(){}
-    virtual media_frame_ptr_t read_frame(stream_id_t stream_id_t) = 0;
+    virtual media_frame_ptr_t fetch_frame(stream_id_t stream_id) = 0;
 };
 
 }

@@ -45,6 +45,8 @@
 #include "media/video/video_layout_manager_custom.h"
 #include "media/video/video_composer.h"
 
+#include "media/common/simple_media_sink.h"
+
 #include <iostream>
 #include <cstring>
 #include <mutex>
@@ -116,6 +118,7 @@ std::uint32_t   mcu_count = 1;
 auto last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 auto real_last_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
+/*
 typedef std::function<bool(const core::media::i_media_frame& frame)> frame_handler_t;
 
 class test_sink : public core::media::i_media_sink
@@ -142,10 +145,10 @@ public:
         }
     }
 };
+*/
 
-
-std::shared_ptr<test_sink> sink(new test_sink());
-std::shared_ptr<test_sink> sink2(new test_sink());
+std::shared_ptr<core::media::simple_media_sink> sink(new core::media::simple_media_sink());
+std::shared_ptr<core::media::simple_media_sink> sink2(new core::media::simple_media_sink());
 
 std::shared_ptr<core::media::video::video_frame_processor> frame_processor;
 
@@ -679,11 +682,11 @@ video_form::video_form(QWidget *parent) :
         }
 */
 
-        auto frame_provider = [this](const core::media::i_media_frame& frame)
+        auto frame_provider = [this](core::media::media_frame_ptr_t frame)
         {
             mutex.lock();
 
-            last_video_frame = frame.clone();
+            last_video_frame = frame->clone();
             if (image_change == false)
             {
                 image_change = true;
@@ -695,27 +698,27 @@ video_form::video_form(QWidget *parent) :
             return true;
         };
 
-        auto frame_handler = [this](const core::media::i_media_frame& frame) ->
+        auto frame_handler = [this](core::media::media_frame_ptr_t frame) ->
         bool
         {
             auto current_seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() % 1000;
 
-            if (frame.media_format().media_type == core::media::media_type_t::video)
+            if (frame->media_format().media_type == core::media::media_type_t::video)
             {
                 auto tp = std::chrono::high_resolution_clock::now();
 
                 core::media::media_frame_ptr_t media_frame;
 
-                if (frame.media_format().is_encoded())
+                if (frame->media_format().is_encoded())
                 {
                     if (frame_transcoder == nullptr)
                     {
-                        frame_transcoder.reset(new core::media::media_frame_transcoder(frame.media_format()));
+                        frame_transcoder.reset(new core::media::media_frame_transcoder(frame->media_format()));
                     }
 
                     core::media::media_frame_queue_t frames;
 
-                    if (frame_transcoder->transcode(frame
+                    if (frame_transcoder->transcode(*frame
                                                     , frames))
                     {
                         decoded_delay = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - tp).count();
@@ -733,7 +736,7 @@ video_form::video_form(QWidget *parent) :
                 }
                 else
                 {
-                    media_frame = frame.clone();
+                    media_frame = frame->clone();
                 }
 
 
@@ -1617,6 +1620,8 @@ void video_form::on_pushButton_clicked()
 
         input_managed_device_ptr->open();
 
+
+        input_managed_device_ptr->set_control("Resolution", "1280x720@30:mjpeg");
         // input_device.open(uri);
 
         ui->cbResoulution->clear();

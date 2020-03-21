@@ -74,6 +74,8 @@ set(SOURCES
 #    "core/media/common/magick/magick_base.cpp"
     "core/media/common/qt/qt_base.cpp"
     "core/media/common/utils/format_converter.cpp"
+    "core/media/common/simple_media_sink.cpp"
+    "core/media/common/simple_media_source.cpp"
     "core/media/audio/audio_frame.cpp"
     "core/media/audio/audio_resampler.cpp"
     "core/media/audio/audio_format.cpp"
@@ -118,6 +120,7 @@ set(SOURCES
     "core/media/video/filters/video_layer_image.cpp"
     "core/media/video/filters/video_layer_figure.cpp"
     "core/media/video/video_utils.cpp"
+    "core/media/video/tools/video_processor.cpp"
 )
 
 set(PRIVATE_HEADERS
@@ -169,6 +172,8 @@ set(PRIVATE_HEADERS
 #    "core/media/common/magick/magick_base.h"
     "core/media/common/qt/qt_base.h"
     "core/media/common/utils/format_converter.h"
+    "core/media/common/simple_media_sink.h"
+    "core/media/common/simple_media_source.h"
     "core/media/audio/audio_resampler.h"
     "core/media/audio/audio_point.h"
     "core/media/audio/audio_frame_converter.h"
@@ -207,6 +212,7 @@ set(PRIVATE_HEADERS
     "core/media/video/filters/video_layer_image.h"
     "core/media/video/filters/video_layer_figure.h"
     "core/media/video/video_utils.h"
+    "core/media/video/tools/video_processor.h"
 )
 
 set(PUBLIC_HEADERS
@@ -229,6 +235,7 @@ set(PUBLIC_HEADERS
     "core/media/common/i_media_channel.h"
     "core/media/common/i_media_track.h"
     "core/media/common/i_media_sink.h"
+    "core/media/common/i_media_sink_aggregator.h"
     "core/media/common/i_media_source.h"
     "core/media/common/i_media_filter.h"
     "core/media/common/i_media_control.h"

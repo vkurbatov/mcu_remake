@@ -7,6 +7,8 @@
 
 #include <memory>
 #include <vector>
+#include <queue>
+
 
 namespace core
 {
@@ -23,6 +25,8 @@ typedef std::uint64_t timestamp_t;
 class i_media_frame;
 
 typedef std::shared_ptr<i_media_frame> media_frame_ptr_t;
+typedef std::vector<media_frame_ptr_t> media_frame_list_t;
+typedef std::queue<media_frame_ptr_t> media_frame_queue_t;
 
 enum class frame_attributes_t
 {

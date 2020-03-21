@@ -113,6 +113,7 @@ struct video_composer_context_t
 
                     fragment.frame_rect.size.width -= dw;
                     fragment.frame_rect.offset.x += dw / 2;
+
                     /*
                     auto dx = fragment.frame_rect.offset.x % align;
 

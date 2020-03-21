@@ -33,6 +33,7 @@ struct normalizer_context_t
     {
         reset();
         this->output_format = output_format;
+        return true;
     }
 
     void reset()
@@ -138,6 +139,12 @@ struct normalizer_context_t
 
     media_frame_ptr_t normalize(media_frame_ptr_t media_frame)
     {
+        if (media_frame == nullptr
+                || media_frame->media_format().media_type != media_type_t::video)
+        {
+            return media_frame;
+        }
+
         media_frame_ptr_t out_frame = media_frame;
 
         if (check_and_initialize(out_frame->media_format()))
@@ -185,6 +192,8 @@ struct normalizer_context_t
 
             return out_frame;
         }
+
+        return nullptr;
     }
 };
 

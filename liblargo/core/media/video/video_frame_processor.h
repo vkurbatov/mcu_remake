@@ -2,7 +2,7 @@
 #define VIDEO_FRAME_PROCESSOR_H
 
 #include "media/common/i_media_control.h"
-#include "media/common/i_media_sink.h"
+#include "media/common/i_media_sink_aggregator.h".h"
 #include "filters/video_filter_flip.h"
 #include "video_frame_normalizer.h"
 
@@ -15,10 +15,9 @@ namespace media
 namespace video
 {
 
-typedef std::vector<media_sink_ptr_t> media_sink_list_t;
-
 class video_frame_processor : virtual public i_media_control
         , virtual public i_media_sink
+        , virtual public i_media_sink_aggregator
 {
     video_frame_normalizer              m_normalizer;
     filters::video_filter_flip          m_flip_filter;
@@ -27,9 +26,9 @@ class video_frame_processor : virtual public i_media_control
 public:
     video_frame_processor();
 
-    bool add_sink(media_sink_ptr_t sink_ptr);
-    bool remove_sink(media_sink_ptr_t sink_ptr);
-    const media_sink_list_t& sinks() const;
+    bool add_sink(media_sink_ptr_t sink_ptr) override;
+    bool remove_sink(media_sink_ptr_t sink_ptr) override;
+    const media_sink_list_t& sinks() const override;
 
     // i_media_sink interface
 public:

@@ -20,6 +20,7 @@ public:
 };
 
 typedef std::shared_ptr<i_media_sink> media_sink_ptr_t;
+typedef std::vector<media_sink_ptr_t> media_sink_list_t;
 
 }
 
