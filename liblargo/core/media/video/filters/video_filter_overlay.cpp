@@ -18,6 +18,7 @@ namespace filters
 {
 
 const auto width_align = 32;//ffmpeg::default_frame_align;
+const auto height_align = 4;//ffmpeg::default_frame_align;
 
 static frame_rect_t fetch_total_rect(const layer_list_t& overlay_list
                                      , const frame_size_t& frame_size)
@@ -81,6 +82,15 @@ bool video_filter_overlay::internal_filter(i_video_frame &video_frame) const
             if (overlay_rect.size.width + overlay_rect.point.x > frame_size.width)
             {
                 overlay_rect.point.x = frame_size.width - overlay_rect.size.width;
+            }
+        }
+
+        if (overlay_rect.size.height % height_align != 0)
+        {
+            overlay_rect.size.height += height_align - overlay_rect.size.height % height_align;
+            if (overlay_rect.size.height + overlay_rect.point.y > frame_size.height)
+            {
+                overlay_rect.point.y = frame_size.height - overlay_rect.size.height;
             }
         }
     }

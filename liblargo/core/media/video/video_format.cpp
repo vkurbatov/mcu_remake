@@ -18,7 +18,7 @@ namespace video
 
 bool video_info_t::is_planar(pixel_format_t pixel_format)
 {
-    return pixel_format < pixel_format_t::rgb555;
+    return pixel_format < pixel_format_t::bgr555;
 }
 
 bool video_info_t::is_encoded(pixel_format_t pixel_format)

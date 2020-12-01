@@ -185,6 +185,93 @@ auto& input_device = input_camera_device;
 
 std::unique_ptr<core::media::media_frame_transcoder> frame_transcoder;
 
+std::size_t ConvertNv12ToRgba(std::int32_t Width
+    , std::int32_t Height
+    , const void* Nv12Buffer
+    , void* RgbaBuffer
+    , std::uint8_t Alpha)
+{
+    std::size_t Result = 0;
+
+    if (Nv12Buffer != nullptr
+        && RgbaBuffer != nullptr
+        && Width > 1
+        && Height > 1)
+    {
+        Result = Width * Height * 4;
+        auto SampleConvertor = [](std::int32_t y, std::int32_t cr, std::int32_t cb, int aplha = 0xff)
+        {
+            auto clip = [](std::int32_t clr)
+            {
+                return (std::uint8_t)(clr < 0 ? 0 : (clr > 255 ? 255 : clr));
+            };
+
+            y -= 16;
+            cb -= 128;
+            cr -= 128;
+
+            auto r = clip((298 * y + 409 * cr + 128) >> 8);
+            auto g = clip((298 * y - 100 * cb - 208 * cr + 128) >> 8);
+            auto b = clip((298 * y + 516 * cb + 128) >> 8);
+
+            return static_cast<std::uint32_t>(r) << 0
+                | static_cast<std::uint32_t>(g) << 8
+                | static_cast<std::uint32_t>(b) << 16
+                | static_cast<std::uint32_t>(aplha) << 24;
+        };
+
+        const auto Stride = Width;
+
+        auto YPtr = static_cast<const std::uint8_t*>(Nv12Buffer);
+        auto RgbaPtr = static_cast<std::uint32_t*>(RgbaBuffer);
+
+        auto CbPtr = YPtr + (Height * Stride);
+        auto CrPtr = CbPtr + 1;
+
+        for (int y = 0; y < Height; y += 2)
+        {
+            auto lineY1 = YPtr;
+            auto lineY2 = YPtr + Stride;
+            auto lineCb = CbPtr;
+            auto lineCr = CrPtr;
+
+            auto lineRgba1 = RgbaPtr;
+            auto lineRgba2 = RgbaPtr + Stride;
+
+            for (int x = 0; x < Width; x += 2)
+            {
+                int  y0 = (int)lineY1[0];
+                int  y1 = (int)lineY1[1];
+                int  y2 = (int)lineY2[0];
+                int  y3 = (int)lineY2[1];
+                int  cb = (int)lineCb[0];
+                int  cr = (int)lineCr[0];
+
+                lineRgba1[0] = SampleConvertor(y0, cr, cb, Alpha);
+                lineRgba1[1] = SampleConvertor(y1, cr, cb, Alpha);
+
+                lineRgba2[0] = SampleConvertor(y2, cr, cb, Alpha);
+                lineRgba2[1] = SampleConvertor(y3, cr, cb, Alpha);
+
+                lineY1 += 2;
+                lineY2 += 2;
+                lineCb += 2;
+                lineCr += 2;
+
+                lineRgba1 += 2;
+                lineRgba2 += 2;
+            }
+
+            RgbaPtr += (Stride * 2);
+            YPtr += (Stride * 2);
+            CbPtr += Stride;
+            CrPtr += Stride;
+        }
+    }
+
+    return Result;
+}
+
 static void publisher_test(core::media::video::i_video_frame& video_frame)
 {
 
@@ -1470,7 +1557,7 @@ void video_form::prepare_image2()
         mid_format.video_info().size.width /= k_w;
         mid_format.video_info().size.height /= k_h;
         mid_area.size = mid_format.video_info().size;
-        mid_format.video_info().pixel_format = core::media::video::pixel_format_t::yuv420p;
+        mid_format.video_info().pixel_format = core::media::video::pixel_format_t::nv12;
 
         const QSize q_size(output_format.video_info().size.width
                            , output_format.video_info().size.height);
@@ -1499,8 +1586,22 @@ void video_form::prepare_image2()
                                                  , mid_format);
 
 
+        auto test_format = mid_format;
+        test_format.video_info().pixel_format = core::media::video::pixel_format_t::rgba32;
 
-        publisher_test2(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
+        std::vector<std::uint8_t> test_buffer(test_format.frame_size(), 0);
+
+        ConvertNv12ToRgba(test_format.video_info().size.width
+                          , test_format.video_info().size.height
+                          , mid_frame->data()
+                          , test_buffer.data()
+                          , 127);
+
+        auto test_frame = core::media::video::video_frame::create(test_format, std::move(test_buffer), mid_frame->frame_id(), mid_frame->timestamp());
+
+        mid_frame = std::move(test_frame);
+
+        // publisher_test2(reinterpret_cast<core::media::video::i_video_frame&>(*mid_frame));
 
         filter_flip.filter(*mid_frame);
 

@@ -151,7 +151,7 @@ struct libav_output_format_context_t
 
                 av_stream->codecpar->codec_type = codec->type;
 
-                av_stream->pts.val = 0;
+                // av_stream->pts.val = 0;
                 av_stream->time_base = { 1, video_sample_rate };
 
                 switch (codec->type)
@@ -198,10 +198,10 @@ struct libav_output_format_context_t
                     av_stream->codecpar->extradata = strm.extra_data.data();
                     av_stream->codecpar->extradata_size = strm.extra_data.size();// - AV_INPUT_BUFFER_PADDING_SIZE;
                 }
-
+/*
                 av_stream->pts.den = av_stream->time_base.den;
                 av_stream->pts.num = av_stream->time_base.num;
-
+*/
                 streams.emplace_back(std::move(strm));
                 return true;
             }
@@ -253,7 +253,8 @@ struct libav_output_format_context_t
                 av_packet.duration = av_stream.codecpar->frame_size;
                 av_packet.pts = av_packet.duration * av_stream.nb_frames;
                 av_packet_rescale_ts(&av_packet
-                                     , { av_stream.pts.num, av_stream.pts.den }
+                                     // , { av_stream.pts.num, av_stream.pts.den }
+                                     , { av_stream.time_base.num, av_stream.time_base.den }
                                      , av_stream.time_base);
 
 
@@ -265,7 +266,8 @@ struct libav_output_format_context_t
                 av_packet.pts = av_stream.nb_frames;
 
                 av_packet_rescale_ts(&av_packet
-                                     , { av_stream.pts.num, av_stream.pts.den }
+                                     // , { av_stream.pts.num, av_stream.pts.den }
+                                     , { av_stream.time_base.num, av_stream.time_base.den }
                                      , av_stream.time_base);
 
                 // av_stream.pts.val ++; //= av_stream.nb_frames;

@@ -132,7 +132,7 @@ void init_context(libav_context_t& context, const libav_codec_config_t& libav_co
 		context.codec_context->profile = libav_codec_config.profile;
 	}
 
-	context.codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_LOW_DELAY;
+    context.codec_context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER | AV_CODEC_FLAG_LOW_DELAY;
 
 	context.frame->channels = context.codec_context->channels;
 	context.frame->channel_layout = context.codec_context->channel_layout;

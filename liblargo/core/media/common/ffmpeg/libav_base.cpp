@@ -846,11 +846,11 @@ codec_params_t::codec_params_t(const std::string &codec_params)
             case custom_parameter_t::global_header:
                 if (option.second.empty() || std::atoi(option.second.c_str()) != 0)
                 {
-                    flags1 |= CODEC_FLAG_GLOBAL_HEADER;
+                    flags1 |= AV_CODEC_FLAG_GLOBAL_HEADER;
                 }
                 else
                 {
-                    flags1 &= ~CODEC_FLAG_GLOBAL_HEADER;
+                    flags1 &= ~AV_CODEC_FLAG_GLOBAL_HEADER;
                 }
             break;
         }
@@ -860,14 +860,14 @@ codec_params_t::codec_params_t(const std::string &codec_params)
 
 bool codec_params_t::is_global_header() const
 {
-    return (flags1 & CODEC_FLAG_GLOBAL_HEADER) != 0;
+    return (flags1 & AV_CODEC_FLAG_GLOBAL_HEADER) != 0;
 }
 
 void codec_params_t::set_global_header(bool enable)
 {
     flags1 = enable
-            ? flags1 | CODEC_FLAG_GLOBAL_HEADER
-            : flags1 & ~CODEC_FLAG_GLOBAL_HEADER;
+            ? flags1 | AV_CODEC_FLAG_GLOBAL_HEADER
+            : flags1 & ~AV_CODEC_FLAG_GLOBAL_HEADER;
 }
 
 std::string codec_params_t::to_params() const

@@ -10,6 +10,7 @@ extern "C"
 #include <libavutil/imgutils.h>
 }
 
+
 #define WBS_MODULE_NAME "ff:transcoder"
 #include <core-tools/logging.h>
 
@@ -118,11 +119,11 @@ bool set_custom_option(AVCodecContext& av_context
         case custom_parameter_t::global_header:
             if (option.second.empty() || std::atoi(option.second.c_str()) != 0)
             {
-                av_context.flags |= CODEC_FLAG_GLOBAL_HEADER;
+                av_context.flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
             }
             else
             {
-                av_context.flags &= ~CODEC_FLAG_GLOBAL_HEADER;
+                av_context.flags &= ~AV_CODEC_FLAG_GLOBAL_HEADER;
             }
         break;
         default:

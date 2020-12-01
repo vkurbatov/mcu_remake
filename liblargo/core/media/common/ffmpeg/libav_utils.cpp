@@ -6,10 +6,8 @@ extern "C"
 #include <libavformat/avformat.h>
 }
 
-
 namespace ffmpeg
 {
-
 
 namespace utils
 {
@@ -39,7 +37,7 @@ media_data_t extract_global_header(const stream_info_t &stream_info)
         if (codec_context != nullptr)
         {
 
-            codec_context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+            codec_context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
             stream_info.media_info >> (*codec_context);
 
             if (avcodec_open2(codec_context
