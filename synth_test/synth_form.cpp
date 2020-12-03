@@ -94,7 +94,7 @@ class AudioTranciever : public core::media::audio::IAudioReader
 public:
     AudioTranciever(std::size_t queue_size)
         : m_queue(queue_size)
-        , m_sensors_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
+        , m_sensors_pos({ {-1.0, 0.0 }, { 1.0, 0.0 }, { 0.0, 2.0 } /*, { 2.0, 0.6 }, { 0.0, 2.0 }*/ })
         , m_stereo_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
     {
 
@@ -154,26 +154,30 @@ private:
         {
             for (const auto& st : m_sensors_pos)
             {
-                /*
+                double sample = 0;
+
+                double max_factor = 0.5;//1.0 / static_cast<double>(m_sensors_pos.size());
+
                 for (const auto& ss : m_sensors_pos)
                 {
-                    auto distance = st.distance(ss);
-                    auto factor = 1.0 - distance / 10.0;
-                    if (factor < 0.0)
-                    {
-                        factor = 0.0;
-                    }
-                    *output_pcm += static_cast<double>(*input_pcm) * factor;
-                }*/
+                    auto distance = rel_mouse_pos.distance(ss) + ss.distance(st);
+                    auto factor = max_factor - distance / 10.0;
 
+                    factor = std::max(0.0, std::min(max_factor, factor));
+
+                    sample += static_cast<double>(*input_pcm) * factor;
+                }
+
+                *output_pcm = static_cast<std::int16_t>(sample * 0.5);
+/*
                 auto distance = rel_mouse_pos.distance(st);
-                auto factor = 1.0 - distance / 10.0;
+                auto factor = 1.0 - distance / 5.0;
                 if (factor < 0.0)
                 {
                     factor = 0.0;
                 }
                 *output_pcm += static_cast<double>(*input_pcm) * factor;
-
+*/
                 input_pcm++;
                 output_pcm++;
             }
