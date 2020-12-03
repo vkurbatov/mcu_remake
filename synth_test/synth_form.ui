@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1280</width>
+    <width>1053</width>
     <height>790</height>
    </rect>
   </property>
@@ -30,13 +30,26 @@
      <string>Play</string>
     </property>
    </widget>
+   <widget class="QLabel" name="lbPos">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>0</y>
+      <width>341</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1280</width>
+     <width>1053</width>
      <height>25</height>
     </rect>
    </property>

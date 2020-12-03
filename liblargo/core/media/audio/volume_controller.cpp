@@ -23,7 +23,7 @@ void change_volume(const void *sound_data, std::size_t size, void *output_data, 
 		auto& input_sample = static_cast<const Tval*>(sound_data)[i];
 		auto& output_sample = static_cast<Tval*>(output_data)[i];
 
-		output_sample = static_cast<Tval>((static_cast<double>(input_sample) * static_cast<double>(volume)) / 100.0f);
+
 
 	}
 }

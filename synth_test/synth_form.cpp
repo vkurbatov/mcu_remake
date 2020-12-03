@@ -11,8 +11,11 @@
 #include "media/audio/audio_dispatcher.h"
 #include "media/audio/channels/alsa/alsa_channel.h"
 #include "media/common/data_queue.h"
+#include "media/audio/volume_controller.h"
 
 #include <mutex>
+#include <cmath>
+#include <cstring>
 
 /*
     static const std::uint32_t duration_ms = 10;
@@ -39,15 +42,60 @@
     while(dispatcher.IsRunning()) timer(duration_ms);
 */
 
+
+struct point_t
+{
+    double x;
+    double y;
+
+    static double distance(const point_t& p1, const point_t& p2)
+    {
+        return p1.distance(p2);
+    }
+
+    point_t(double x = 0.0, double y = 0.0)
+        : x(x)
+        , y(y)
+    {
+
+    }
+
+    double distance(const point_t& p = {}) const
+    {
+        return std::sqrt(std::pow(p.x - x, 2) + std::pow(p.y - y, 2));
+    }
+
+    bool operator == (const point_t& p) const
+    {
+        return x == p.x && p.y == y;
+    }
+
+    bool operator != (const point_t& p) const
+    {
+        return !operator == (p);
+    }
+};
+
+point_t abs_mouse_pos;
+point_t rel_mouse_pos;
+
+const double area_size = 10.0; // в метрах
+
 class AudioTranciever : public core::media::audio::IAudioReader
         , public core::media::audio::IAudioWriter
 {
     std::mutex                  m_mutex;
     core::media::DataQueue      m_queue;
 
+    std::vector<point_t>        m_sensors_pos;
+    std::vector<point_t>        m_stereo_pos;
+    std::vector<std::uint8_t>   m_process_buffer;
+
 public:
     AudioTranciever(std::size_t queue_size)
         : m_queue(queue_size)
+        , m_sensors_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
+        , m_stereo_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
     {
 
     }
@@ -79,20 +127,61 @@ public:
     int32_t Read(const core::media::audio::audio_format_t &audio_format, void *data, std::size_t size, uint32_t options)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto result = m_queue.Pop(data, size);
 
-        auto pcm = static_cast<std::uint16_t*>(data);
-        auto samples = size / sizeof(pcm[0]);
+        m_process_buffer.resize(size);
+        auto result = m_queue.Pop(m_process_buffer.data(), size);
 
-        for (auto i = 0; i < samples; i++)
+        if (result > 0)
         {
-            if (i % 2 != 0)
-            {
-                pcm[i] = 0;
-            }
+            filter(m_process_buffer.data(), data, result);
         }
 
         return result;
+    }
+private:
+    void filter(const void *input_data, void *output_data, std::size_t size)
+    {
+        auto input_pcm = static_cast<const std::int16_t*>(input_data);
+        auto output_pcm = static_cast<std::int16_t*>(output_data);
+        auto samples = size / sizeof(std::int16_t);
+        const auto end = input_pcm + samples;
+
+        std::memset(output_pcm, 0, size);
+
+        //core::media::audio::VolumeController::VolumeChange(core::media::audio::sample_format_t::pcm_16, 10, input_pcm, size, output_pcm, size);
+
+        while (input_pcm < end)
+        {
+            for (const auto& st : m_sensors_pos)
+            {
+                /*
+                for (const auto& ss : m_sensors_pos)
+                {
+                    auto distance = st.distance(ss);
+                    auto factor = 1.0 - distance / 10.0;
+                    if (factor < 0.0)
+                    {
+                        factor = 0.0;
+                    }
+                    *output_pcm += static_cast<double>(*input_pcm) * factor;
+                }*/
+
+                auto distance = rel_mouse_pos.distance(st);
+                auto factor = 1.0 - distance / 10.0;
+                if (factor < 0.0)
+                {
+                    factor = 0.0;
+                }
+                *output_pcm += static_cast<double>(*input_pcm) * factor;
+
+                input_pcm++;
+                output_pcm++;
+            }
+        }
+
+        return;
+
+        // std::memset();
     }
 };
 
@@ -106,7 +195,7 @@ class AudioLoopback
     core::media::audio::AudioDispatcher m_writer;
 
 public:
-    AudioLoopback(std::uint32_t duration_ms = 10, std::uint32_t sample_rate = 32000)
+    AudioLoopback(std::uint32_t duration_ms = 20, std::uint32_t sample_rate = 32000)
         : m_duration(duration_ms)
         , m_recorder({core::media::audio::channels::channel_direction_t::recorder, { sample_rate, core::media::audio::sample_format_t::pcm_16, 1 }, duration_ms})
         , m_playback({core::media::audio::channels::channel_direction_t::playback, { sample_rate, core::media::audio::sample_format_t::pcm_16, 2 }, duration_ms})
@@ -150,11 +239,39 @@ synth_form::synth_form(QWidget *parent) :
     ui(new Ui::synth_form)
 {   
     ui->setupUi(this);
+    installEventFilter(this);
+    setMouseTracking(true);
 }
 
 synth_form::~synth_form()
 {
     delete ui;
+}
+
+bool synth_form::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::MouseMove)
+    {
+          QMouseEvent* mouseEvent = (QMouseEvent*)event;
+          if (mouseEvent->type() == QMouseEvent::MouseMove)
+          {
+
+             abs_mouse_pos.x = mouseEvent->x();
+             abs_mouse_pos.y = mouseEvent->y();
+
+             auto current_size = std::min(ui->centralwidget->width(), ui->centralwidget->height());
+
+             double factor = area_size / current_size;
+
+             rel_mouse_pos.x = (abs_mouse_pos.x - ui->centralwidget->width() / 2) * factor;
+             rel_mouse_pos.y = (-(abs_mouse_pos.y - (ui->centralwidget->height() / 2))) * factor;
+
+             const auto& pt = rel_mouse_pos;
+
+             ui->lbPos->setText(QString("{%1:%2}, d = %3").arg(pt.x).arg(pt.y).arg(rel_mouse_pos.distance()));
+          }
+    }
+    return false;
 }
 
 void synth_form::on_btPlay_clicked()

@@ -69,6 +69,7 @@ struct frame_rect_t
     void aspect_ratio(const frame_rect_t& rect);
     bool is_null() const;
 };
+
 }
 
 #endif // FRAME_BASE_H

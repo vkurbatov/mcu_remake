@@ -14,6 +14,8 @@ class synth_form : public QMainWindow
 public:
     explicit synth_form(QWidget *parent = 0);
     ~synth_form();
+
+    virtual bool eventFilter(QObject *watched, QEvent *event) override;
     
 
 private slots:
