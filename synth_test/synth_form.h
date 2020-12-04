@@ -16,6 +16,7 @@ public:
     ~synth_form();
 
     virtual bool eventFilter(QObject *watched, QEvent *event) override;
+    void paintEvent(QPaintEvent *) override;
     
 
 private slots:

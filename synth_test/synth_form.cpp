@@ -94,7 +94,7 @@ class AudioTranciever : public core::media::audio::IAudioReader
 public:
     AudioTranciever(std::size_t queue_size)
         : m_queue(queue_size)
-        , m_sensors_pos({ {-1.0, 0.0 }, { 1.0, 0.0 }, { 0.0, 2.0 } /*, { 2.0, 0.6 }, { 0.0, 2.0 }*/ })
+        , m_sensors_pos({ {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.8 }, { 1.5, 1.8 } })
         , m_stereo_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
     {
 
@@ -152,7 +152,7 @@ private:
 
         while (input_pcm < end)
         {
-            for (const auto& st : m_sensors_pos)
+            for (const auto& st : m_stereo_pos)
             {
                 double sample = 0;
 
@@ -189,13 +189,62 @@ private:
     }
 };
 
+class AudioGenerator : public core::media::audio::IAudioReader
+{
+    std::int32_t    m_step;
+    double          m_freq;
+    double          m_level;
+    // IMediaReadStatus interface
+public:
+    AudioGenerator(double freq = 300.0
+            , double level = 0.2)
+        : m_step(0)
+        , m_freq(freq)
+        , m_level(level)
+    {
+
+    }
+public:
+    bool CanRead() const
+    {
+        return true;
+    }
+
+    // IAudioReader interface
+public:
+    int32_t Read(const core::media::audio::audio_format_t &audio_format
+                 , void *data
+                 , std::size_t size
+                 , uint32_t options)
+    {
+
+        auto period = static_cast<double>(audio_format.sample_rate) / m_freq / 2;
+        double factor = M_PI / period;
+
+        auto pcm = static_cast<std::int16_t*>(data);
+        auto samples = size / sizeof(*pcm);
+
+        while(samples-- > 0)
+        {
+            auto sample = m_level * std::sin(static_cast<double>(m_step) * factor);
+            *pcm = static_cast<double>(sample * 32767.0);
+
+            pcm++;
+            m_step++;
+        }
+
+        return size;
+    }
+};
+
 class AudioLoopback
 {
     std::uint32_t m_duration;
     core::media::audio::channels::alsa::AlsaChannel m_recorder;
     core::media::audio::channels::alsa::AlsaChannel m_playback;
-    AudioTranciever m_transiever;
+    AudioTranciever                     m_transiever;
     core::media::audio::AudioDispatcher m_reader;
+    AudioGenerator                      m_generator;
     core::media::audio::AudioDispatcher m_writer;
 
 public:
@@ -236,6 +285,8 @@ public:
     }
 };
 
+
+double resize_factor = 0.0;
 AudioLoopback audio_loopback;
 
 synth_form::synth_form(QWidget *parent) :
@@ -265,10 +316,10 @@ bool synth_form::eventFilter(QObject *watched, QEvent *event)
 
              auto current_size = std::min(ui->centralwidget->width(), ui->centralwidget->height());
 
-             double factor = area_size / current_size;
+             resize_factor = area_size / current_size;
 
-             rel_mouse_pos.x = (abs_mouse_pos.x - ui->centralwidget->width() / 2) * factor;
-             rel_mouse_pos.y = (-(abs_mouse_pos.y - (ui->centralwidget->height() / 2))) * factor;
+             rel_mouse_pos.x = (abs_mouse_pos.x - ui->centralwidget->width() / 2) * resize_factor;
+             rel_mouse_pos.y = (-(abs_mouse_pos.y - (ui->centralwidget->height() / 2))) * resize_factor;
 
              const auto& pt = rel_mouse_pos;
 
@@ -276,6 +327,33 @@ bool synth_form::eventFilter(QObject *watched, QEvent *event)
           }
     }
     return false;
+}
+
+void synth_form::paintEvent(QPaintEvent *pe)
+{
+    QPainter p(this);
+    QPen pen;
+    pen.setColor(Qt::black);
+    p.setPen(pen);
+    p.setBrush(Qt::black);
+
+
+    auto w = ui->centralwidget->width();
+    auto h = ui->centralwidget->height();
+
+    auto x = w / 2;
+    auto y = h / 2;
+
+    p.drawEllipse({ x, y }, 3, 3);
+
+    point_t points[] = { {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.8 }, { 1.5, 1.8 } };
+
+    for (const auto& pt : points)
+    {
+        x = pt.x / resize_factor + w / 2;
+        y = (-pt.y) / resize_factor + h / 2;
+        p.drawEllipse({ x, y }, 3, 3);
+    }
 }
 
 void synth_form::on_btPlay_clicked()
