@@ -32,6 +32,9 @@ private:
 protected:
 
 private slots:
+    void on_cbPhase_stateChanged(int arg1);
+
+private slots:
     void on_btPlay_clicked();
 };
 

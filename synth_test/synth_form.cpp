@@ -42,6 +42,8 @@
     while(dispatcher.IsRunning()) timer(duration_ms);
 */
 
+double wave_speed = 331.0;
+double wave_delay = 1.0 / wave_speed;
 
 struct point_t
 {
@@ -78,14 +80,74 @@ struct point_t
 
 point_t abs_mouse_pos;
 point_t rel_mouse_pos;
+bool phase_process = false;
 
 const double area_size = 10.0; // в метрах
+
+/*
+class AudioSensor
+{
+    point_t                             m_position;
+    std::vector<std::uint8_t>           m_audio_buffer;
+    core::media::audio::audio_info_t    m_audio_format;
+public:
+    AudioSensor(const point_t& position)
+        : m_position(position)
+        , m_audio_format(core::media::audio::sample_format_t::pcm_16, 32000, 1)
+    {
+
+    }
+
+    void Write(const void* data, std::size_t size)
+    {
+
+        if (m_audio_buffer.size() < size * 2)
+        {
+            m_audio_buffer.resize(size * 2);
+        }
+
+        std::memcpy(m_audio_buffer.data(), m_audio_buffer.data() + size, size);
+        std::memcpy(m_audio_buffer.data() + size, data, size);
+    }
+
+    std::size_t Read(const point_t& pos, void* data, std::size_t size)
+    {
+        double distance = rel_mouse_pos.distance(m_position) + m_position.distance(pos);
+        std::int32_t samples_delay = m_audio_format.samples_from_duration(static_cast<std::int32_t>(distance * wave_delay));
+
+        if (m_audio_buffer.size() > size)
+        {
+            auto pcm_input = static_cast<const std::int16_t*>(m_audio_buffer.data() + size - samples_delay * 2);
+            auto pcm_output = static_cast<std::int16_t*>(data);
+            auto samples = size / 2;
+
+            double max_factor = 0.5;
+
+            while (samples-->0)
+            {
+                auto factor = max_factor - distance / 10.0;
+
+                factor = std::max(0.0, std::min(max_factor, factor));
+
+                *pcm_output++ = pcm_input++ ;
+            }
+
+            std::memcpy(data, m_audio_buffer.data() + size - samples_delay * 2, size);
+            return size;
+        }
+
+        return 0;
+    }
+};
+
+*/
 
 class AudioTranciever : public core::media::audio::IAudioReader
         , public core::media::audio::IAudioWriter
 {
     std::mutex                  m_mutex;
-    core::media::DataQueue      m_queue;
+    // core::media::DataQueue      m_queue;
+    std::vector<std::uint8_t>   m_buffer;
 
     std::vector<point_t>        m_sensors_pos;
     std::vector<point_t>        m_stereo_pos;
@@ -93,8 +155,8 @@ class AudioTranciever : public core::media::audio::IAudioReader
 
 public:
     AudioTranciever(std::size_t queue_size)
-        : m_queue(queue_size)
-        , m_sensors_pos({ {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.8 }, { 1.5, 1.8 } })
+         //m_queue(queue_size)
+        : m_sensors_pos({ {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.8 }, { 1.5, 1.8 } })
         , m_stereo_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
     {
 
@@ -119,7 +181,15 @@ public:
     int32_t Write(const core::media::audio::audio_format_t &audio_format, const void *data, std::size_t size, uint32_t options)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        return m_queue.Push(data, size);
+
+        if (m_buffer.size() < size * 2)
+        {
+            m_buffer.resize(size * 2, 0);
+        }
+        std::memcpy(m_buffer.data(), m_buffer.data() + size, size);
+        std::memcpy(m_buffer.data() + size, data, size);
+
+        //return m_queue.Push(data, size);
     }
 
     // IAudioReader interface
@@ -128,15 +198,13 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
-        m_process_buffer.resize(size);
-        auto result = m_queue.Pop(m_process_buffer.data(), size);
-
-        if (result > 0)
+        if (m_buffer.size() > size)
         {
-            filter(m_process_buffer.data(), data, result);
+            filter(m_buffer.data() + size, data, size);
+            return size;
         }
 
-        return result;
+        return 0;
     }
 private:
     void filter(const void *input_data, void *output_data, std::size_t size)
@@ -161,30 +229,25 @@ private:
                 for (const auto& ss : m_sensors_pos)
                 {
                     auto distance = rel_mouse_pos.distance(ss) + ss.distance(st);
+                    auto delay_ms = phase_process ? static_cast<std::int32_t>(distance * wave_delay * 1000.0) : 0;
+
+                    std::int32_t samples_delay = core::media::audio::audio_info_t(core::media::audio::sample_format_t::pcm_16, 32000, 1).samples_from_duration(delay_ms);
+
                     auto factor = max_factor - distance / 10.0;
 
                     factor = std::max(0.0, std::min(max_factor, factor));
 
-                    sample += static_cast<double>(*input_pcm) * factor;
+                    sample += static_cast<double>(*(input_pcm - samples_delay)) * factor;
                 }
 
                 *output_pcm = static_cast<std::int16_t>(sample * 0.5);
-/*
-                auto distance = rel_mouse_pos.distance(st);
-                auto factor = 1.0 - distance / 5.0;
-                if (factor < 0.0)
-                {
-                    factor = 0.0;
-                }
-                *output_pcm += static_cast<double>(*input_pcm) * factor;
-*/
+
                 input_pcm++;
                 output_pcm++;
             }
         }
 
         return;
-
         // std::memset();
     }
 };
@@ -368,4 +431,9 @@ void synth_form::on_btPlay_clicked()
     }
 
     ui->btPlay->setText(audio_loopback.is_started() ? "Stop" : "Play");
+}
+
+void synth_form::on_cbPhase_stateChanged(int arg1)
+{
+    phase_process = arg1 > 0;
 }
