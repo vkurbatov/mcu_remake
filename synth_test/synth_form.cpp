@@ -81,6 +81,7 @@ struct point_t
 point_t abs_mouse_pos;
 point_t rel_mouse_pos;
 bool phase_process = false;
+const std::vector<point_t> default_sensor_pos = { {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.7 }, { 1.5, 1.7 } };
 
 const double area_size = 10.0; // в метрах
 
@@ -156,7 +157,7 @@ class AudioTranciever : public core::media::audio::IAudioReader
 public:
     AudioTranciever(std::size_t queue_size)
          //m_queue(queue_size)
-        : m_sensors_pos({ {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.8 }, { 1.5, 1.8 } })
+        : m_sensors_pos(default_sensor_pos)
         , m_stereo_pos({ {-1.0, 0.0 }, { 1.0, 0.0 } })
     {
 
@@ -233,7 +234,8 @@ private:
 
                     std::int32_t samples_delay = core::media::audio::audio_info_t(core::media::audio::sample_format_t::pcm_16, 32000, 1).samples_from_duration(delay_ms);
 
-                    auto factor = max_factor - distance / 10.0;
+                    //auto factor = max_factor - distance / 10.0;
+                    auto factor = std::exp(-distance / 1.5);
 
                     factor = std::max(0.0, std::min(max_factor, factor));
 
@@ -409,7 +411,7 @@ void synth_form::paintEvent(QPaintEvent *pe)
 
     p.drawEllipse({ x, y }, 3, 3);
 
-    point_t points[] = { {-2.0, -0.5 }, { 2.0, -0.5 }, { 0.0, 2.0 }, { -1.5, 1.8 }, { 1.5, 1.8 } };
+    auto points = default_sensor_pos;
 
     for (const auto& pt : points)
     {
